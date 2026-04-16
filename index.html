@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Binio Dive — Dive Logbook</title>
+<title>Mr.Binio Dive — Dive Logbook</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -12,33 +12,50 @@
 <div class="header">
   <div class="header-inner">
     <div class="brand">
-      <!-- Astronaut-diver SVG logo -->
-      <svg width="42" height="42" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="100" height="100" rx="22" fill="#111820"/>
-        <rect x="1" y="1" width="98" height="98" rx="21" stroke="#1a2332" stroke-width="2"/>
-        <!-- Helmet -->
-        <ellipse cx="50" cy="44" rx="22" ry="24" fill="#1a2332" stroke="#00d4ff" stroke-width="2.5"/>
-        <!-- Visor -->
-        <ellipse cx="50" cy="42" rx="15" ry="14" fill="url(#visor)"/>
+      <!-- Cute astronaut SVG matching original style -->
+      <svg width="44" height="44" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="120" height="120" rx="24" fill="#0f1923"/>
+        <rect x="1.5" y="1.5" width="117" height="117" rx="22.5" stroke="#1e293b" stroke-width="1.5"/>
+        <!-- Helmet - round like original -->
+        <circle cx="60" cy="46" r="24" fill="#e8ecf0" stroke="#2a2a2a" stroke-width="2.5"/>
+        <!-- Helmet shine -->
+        <ellipse cx="52" cy="38" rx="10" ry="7" fill="white" opacity="0.4"/>
+        <!-- Visor - big golden like original -->
+        <rect x="40" y="36" width="40" height="22" rx="6" fill="url(#visor2)" stroke="#2a2a2a" stroke-width="1.5"/>
         <!-- Visor shine -->
-        <ellipse cx="43" cy="37" rx="5" ry="3.5" fill="rgba(255,255,255,0.15)" transform="rotate(-15 43 37)"/>
+        <ellipse cx="52" cy="43" rx="8" ry="4" fill="rgba(255,255,255,0.2)" transform="rotate(-8 52 43)"/>
+        <!-- Ear pieces -->
+        <circle cx="36" cy="48" r="4" fill="#b0b8c0" stroke="#2a2a2a" stroke-width="1.5"/>
+        <circle cx="84" cy="48" r="4" fill="#b0b8c0" stroke="#2a2a2a" stroke-width="1.5"/>
         <!-- Body -->
-        <rect x="35" y="65" width="30" height="18" rx="8" fill="#1a2332" stroke="#00d4ff" stroke-width="2"/>
-        <!-- Neck -->
-        <rect x="42" y="62" width="16" height="8" rx="3" fill="#1a2332"/>
+        <rect x="42" y="68" width="36" height="26" rx="10" fill="#e8ecf0" stroke="#2a2a2a" stroke-width="2.5"/>
+        <!-- Neck connector -->
+        <rect x="50" y="64" width="20" height="10" rx="4" fill="#d0d4d8" stroke="#2a2a2a" stroke-width="1.5"/>
+        <!-- Chest panel -->
+        <rect x="50" y="74" width="20" height="14" rx="3" fill="white" stroke="#2a2a2a" stroke-width="1.5"/>
+        <!-- Chest buttons -->
+        <circle cx="57" cy="80" r="2" fill="#555"/>
+        <circle cx="63" cy="80" r="2" fill="#555"/>
+        <circle cx="57" cy="86" r="1.5" fill="#888"/>
+        <!-- Belt - red like original -->
+        <rect x="42" y="90" width="36" height="5" rx="2" fill="#ef4444"/>
+        <!-- Arms -->
+        <ellipse cx="38" cy="78" rx="6" ry="8" fill="#e8ecf0" stroke="#2a2a2a" stroke-width="2"/>
+        <ellipse cx="82" cy="78" rx="6" ry="8" fill="#e8ecf0" stroke="#2a2a2a" stroke-width="2"/>
         <!-- Bubbles -->
-        <circle cx="72" cy="28" r="4" fill="none" stroke="#00d4ff" stroke-width="1.8" opacity="0.7"/>
-        <circle cx="79" cy="20" r="2.5" fill="none" stroke="#00d4ff" stroke-width="1.5" opacity="0.5"/>
-        <circle cx="83" cy="13" r="1.5" fill="none" stroke="#00d4ff" stroke-width="1.2" opacity="0.3"/>
+        <circle cx="90" cy="30" r="4.5" fill="none" stroke="#2dd4bf" stroke-width="2" opacity="0.8"/>
+        <circle cx="97" cy="22" r="3" fill="none" stroke="#2dd4bf" stroke-width="1.5" opacity="0.5"/>
+        <circle cx="102" cy="15" r="1.8" fill="none" stroke="#8b5cf6" stroke-width="1.2" opacity="0.4"/>
         <defs>
-          <linearGradient id="visor" x1="35" y1="28" x2="65" y2="56">
-            <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.3"/>
-            <stop offset="100%" stop-color="#0077aa" stop-opacity="0.6"/>
+          <linearGradient id="visor2" x1="40" y1="36" x2="80" y2="58">
+            <stop offset="0%" stop-color="#c9a84c"/>
+            <stop offset="50%" stop-color="#8a7530"/>
+            <stop offset="100%" stop-color="#6b5a28"/>
           </linearGradient>
         </defs>
       </svg>
       <div class="brand-text">
-        <div class="brand-name">binio<span>dive</span></div>
+        <div class="brand-name"><span class="mr">Mr</span><span class="dot">.</span>Binio<span class="dive">dive</span></div>
         <div class="brand-sub" id="brand-sub">DIVE LOGBOOK</div>
       </div>
     </div>
@@ -69,7 +86,6 @@
     <button class="tab" id="tab-shop" onclick="switchTab('shop')">🛒 Shop</button>
   </div>
 
-  <!-- LOG -->
   <div class="panel active" id="panel-log">
     <div class="card">
       <div class="card-title" id="card-title-text">🧭 New <span class="accent">Dive Entry</span></div>
@@ -146,7 +162,6 @@
     </div>
   </div>
 
-  <!-- HISTORY -->
   <div class="panel" id="panel-history">
     <div class="filters">
       <input type="text" class="search-input" id="search-input" placeholder="🔍 Search..." oninput="renderDives()">
@@ -165,13 +180,12 @@
     <div class="dives-list" id="dives-grid"></div>
   </div>
 
-  <!-- SHOP -->
   <div class="panel" id="panel-shop">
     <div class="shop-panel">
       <div class="shop-header">
         <div class="shop-icon">🛒</div>
         <div class="shop-header-text">
-          <h2 id="shop-title">biniodive — Shop</h2>
+          <h2 id="shop-title">Mr.Binio — Shop</h2>
           <p id="shop-desc">Dive gear, courses, accessories — all in one place</p>
         </div>
       </div>
@@ -196,24 +210,19 @@
             <span class="shop-cat-icon">📦</span><div class="shop-cat-name">Akcesoria</div>
           </a>
         </div>
-        <a href="https://justadive.pl/home/sklep/" target="_blank" class="btn-shop" id="shop-btn-text">
-          🛒 Go to shop justadive.pl
-        </a>
-        <p style="text-align:center;margin-top:12px;font-size:0.68rem;color:var(--text-muted);">
-          📞 +48 666 663 224 · 🌐 www.justadive.pl
-        </p>
+        <a href="https://justadive.pl/home/sklep/" target="_blank" class="btn-shop" id="shop-btn-text">🛒 Go to shop justadive.pl</a>
+        <p style="text-align:center;margin-top:12px;font-size:0.65rem;color:var(--text-muted);">📞 +48 666 663 224 · 🌐 www.justadive.pl</p>
       </div>
     </div>
   </div>
 </div>
 
-<!-- MODAL -->
 <div class="modal-overlay" id="modal" onclick="closeModal(event)">
   <div class="modal">
     <button class="modal-close" onclick="closeModalDirect()">✕</button>
     <div class="modal-badge" id="m-num">DIVE #0</div>
     <h2 id="m-site"></h2>
-    <div id="m-meta" style="font-size:0.75rem;color:var(--text-dim);margin-bottom:3px;"></div>
+    <div id="m-meta" style="font-size:0.74rem;color:var(--text-dim);margin-bottom:3px;"></div>
     <div class="modal-stats" id="m-stats"></div>
     <div id="m-notes-wrap"></div>
     <button class="btn-delete" id="m-delete">🗑 Delete</button>
