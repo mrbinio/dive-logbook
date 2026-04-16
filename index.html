@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AquaNaut — Dive Logbook</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<title>Binio Dive — Dive Logbook</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,13 +12,37 @@
 <div class="header">
   <div class="header-inner">
     <div class="brand">
-      <div class="logo">🧑‍🚀</div>
-      <div>
-        <div class="brand-name">Aqua<span>Naut</span></div>
+      <!-- Astronaut-diver SVG logo -->
+      <svg width="42" height="42" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100" height="100" rx="22" fill="#111820"/>
+        <rect x="1" y="1" width="98" height="98" rx="21" stroke="#1a2332" stroke-width="2"/>
+        <!-- Helmet -->
+        <ellipse cx="50" cy="44" rx="22" ry="24" fill="#1a2332" stroke="#00d4ff" stroke-width="2.5"/>
+        <!-- Visor -->
+        <ellipse cx="50" cy="42" rx="15" ry="14" fill="url(#visor)"/>
+        <!-- Visor shine -->
+        <ellipse cx="43" cy="37" rx="5" ry="3.5" fill="rgba(255,255,255,0.15)" transform="rotate(-15 43 37)"/>
+        <!-- Body -->
+        <rect x="35" y="65" width="30" height="18" rx="8" fill="#1a2332" stroke="#00d4ff" stroke-width="2"/>
+        <!-- Neck -->
+        <rect x="42" y="62" width="16" height="8" rx="3" fill="#1a2332"/>
+        <!-- Bubbles -->
+        <circle cx="72" cy="28" r="4" fill="none" stroke="#00d4ff" stroke-width="1.8" opacity="0.7"/>
+        <circle cx="79" cy="20" r="2.5" fill="none" stroke="#00d4ff" stroke-width="1.5" opacity="0.5"/>
+        <circle cx="83" cy="13" r="1.5" fill="none" stroke="#00d4ff" stroke-width="1.2" opacity="0.3"/>
+        <defs>
+          <linearGradient id="visor" x1="35" y1="28" x2="65" y2="56">
+            <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#0077aa" stop-opacity="0.6"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="brand-text">
+        <div class="brand-name">binio<span>dive</span></div>
         <div class="brand-sub" id="brand-sub">DIVE LOGBOOK</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;">
+    <div class="header-right">
       <div class="header-stats">
         <div class="stat">
           <div class="stat-num" id="total-dives">0</div>
@@ -147,41 +171,35 @@
       <div class="shop-header">
         <div class="shop-icon">🛒</div>
         <div class="shop-header-text">
-          <h2 id="shop-title">AquaNaut — Shop</h2>
+          <h2 id="shop-title">biniodive — Shop</h2>
           <p id="shop-desc">Dive gear, courses, accessories — all in one place</p>
         </div>
       </div>
       <div class="shop-body">
         <div class="shop-categories">
           <a href="https://justadive.pl/home/sklep/" target="_blank" class="shop-cat">
-            <span class="shop-cat-icon">🤿</span>
-            <div class="shop-cat-name">Maski & Rurki</div>
+            <span class="shop-cat-icon">🤿</span><div class="shop-cat-name">Maski & Rurki</div>
           </a>
           <a href="https://justadive.pl/home/sklep/" target="_blank" class="shop-cat">
-            <span class="shop-cat-icon">🦺</span>
-            <div class="shop-cat-name">Jacket BCD</div>
+            <span class="shop-cat-icon">🦺</span><div class="shop-cat-name">Jacket BCD</div>
           </a>
           <a href="https://justadive.pl/home/sklep/" target="_blank" class="shop-cat">
-            <span class="shop-cat-icon">🫧</span>
-            <div class="shop-cat-name">Regulatory</div>
+            <span class="shop-cat-icon">🫧</span><div class="shop-cat-name">Regulatory</div>
           </a>
           <a href="https://justadive.pl/home/sklep/" target="_blank" class="shop-cat">
-            <span class="shop-cat-icon">🩱</span>
-            <div class="shop-cat-name">Pianki</div>
+            <span class="shop-cat-icon">🩱</span><div class="shop-cat-name">Pianki</div>
           </a>
           <a href="https://justadive.pl/home/sklep/" target="_blank" class="shop-cat">
-            <span class="shop-cat-icon">🦶</span>
-            <div class="shop-cat-name">Płetwy</div>
+            <span class="shop-cat-icon">🦶</span><div class="shop-cat-name">Płetwy</div>
           </a>
           <a href="https://justadive.pl/home/sklep/" target="_blank" class="shop-cat">
-            <span class="shop-cat-icon">📦</span>
-            <div class="shop-cat-name">Akcesoria</div>
+            <span class="shop-cat-icon">📦</span><div class="shop-cat-name">Akcesoria</div>
           </a>
         </div>
         <a href="https://justadive.pl/home/sklep/" target="_blank" class="btn-shop" id="shop-btn-text">
           🛒 Go to shop justadive.pl
         </a>
-        <p style="text-align:center;margin-top:14px;font-size:0.72rem;color:var(--text-muted);">
+        <p style="text-align:center;margin-top:12px;font-size:0.68rem;color:var(--text-muted);">
           📞 +48 666 663 224 · 🌐 www.justadive.pl
         </p>
       </div>
@@ -195,7 +213,7 @@
     <button class="modal-close" onclick="closeModalDirect()">✕</button>
     <div class="modal-badge" id="m-num">DIVE #0</div>
     <h2 id="m-site"></h2>
-    <div id="m-meta" style="font-size:0.78rem;color:var(--text-dim);margin-bottom:4px;"></div>
+    <div id="m-meta" style="font-size:0.75rem;color:var(--text-dim);margin-bottom:3px;"></div>
     <div class="modal-stats" id="m-stats"></div>
     <div id="m-notes-wrap"></div>
     <button class="btn-delete" id="m-delete">🗑 Delete</button>
