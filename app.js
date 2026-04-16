@@ -21,7 +21,10 @@ const T = {
     saved:'✅ Dive saved!', deleted:'🗑 Log deleted',
     enterSite:'⚠️ Enter dive site name', errorSave:'❌ Save error: ',
     errorDelete:'❌ Delete error: ',
-    subtitle:'DIVE LOGBOOK'
+    subtitle:'DIVE LOGBOOK',
+    importBtn:'📥 Import Suunto',
+    importSuccess:'✅ Suunto dive imported!',
+    avgDepth:'Avg Depth', device:'Device', gpsMap:'GPS Map'
   },
   pl: {
     logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep',
@@ -45,7 +48,10 @@ const T = {
     saved:'✅ Nurkowanie zapisane!', deleted:'🗑 Log usunięty',
     enterSite:'⚠️ Podaj nazwę miejsca nurkowania', errorSave:'❌ Błąd zapisu: ',
     errorDelete:'❌ Błąd usuwania: ',
-    subtitle:'DZIENNIK NURKOWY'
+    subtitle:'DZIENNIK NURKOWY',
+    importBtn:'📥 Import Suunto',
+    importSuccess:'✅ Nurkowanie z Suunto zaimportowane!',
+    avgDepth:'Śr. głęb.', device:'Urządzenie', gpsMap:'Mapa GPS'
   }
 };
 
@@ -100,6 +106,7 @@ function applyLang() {
   document.getElementById('shop-title').textContent = t('shopTitle');
   document.getElementById('shop-desc').textContent = t('shopDesc');
   document.getElementById('shop-btn-text').textContent = t('goShop');
+  document.getElementById('import-btn-text').textContent = t('importBtn');
   // Re-render dives
   renderDives();
 }
@@ -240,24 +247,106 @@ function openModal(id) {
   const d = dives.find(x=>x.id===id);
   if(!d) return;
   document.getElementById('m-num').textContent = 'DIVE #'+d.num;
-  document.getElementById('m-site').textContent = d.site+(d.location?` — ${d.location}`:'');
-  document.getElementById('m-meta').innerHTML = `${d.date?`📅 ${formatDate(d.date)} &nbsp;·&nbsp; `:''}🤿 ${d.type}${d.rating?' &nbsp;'+'⭐'.repeat(d.rating):''}`;
+  document.getElementById('m-site').textContent = (d.site||'Suunto Dive')+(d.location?` — ${d.location}`:'');
+  document.getElementById('m-meta').innerHTML = `${d.date?`📅 ${formatDate(d.date)} &nbsp;·&nbsp; `:''}🤿 ${d.type}${d.rating?' &nbsp;'+'⭐'.repeat(d.rating):''}${d.device?' &nbsp;·&nbsp; ⌚ '+d.device:''}`;
+
   const stats=[
     {val:d.depth+'m',label:'Max Depth'},
+    {val:(d.avgDepth?d.avgDepth+'m':'—'),label:t('avgDepth')},
     {val:d.duration+' min',label:'Bottom Time'},
     {val:d.temp?d.temp+'°C':'—',label:'Water Temp'},
     {val:d.visibility?d.visibility+'m':'—',label:'Visibility'},
     {val:d.buddy||'—',label:'Buddy'},
-    {val:d.cert||'—',label:'Certification'},
   ];
   document.getElementById('m-stats').innerHTML = stats.map(s=>`
     <div class="m-stat"><div class="m-stat-val">${s.val}</div><div class="m-stat-label">${s.label}</div></div>
   `).join('');
-  document.getElementById('m-notes-wrap').innerHTML = d.notes
-    ?`<div class="modal-section-title">Notes</div><div class="modal-notes">${d.notes}</div>`:'';
+
+  // Depth profile chart
+  let extraHTML = '';
+  if(d.depthProfile && d.depthProfile.length > 2) {
+    extraHTML += `<div class="modal-section-title">Depth Profile</div><canvas id="depth-chart" height="160" style="width:100%;background:var(--bg-input);border-radius:8px;"></canvas>`;
+  }
+  // GPS map
+  if(d.gps && d.gps.lat && d.gps.lng) {
+    const lat = d.gps.lat, lng = d.gps.lng;
+    extraHTML += `<div class="modal-section-title">${t('gpsMap')}</div>
+      <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" style="display:block;border-radius:8px;overflow:hidden;">
+        <img src="https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=14&size=480x200&markers=color:red%7C${lat},${lng}&style=feature:all|element:geometry|color:0x0f1923&style=feature:water|color:0x142030&key=" 
+          onerror="this.parentElement.innerHTML='<div style=\\'padding:14px;background:var(--bg-input);border-radius:8px;text-align:center;font-size:0.78rem;color:var(--text-dim)\\'>📍 <a href=\\'https://www.google.com/maps?q=${lat},${lng}\\' target=\\'_blank\\' style=\\'color:var(--accent)\\'>Open in Google Maps</a> (${lat.toFixed(4)}, ${lng.toFixed(4)})</div>'"
+          style="width:100%;display:block;" alt="Dive location">
+      </a>`;
+  }
+
+  document.getElementById('m-notes-wrap').innerHTML =
+    extraHTML +
+    (d.notes ? `<div class="modal-section-title">Notes</div><div class="modal-notes">${d.notes}</div>` : '');
+
   document.getElementById('m-delete').textContent = t('deleteDive');
   document.getElementById('m-delete').onclick = ()=>deleteDive(id);
   document.getElementById('modal').classList.add('open');
+
+  // Draw depth chart after DOM update
+  if(d.depthProfile && d.depthProfile.length > 2) {
+    setTimeout(()=>drawDepthChart(d.depthProfile), 50);
+  }
+}
+
+function drawDepthChart(profile) {
+  const canvas = document.getElementById('depth-chart');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * 2;
+  canvas.height = 320;
+  ctx.scale(2,2);
+  const W = rect.width, H = 160;
+  const pad = {t:12,r:10,b:24,l:36};
+  const cW = W-pad.l-pad.r, cH = H-pad.t-pad.b;
+
+  const maxD = Math.max(...profile.map(p=>p.depth));
+  const maxT = profile[profile.length-1].time;
+
+  // Grid lines
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 0.5;
+  for(let i=0;i<=4;i++){
+    const y = pad.t + (cH/4)*i;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
+    ctx.fillStyle = '#334155';
+    ctx.font = '9px Inter,system-ui';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxD/4*i)+'m', pad.l-4, y+3);
+  }
+  // Time labels
+  ctx.textAlign = 'center';
+  for(let i=0;i<=4;i++){
+    const x = pad.l + (cW/4)*i;
+    ctx.fillText(Math.round(maxT/4*i/60)+'min', x, H-4);
+  }
+
+  // Depth line
+  ctx.beginPath();
+  ctx.strokeStyle = '#2dd4bf';
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  profile.forEach((p,i)=>{
+    const x = pad.l + (p.time/maxT)*cW;
+    const y = pad.t + (p.depth/maxD)*cH;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // Fill
+  const lastP = profile[profile.length-1];
+  ctx.lineTo(pad.l + (lastP.time/maxT)*cW, pad.t);
+  ctx.lineTo(pad.l, pad.t);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0,pad.t,0,H);
+  grad.addColorStop(0,'rgba(45,212,191,0.01)');
+  grad.addColorStop(1,'rgba(45,212,191,0.15)');
+  ctx.fillStyle = grad;
+  ctx.fill();
 }
 
 async function deleteDive(id) {
