@@ -857,7 +857,20 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
+firebase.initializeApp({
+  apiKey: "AIzaSyAbO13N1ypFMUTPTA4T_ccCpPe7t6SzQQg",
+  authDomain: "dive-logbook-c0b37.firebaseapp.com",
+  projectId: "dive-logbook-c0b37",
+  storageBucket: "dive-logbook-c0b37.firebasestorage.app",
+  messagingSenderId: "416389167201",
+  appId: "1:416389167201:web:2f2ad02160f2606d315220"
+});
+const db = firebase.firestore();
+const divesCol = db.collection('dives');
+
 // Bubbles
 (function(){
   const c = document.getElementById('bubbles');
@@ -872,9 +885,17 @@
 
 document.getElementById('f-date').valueAsDate = new Date();
 
-let dives = JSON.parse(localStorage.getItem('jad_dives') || '[]');
+let dives = [];
 let currentRating = 0;
 let currentModalId = null;
+
+// Load dives from Firestore in real-time
+divesCol.orderBy('createdAt','desc').onSnapshot(snap => {
+  dives = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  dives.forEach((d,i) => d.num = dives.length - i);
+  updateStats();
+  if(document.getElementById('panel-history').classList.contains('active')) renderDives();
+});
 
 function updateStats() {
   document.getElementById('total-dives').textContent = dives.length;
@@ -905,12 +926,10 @@ function switchTab(tab) {
   if(tab==='history') renderDives();
 }
 
-function saveDive() {
+async function saveDive() {
   const site = document.getElementById('f-site').value.trim();
   if(!site){ showToast('⚠️ Podaj nazwę miejsca nurkowania'); return; }
   const dive = {
-    id: Date.now(),
-    num: dives.length+1,
     site,
     location: document.getElementById('f-location').value.trim(),
     date: document.getElementById('f-date').value,
@@ -923,13 +942,15 @@ function saveDive() {
     cert: document.getElementById('f-cert').value.trim(),
     rating: currentRating,
     notes: document.getElementById('f-notes').value.trim(),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
-  dives.unshift(dive);
-  dives.forEach((d,i)=>d.num=dives.length-i);
-  localStorage.setItem('jad_dives', JSON.stringify(dives));
-  updateStats();
-  resetForm();
-  showToast('✅ Nurkowanie zapisane!');
+  try {
+    await divesCol.add(dive);
+    resetForm();
+    showToast('✅ Nurkowanie zapisane!');
+  } catch(e) {
+    showToast('❌ Błąd zapisu: ' + e.message);
+  }
 }
 
 function resetForm() {
@@ -959,7 +980,7 @@ function renderDives() {
     return;
   }
   grid.innerHTML = filtered.map(d=>`
-    <div class="dive-card" onclick="openModal(${d.id})">
+    <div class="dive-card" onclick="openModal('${d.id}')">
       <div class="dive-num">#${d.num}</div>
       <div class="dive-info">
         <h3>${d.site}${d.location?` <span style="color:var(--mid-gray);font-weight:400">· ${d.location}</span>`:''}</h3>
@@ -1012,13 +1033,15 @@ function openModal(id) {
   document.getElementById('modal').classList.add('open');
 }
 
-function deleteDive(id) {
+async function deleteDive(id) {
   if(!confirm('Usunąć ten log nurkowania?')) return;
-  dives = dives.filter(d=>d.id!==id);
-  dives.forEach((d,i)=>d.num=dives.length-i);
-  localStorage.setItem('jad_dives',JSON.stringify(dives));
-  updateStats(); closeModalDirect(); renderDives();
-  showToast('🗑 Log usunięty');
+  try {
+    await divesCol.doc(id).delete();
+    closeModalDirect();
+    showToast('🗑 Log usunięty');
+  } catch(e) {
+    showToast('❌ Błąd usuwania: ' + e.message);
+  }
 }
 
 function closeModal(e){ if(e.target===document.getElementById('modal')) closeModalDirect(); }
@@ -1029,8 +1052,6 @@ function showToast(msg){
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),3000);
 }
-
-updateStats();
 </script>
 </body>
 </html>
