@@ -1,0 +1,7 @@
+*.json
+!manifest.json
+*.png
+*.jpg
+*.jpeg
+.DS_Store
+just_a_dive_logbook.html
