@@ -94,10 +94,30 @@ function handleSuuntoImport(fileInput) {
       const docRef = await divesCol.add(dive);
       showToast(t('importSuccess'));
 
-      // Prompt for site name
-      const siteName = prompt(lang==='pl' ? 'Podaj nazwę miejsca nurkowania:' : 'Enter dive site name:', '');
-      if (siteName) {
-        await divesCol.doc(docRef.id).update({ site: siteName.trim() });
+      // Auto-fill site name from GPS reverse geocoding
+      if (dive.gps && dive.gps.lat && dive.gps.lng) {
+        try {
+          const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${dive.gps.lat}&lon=${dive.gps.lng}&format=json&zoom=14`);
+          const geo = await resp.json();
+          if (geo && geo.address) {
+            const a = geo.address;
+            const site = a.beach || a.bay || a.water || a.natural || a.tourism || a.leisure || a.village || a.town || a.city || '';
+            const location = a.state ? (a.state + ', ' + (a.country || '')) : (a.country || '');
+            if (site || location) {
+              await divesCol.doc(docRef.id).update({
+                site: site || (lang==='pl' ? 'Nurkowanie' : 'Dive'),
+                location: location
+              });
+            }
+          }
+        } catch(e) { /* geocoding failed, user can edit later */ }
+      }
+
+      // If still no site name, prompt
+      const updatedDoc = await divesCol.doc(docRef.id).get();
+      if (!updatedDoc.data().site) {
+        const siteName = prompt(lang==='pl' ? 'Podaj nazwę miejsca nurkowania:' : 'Enter dive site name:', '');
+        if (siteName) await divesCol.doc(docRef.id).update({ site: siteName.trim() });
       }
 
       switchTab('history');

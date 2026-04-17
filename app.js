@@ -252,7 +252,7 @@ function renderDives() {
     <div class="dive-card" onclick="openModal('${d.id}')">
       <div class="dive-num">#${d.num}</div>
       <div class="dive-info">
-        <h3>${d.site}${d.location?` <span style="color:var(--text-dim);font-weight:400">· ${d.location}</span>`:''}</h3>
+        <h3>${d.site||d.location||(d.source==='suunto'?'Suunto Dive':'Dive')}${d.location&&d.site?` <span style="color:var(--text-dim);font-weight:400">· ${d.location}</span>`:''}</h3>
         <div class="dive-meta">
           ${d.date?`<div class="chip">📅 <span>${formatDate(d.date)}</span></div>`:''}
           <div class="chip">🤿 <span>${d.type}</span></div>
@@ -314,12 +314,12 @@ function openModal(id) {
   document.getElementById('m-delete').onclick = ()=>deleteDive(id);
   document.getElementById('modal').classList.add('open');
 
-  // Render viz after DOM
+  // Render viz after DOM - wait for modal to be fully visible
   if(d.depthProfile && d.depthProfile.length > 2) {
     setTimeout(()=>{
-      render3DViz('dive-3d', d);
-      renderDiveViz('dive-viz', d);
-    }, 80);
+      try { render3DViz('dive-3d', d); } catch(e) { console.warn('3D error:', e); }
+      try { renderDiveViz('dive-viz', d); } catch(e) { console.warn('Viz error:', e); }
+    }, 300);
   }
   if(d.gps && d.gps.lat && d.gps.lng) {
     setTimeout(()=>{
