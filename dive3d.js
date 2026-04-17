@@ -42,15 +42,17 @@ function render3DViz(containerId, dive) {
       pathPoints.push({ x: gx, y: -p.depth, z: gz, depth: p.depth, time: p.time });
     });
   } else {
-    // No GPS - create slight curve path
+    // No GPS - simulate realistic dive path with curves
+    const totalDist = 30;
     profile.forEach(p => {
       const ratio = p.time / maxT;
-      const angle = ratio * Math.PI * 0.3;
-      const dist = ratio * 30;
+      // Create a natural-looking dive path with turns
+      const angle = ratio * Math.PI * 1.8;
+      const r = 5 + Math.sin(ratio * Math.PI * 3) * 3;
       pathPoints.push({
-        x: Math.sin(angle) * dist,
+        x: Math.cos(angle) * r + ratio * 8,
         y: -p.depth,
-        z: Math.cos(angle) * dist - 15,
+        z: Math.sin(angle) * r + ratio * 6,
         depth: p.depth,
         time: p.time
       });
@@ -84,8 +86,8 @@ function render3DViz(containerId, dive) {
   el.style.overflow = 'hidden';
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b1119);
-  scene.fog = new THREE.Fog(0x0b1119, 60, 120);
+  scene.background = new THREE.Color(0x1a2744);
+  scene.fog = new THREE.Fog(0x1a2744, 60, 120);
 
   const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 200);
   camera.position.set(25, 15, 25);
@@ -105,7 +107,7 @@ function render3DViz(containerId, dive) {
     gridVerts.push(i, 0, -gridSize, i, 0, gridSize);
   }
   gridGeo.setAttribute('position', new THREE.Float32BufferAttribute(gridVerts, 3));
-  const gridMat = new THREE.LineBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.4 });
+  const gridMat = new THREE.LineBasicMaterial({ color: 0x3a4a6b, transparent: true, opacity: 0.3 });
   scene.add(new THREE.LineSegments(gridGeo, gridMat));
 
   // Surface line (red) - path projected on y=0
@@ -146,7 +148,7 @@ function render3DViz(containerId, dive) {
   }
   dropGeo.setAttribute('position', new THREE.Float32BufferAttribute(dropVerts, 3));
   dropGeo.setAttribute('color', new THREE.Float32BufferAttribute(dropColors, 3));
-  scene.add(new THREE.LineSegments(dropGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.35 })));
+  scene.add(new THREE.LineSegments(dropGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.5 })));
 
   // Depth wall (mesh between surface and depth)
   const wallPositions = [], wallColors = [];
@@ -158,16 +160,14 @@ function render3DViz(containerId, dive) {
     wallPositions.push(a.x, 0, a.z, b.x, b.y, b.z, b.x, 0, b.z);
     for (let j = 0; j < 2; j++) {
       const ra = a.depth / maxD, rb = b.depth / maxD;
-      const ca = tealColor.clone().lerp(purpleColor, ra);
-      const cb = tealColor.clone().lerp(purpleColor, rb);
       if (j === 0) {
-        wallColors.push(ca.r * 0.1, ca.g * 0.1, ca.b * 0.1);
-        wallColors.push(ca.r * 0.3, ca.g * 0.3, ca.b * 0.3);
-        wallColors.push(cb.r * 0.3, cb.g * 0.3, cb.b * 0.3);
+        wallColors.push(0.25, 0.28, 0.35);
+        wallColors.push(0.15, 0.17, 0.22);
+        wallColors.push(0.15, 0.17, 0.22);
       } else {
-        wallColors.push(ca.r * 0.1, ca.g * 0.1, ca.b * 0.1);
-        wallColors.push(cb.r * 0.3, cb.g * 0.3, cb.b * 0.3);
-        wallColors.push(cb.r * 0.1, cb.g * 0.1, cb.b * 0.1);
+        wallColors.push(0.25, 0.28, 0.35);
+        wallColors.push(0.15, 0.17, 0.22);
+        wallColors.push(0.25, 0.28, 0.35);
       }
     }
   }
@@ -176,7 +176,7 @@ function render3DViz(containerId, dive) {
   wallGeo.setAttribute('color', new THREE.Float32BufferAttribute(wallColors, 3));
   wallGeo.computeVertexNormals();
   const wallMesh = new THREE.Mesh(wallGeo, new THREE.MeshBasicMaterial({
-    vertexColors: true, transparent: true, opacity: 0.5, side: THREE.DoubleSide
+    vertexColors: true, transparent: true, opacity: 0.7, side: THREE.DoubleSide
   }));
   scene.add(wallMesh);
 
