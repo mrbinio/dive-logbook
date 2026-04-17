@@ -291,6 +291,11 @@ function openModal(id) {
     {val:d.visibility?d.visibility+'m':'—',label:'Visibility'},
     {val:d.buddy||'—',label:'Buddy'},
   ];
+  if(d.safetyStop) stats.push({val:'✅',label:'Safety Stop'});
+  if(d.minNDL!=null) stats.push({val:d.minNDL+' min',label:'Min NDL'});
+  if(d.weather) stats.push({val:d.weather.condition||'—',label:'Weather'});
+  if(d.weather?.wind) stats.push({val:d.weather.wind+' km/h',label:'Wind'});
+  if(d.weather?.airTempMax) stats.push({val:d.weather.airTempMin+'–'+d.weather.airTempMax+'°C',label:'Air Temp'});
   document.getElementById('m-stats').innerHTML = stats.map(s=>`
     <div class="m-stat"><div class="m-stat-val">${s.val}</div><div class="m-stat-label">${s.label}</div></div>
   `).join('');

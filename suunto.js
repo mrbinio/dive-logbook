@@ -52,6 +52,14 @@ function parseSuuntoJSON(json) {
     });
   }
 
+  // Dive events
+  const events = samples.filter(s => s.DiveEvents);
+  const safetyStop = events.some(s => s.DiveEvents?.State?.Type?.includes('Safety Stop'));
+  
+  // NDL (No Deco Limit) - minimum during dive
+  const ndlSamples = depthSamples.filter(s => s.NoDecTime != null && s.NoDecTime < 6000);
+  const minNDL = ndlSamples.length ? Math.min(...ndlSamples.map(s => Math.round(s.NoDecTime / 60))) : null;
+
   const device = dl.Device?.Name || 'Suunto';
   const sw = dl.Device?.Info?.SW || '';
 
@@ -71,6 +79,8 @@ function parseSuuntoJSON(json) {
     notes: '',
     source: 'suunto',
     device: device + (sw ? ' v' + sw : ''),
+    safetyStop: safetyStop,
+    minNDL: minNDL,
     gps: (originLat && originLng) ? { lat: originLat, lng: originLng } : null,
     gpsTrack: gpsTrack.length ? gpsTrack : null,
     depthProfile,
@@ -93,6 +103,29 @@ function handleSuuntoImport(fileInput) {
       dive.createdAt = firebase.firestore.FieldValue.serverTimestamp();
       const docRef = await divesCol.add(dive);
       showToast(t('importSuccess'));
+
+      // Auto-fill weather from Open-Meteo
+      if (dive.gps && dive.date) {
+        try {
+          var wr = await fetch('https://archive-api.open-meteo.com/v1/archive?latitude='+dive.gps.lat+'&longitude='+dive.gps.lng+'&start_date='+dive.date+'&end_date='+dive.date+'&daily=temperature_2m_max,temperature_2m_min,windspeed_10m_max,weathercode&timezone=auto');
+          var wd = await wr.json();
+          if (wd.daily) {
+            var wc = wd.daily.weathercode?.[0];
+            var wLabel = {0:'☀️ Clear',1:'🌤 Mostly clear',2:'⛅ Partly cloudy',3:'☁️ Overcast',
+              45:'🌫 Fog',51:'🌦 Light drizzle',53:'🌧 Drizzle',55:'🌧 Heavy drizzle',
+              61:'🌧 Light rain',63:'🌧 Rain',65:'🌧 Heavy rain',80:'🌦 Showers',81:'🌧 Heavy showers',
+              95:'⛈ Thunderstorm'}[wc] || ('Code '+wc);
+            await divesCol.doc(docRef.id).update({
+              weather: {
+                airTempMax: wd.daily.temperature_2m_max?.[0],
+                airTempMin: wd.daily.temperature_2m_min?.[0],
+                wind: wd.daily.windspeed_10m_max?.[0],
+                condition: wLabel
+              }
+            });
+          }
+        } catch(e) { /* weather fetch failed */ }
+      }
 
       // Auto-fill site name from GPS reverse geocoding
       if (dive.gps && dive.gps.lat && dive.gps.lng) {
@@ -336,6 +369,8 @@ function attachSuuntoToDiv(diveId, fileInput) {
         temp: parsed.temp,
         source: 'suunto',
         device: parsed.device,
+        safetyStop: parsed.safetyStop,
+        minNDL: parsed.minNDL,
         gps: parsed.gps,
         gpsTrack: parsed.gpsTrack,
         depthProfile: parsed.depthProfile,
