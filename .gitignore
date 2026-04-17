@@ -3,5 +3,7 @@
 *.png
 *.jpg
 *.jpeg
+*.mov
+*.mp4
 .DS_Store
 just_a_dive_logbook.html
