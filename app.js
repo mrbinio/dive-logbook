@@ -265,6 +265,7 @@ function openModal(id) {
   // Depth profile + map
   let extraHTML = '';
   if(d.depthProfile && d.depthProfile.length > 2) {
+    extraHTML += `<div class="modal-section-title">3D Dive View</div><div id="dive-3d" style="position:relative;"></div>`;
     extraHTML += `<div class="modal-section-title">Depth Profile</div><div id="dive-viz"></div>`;
   }
   if(d.gps && d.gps.lat && d.gps.lng) {
@@ -282,7 +283,10 @@ function openModal(id) {
 
   // Render viz after DOM
   if(d.depthProfile && d.depthProfile.length > 2) {
-    setTimeout(()=>renderDiveViz('dive-viz', d), 80);
+    setTimeout(()=>{
+      render3DViz('dive-3d', d);
+      renderDiveViz('dive-viz', d);
+    }, 80);
   }
   if(d.gps && d.gps.lat && d.gps.lng) {
     setTimeout(()=>{
