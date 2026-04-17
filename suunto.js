@@ -264,9 +264,28 @@ function renderDiveViz(containerId, dive) {
     document.getElementById('viz-dot').style.display = 'none';
   }
 
+  let touchStartX = 0, touchStartY = 0, isHorizontal = null;
+
   canvas.addEventListener('mousemove', e => handleInteraction(e.clientX));
   canvas.addEventListener('mouseleave', hideTooltip);
-  canvas.addEventListener('touchmove', e => { e.preventDefault(); handleInteraction(e.touches[0].clientX); }, { passive: false });
-  canvas.addEventListener('touchstart', e => { e.preventDefault(); handleInteraction(e.touches[0].clientX); }, { passive: false });
-  canvas.addEventListener('touchend', hideTooltip);
+
+  canvas.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    isHorizontal = null;
+  }, { passive: true });
+
+  canvas.addEventListener('touchmove', e => {
+    const dx = Math.abs(e.touches[0].clientX - touchStartX);
+    const dy = Math.abs(e.touches[0].clientY - touchStartY);
+    if (isHorizontal === null && (dx > 5 || dy > 5)) {
+      isHorizontal = dx > dy;
+    }
+    if (isHorizontal) {
+      e.preventDefault();
+      handleInteraction(e.touches[0].clientX);
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', () => { isHorizontal = null; hideTooltip(); });
 }
