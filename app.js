@@ -312,6 +312,18 @@ function openModal(id) {
 
   document.getElementById('m-delete').textContent = t('deleteDive');
   document.getElementById('m-delete').onclick = ()=>deleteDive(id);
+
+  // Attach Suunto button (only if no depth profile yet)
+  const attachWrap = document.getElementById('m-attach-wrap');
+  if (!d.depthProfile || d.depthProfile.length < 2) {
+    attachWrap.innerHTML = `<label style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:1px dashed var(--border-light);border-radius:8px;cursor:pointer;color:var(--accent);font-size:0.75rem;font-weight:700;margin-top:12px;transition:all 0.2s;">
+      📥 ${lang==='pl'?'Dołącz dane Suunto':'Attach Suunto data'}
+      <input type="file" accept=".json" style="display:none" onchange="attachSuuntoToDiv('${id}',this)">
+    </label>`;
+  } else {
+    attachWrap.innerHTML = '';
+  }
+
   document.getElementById('modal').classList.add('open');
 
   // Render viz after DOM - wait for modal to be fully visible

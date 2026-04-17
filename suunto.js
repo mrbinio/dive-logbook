@@ -317,3 +317,37 @@ function renderDiveViz(containerId, dive) {
 
   canvas.addEventListener('touchend', () => { isHorizontal = null; hideTooltip(); });
 }
+
+// Attach Suunto data to existing dive
+function attachSuuntoToDiv(diveId, fileInput) {
+  var file = fileInput.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      var json = JSON.parse(e.target.result);
+      if (!json.DeviceLog) { showToast('❌ Not a Suunto file'); return; }
+      var parsed = parseSuuntoJSON(json);
+      // Merge Suunto data into existing dive (keep user's manual data)
+      await divesCol.doc(diveId).update({
+        depth: parsed.depth,
+        avgDepth: parsed.avgDepth,
+        duration: parsed.duration,
+        temp: parsed.temp,
+        source: 'suunto',
+        device: parsed.device,
+        gps: parsed.gps,
+        gpsTrack: parsed.gpsTrack,
+        depthProfile: parsed.depthProfile,
+        tempProfile: parsed.tempProfile
+      });
+      showToast(lang==='pl' ? '✅ Dane Suunto dołączone!' : '✅ Suunto data attached!');
+      closeModalDirect();
+      setTimeout(function(){ openModal(diveId); }, 300);
+    } catch(err) {
+      showToast('❌ Error: ' + err.message);
+    }
+    fileInput.value = '';
+  };
+  reader.readAsText(file);
+}

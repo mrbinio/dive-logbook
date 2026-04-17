@@ -12,13 +12,17 @@ function render3DViz(containerId, dive) {
       var maxD = 0, maxT = profile[profile.length-1].time;
       for (var i=0;i<profile.length;i++) if(profile[i].depth>maxD) maxD=profile[i].depth;
 
-      // Build path
+      // Unique path per dive based on data
+      var seed = 0;
+      for(var i=0;i<profile.length;i++) seed += profile[i].depth * (i+1);
+      function rng(){ seed=(seed*9301+49297)%233280; return seed/233280; }
+
       var pts = [];
       profile.forEach(function(p) {
         var r = p.time / maxT;
-        var a = r * Math.PI * 1.8;
-        var rad = 5 + Math.sin(r * Math.PI * 3) * 3;
-        pts.push({ x: Math.cos(a)*rad + r*8, y: -p.depth, z: Math.sin(a)*rad + r*6, depth: p.depth });
+        var a = r * Math.PI * (1.5 + rng()*0.8);
+        var rad = 4 + rng()*4 + Math.sin(r * Math.PI * (2+rng()*2)) * 3;
+        pts.push({ x: Math.cos(a)*rad + r*(6+rng()*6), y: -p.depth, z: Math.sin(a)*rad + r*(4+rng()*4), depth: p.depth });
       });
 
       // Normalize
