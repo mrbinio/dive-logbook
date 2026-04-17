@@ -5,6 +5,10 @@ function render3DViz(containerId, dive) {
   el.style.cssText = 'width:100%;height:280px;position:relative;border-radius:8px;overflow:hidden;background:#1a2744;';
   el.innerHTML = '';
 
+  // Use dive id as unique seed
+  var idSeed = 0;
+  if (dive.id) for(var i=0;i<dive.id.length;i++) idSeed += dive.id.charCodeAt(i) * (i+1);
+
   setTimeout(function() {
     try {
       var W = el.clientWidth || 400, H = 280;
@@ -13,8 +17,7 @@ function render3DViz(containerId, dive) {
       for (var i=0;i<profile.length;i++) if(profile[i].depth>maxD) maxD=profile[i].depth;
 
       // Unique path per dive based on data
-      var seed = 0;
-      for(var i=0;i<profile.length;i++) seed += profile[i].depth * (i+1);
+      var seed = idSeed;
       function rng(){ seed=(seed*9301+49297)%233280; return seed/233280; }
 
       var pts = [];
