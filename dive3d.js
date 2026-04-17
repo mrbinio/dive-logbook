@@ -7,7 +7,7 @@ function render3DViz(containerId, dive) {
 
   // Use dive id as unique seed
   var idSeed = 0;
-  if (dive.id) for(var i=0;i<dive.id.length;i++) idSeed += dive.id.charCodeAt(i) * (i+1);
+  if (dive.id) for(var i=0;i<dive.id.length;i++) idSeed += dive.id.charCodeAt(i) * (i*37+1);
 
   setTimeout(function() {
     try {
@@ -17,15 +17,22 @@ function render3DViz(containerId, dive) {
       for (var i=0;i<profile.length;i++) if(profile[i].depth>maxD) maxD=profile[i].depth;
 
       // Unique path per dive based on data
-      var seed = idSeed;
-      function rng(){ seed=(seed*9301+49297)%233280; return seed/233280; }
+      var seed = idSeed || Date.now();
+      function rng(){ seed=(seed*16807+12345)%2147483647; return (seed&0xffff)/0xffff; }
+      // Pre-generate path parameters to ensure uniqueness
+      var pathAngle = 1.2 + rng()*1.5;
+      var pathWave = 1.5 + rng()*3;
+      var pathDriftX = 4 + rng()*10;
+      var pathDriftZ = 3 + rng()*8;
+      var pathBaseR = 3 + rng()*5;
+      var pathWaveR = 2 + rng()*4;
 
       var pts = [];
       profile.forEach(function(p) {
         var r = p.time / maxT;
-        var a = r * Math.PI * (1.5 + rng()*0.8);
-        var rad = 4 + rng()*4 + Math.sin(r * Math.PI * (2+rng()*2)) * 3;
-        pts.push({ x: Math.cos(a)*rad + r*(6+rng()*6), y: -p.depth, z: Math.sin(a)*rad + r*(4+rng()*4), depth: p.depth });
+        var a = r * Math.PI * pathAngle;
+        var rad = pathBaseR + Math.sin(r * Math.PI * pathWave) * pathWaveR;
+        pts.push({ x: Math.cos(a)*rad + r*pathDriftX, y: -p.depth, z: Math.sin(a)*rad + r*pathDriftZ, depth: p.depth });
       });
 
       // Normalize
