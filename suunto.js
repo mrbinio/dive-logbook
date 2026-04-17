@@ -97,12 +97,13 @@ function handleSuuntoImport(fileInput) {
       // Auto-fill site name from GPS reverse geocoding
       if (dive.gps && dive.gps.lat && dive.gps.lng) {
         try {
-          const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${dive.gps.lat}&lon=${dive.gps.lng}&format=json&zoom=14`);
+          const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${dive.gps.lat}&lon=${dive.gps.lng}&format=json&zoom=16&addressdetails=1`);
           const geo = await resp.json();
           if (geo && geo.address) {
             const a = geo.address;
-            const site = a.beach || a.bay || a.water || a.natural || a.tourism || a.leisure || a.village || a.town || a.city || '';
-            const location = a.state ? (a.state + ', ' + (a.country || '')) : (a.country || '');
+            const site = a.beach || a.bay || a.water || a.natural || a.tourism || a.leisure || a.suburb || a.village || a.town || a.city || a.county || '';
+            const parts = [a.state || a.county, a.country].filter(Boolean);
+            const location = parts.join(', ');
             if (site || location) {
               await divesCol.doc(docRef.id).update({
                 site: site || (lang==='pl' ? 'Nurkowanie' : 'Dive'),

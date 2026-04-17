@@ -77,24 +77,29 @@ function render3DViz(containerId, dive) {
   }));
 
   // Setup Three.js
-  const width = el.clientWidth;
+  const width = el.clientWidth || el.parentElement.clientWidth || 400;
   const height = 280;
-  el.innerHTML = '';
+  el.style.width = '100%';
   el.style.height = height + 'px';
   el.style.position = 'relative';
   el.style.borderRadius = '8px';
   el.style.overflow = 'hidden';
+  el.innerHTML = '';
+
+  // Wait for element to have actual dimensions
+  requestAnimationFrame(() => {
+  const actualWidth = el.clientWidth || 400;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x1a2744);
   scene.fog = new THREE.Fog(0x1a2744, 60, 120);
 
-  const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 200);
+  const camera = new THREE.PerspectiveCamera(50, actualWidth / height, 0.1, 200);
   camera.position.set(25, 15, 25);
   camera.lookAt(0, -maxD * depthScale * 0.4, 0);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(width, height);
+  renderer.setSize(actualWidth, height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   el.appendChild(renderer.domElement);
 
@@ -270,4 +275,5 @@ function render3DViz(containerId, dive) {
   labelDiv.style.cssText = 'position:absolute;bottom:8px;left:8px;font-size:0.6rem;color:var(--text-muted);letter-spacing:1px;pointer-events:none;';
   labelDiv.innerHTML = `MAX ${maxD.toFixed(1)}m · ${Math.round(maxT/60)} min · <span style="color:#ef4444">━</span> surface <span style="color:#2dd4bf">━</span> depth`;
   el.appendChild(labelDiv);
+  }); // end requestAnimationFrame
 }
