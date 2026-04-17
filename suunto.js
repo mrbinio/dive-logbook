@@ -93,6 +93,13 @@ function handleSuuntoImport(fileInput) {
       dive.createdAt = firebase.firestore.FieldValue.serverTimestamp();
       const docRef = await divesCol.add(dive);
       showToast(t('importSuccess'));
+
+      // Prompt for site name
+      const siteName = prompt(lang==='pl' ? 'Podaj nazwę miejsca nurkowania:' : 'Enter dive site name:', '');
+      if (siteName) {
+        await divesCol.doc(docRef.id).update({ site: siteName.trim() });
+      }
+
       switchTab('history');
       setTimeout(() => openModal(docRef.id), 500);
     } catch(err) {

@@ -24,8 +24,8 @@ const T = {
     subtitle:'DIVE LOGBOOK',
     importBtn:'📥 Import Suunto',
     importSuccess:'✅ Suunto dive imported!',
-    avgDepth:'Avg Depth', device:'Device', gpsMap:'GPS Map'
-  },
+    avgDepth:'Avg Depth', device:'Device', gpsMap:'GPS Map',
+    gpsLabel:'GPS Location', gpsBtn:'📍', gpsGetting:'Getting location...'  },
   pl: {
     logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep',
     newEntry:'Nowy', diveEntry:'Wpis nurkowy',
@@ -51,7 +51,8 @@ const T = {
     subtitle:'DZIENNIK NURKOWY',
     importBtn:'📥 Import Suunto',
     importSuccess:'✅ Nurkowanie z Suunto zaimportowane!',
-    avgDepth:'Śr. głęb.', device:'Urządzenie', gpsMap:'Mapa GPS'
+    avgDepth:'Śr. głęb.', device:'Urządzenie', gpsMap:'Mapa GPS',
+    gpsLabel:'Lokalizacja GPS', gpsBtn:'📍', gpsGetting:'Pobieranie lokalizacji...'
   }
 };
 
@@ -107,6 +108,8 @@ function applyLang() {
   document.getElementById('shop-desc').textContent = t('shopDesc');
   document.getElementById('shop-btn-text').textContent = t('goShop');
   document.getElementById('import-btn-text').textContent = t('importBtn');
+  const gpsLabel = document.getElementById('l-gps');
+  if(gpsLabel) gpsLabel.textContent = t('gpsLabel');
   // Re-render dives
   renderDives();
 }
@@ -164,6 +167,31 @@ function switchTab(tab) {
   if(tab==='history') renderDives();
 }
 
+let formGps = null;
+let formMap = null;
+
+function getGPS() {
+  if (!navigator.geolocation) { showToast('❌ GPS not supported'); return; }
+  document.getElementById('f-gps').value = t('gpsGetting');
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = Math.round(pos.coords.latitude * 10000) / 10000;
+    const lng = Math.round(pos.coords.longitude * 10000) / 10000;
+    formGps = { lat, lng };
+    document.getElementById('f-gps').value = lat + ', ' + lng;
+    // Show mini map
+    const mapEl = document.getElementById('f-gps-map');
+    mapEl.style.display = 'block';
+    if (formMap) formMap.remove();
+    formMap = L.map(mapEl, { zoomControl: false, attributionControl: false }).setView([lat, lng], 14);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(formMap);
+    L.circleMarker([lat, lng], { radius: 8, color: '#2dd4bf', fillColor: '#2dd4bf', fillOpacity: 0.3, weight: 2 }).addTo(formMap);
+    setTimeout(() => formMap.invalidateSize(), 100);
+  }, () => {
+    document.getElementById('f-gps').value = '';
+    showToast('❌ ' + (lang==='pl' ? 'Nie udało się pobrać GPS' : 'Could not get GPS'));
+  }, { enableHighAccuracy: true });
+}
+
 async function saveDive() {
   const site = document.getElementById('f-site').value.trim();
   if(!site){ showToast(t('enterSite')); return; }
@@ -180,6 +208,7 @@ async function saveDive() {
     cert: document.getElementById('f-cert').value.trim(),
     rating: currentRating,
     notes: document.getElementById('f-notes').value.trim(),
+    gps: formGps || null,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   try {
@@ -196,6 +225,10 @@ function resetForm() {
   document.getElementById('f-date').valueAsDate = new Date();
   document.getElementById('f-type').value='Recreational';
   updateDepthBar(0); setRating(0); currentRating=0;
+  formGps = null;
+  document.getElementById('f-gps').value = '';
+  document.getElementById('f-gps-map').style.display = 'none';
+  if(formMap) { formMap.remove(); formMap = null; }
 }
 
 function renderDives() {

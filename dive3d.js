@@ -197,22 +197,39 @@ function render3DViz(containerId, dive) {
   updateCamera();
 
   const cvs = renderer.domElement;
-  cvs.style.touchAction = 'none';
+  cvs.style.touchAction = 'pan-y';
+
+  let pointerDown = false, prevX = 0, prevY = 0, pointerMoved = false;
 
   cvs.addEventListener('pointerdown', e => {
-    isDragging = true; prevX = e.clientX; prevY = e.clientY;
-    cvs.setPointerCapture(e.pointerId);
+    pointerDown = true; pointerMoved = false;
+    prevX = e.clientX; prevY = e.clientY;
   });
   cvs.addEventListener('pointermove', e => {
-    if (!isDragging) return;
+    if (!pointerDown) return;
     const dx = e.clientX - prevX, dy = e.clientY - prevY;
-    theta -= dx * 0.008;
-    phi = Math.max(0.05, Math.min(Math.PI / 2.2, phi + dy * 0.008));
+    if (!pointerMoved && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 5) {
+      pointerMoved = true;
+      cvs.setPointerCapture(e.pointerId);
+      cvs.style.touchAction = 'none';
+    }
+    if (pointerMoved) {
+      theta -= dx * 0.008;
+      phi = Math.max(0.05, Math.min(Math.PI / 2.2, phi + dy * 0.008));
+      updateCamera();
+    }
     prevX = e.clientX; prevY = e.clientY;
-    updateCamera();
   });
-  cvs.addEventListener('pointerup', () => { isDragging = false; });
-  cvs.addEventListener('pointercancel', () => { isDragging = false; });
+  cvs.addEventListener('pointerup', e => {
+    pointerDown = false;
+    if (pointerMoved) { cvs.releasePointerCapture(e.pointerId); }
+    pointerMoved = false;
+    cvs.style.touchAction = 'pan-y';
+  });
+  cvs.addEventListener('pointercancel', () => {
+    pointerDown = false; pointerMoved = false;
+    cvs.style.touchAction = 'pan-y';
+  });
 
   // Zoom
   cvs.addEventListener('wheel', e => {
