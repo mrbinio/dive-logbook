@@ -462,3 +462,35 @@ function showToast(msg){
 }
 
 applyLang();
+
+function handleImport(fileInput) {
+  const file = fileInput.files[0];
+  if (!file) return;
+  const name = file.name.toLowerCase();
+
+  if (name.endsWith('.db')) {
+    // Shearwater Cloud SQLite
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        const divesList = await parseShearwaterDB(e.target.result);
+        if (!divesList.length) { showToast('❌ No dives found in file'); return; }
+        let count = 0;
+        for (const dive of divesList) {
+          dive.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+          await divesCol.add(dive);
+          count++;
+        }
+        showToast(t('importSuccess') + ' (' + count + ')');
+        switchTab('history');
+      } catch(err) {
+        showToast('❌ ' + err.message);
+      }
+      fileInput.value = '';
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    // Suunto JSON — use existing handler
+    handleSuuntoImport(fileInput);
+  }
+}
