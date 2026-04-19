@@ -189,6 +189,22 @@ function showApp(user) {
   // Set user-specific collection
   divesCol = db.collection('users').doc(user.uid).collection('dives');
 
+  // One-time migration from old shared 'dives' collection
+  const migrated = localStorage.getItem('dives_migrated_' + user.uid);
+  if (!migrated) {
+    db.collection('dives').get().then(snap => {
+      if (snap.empty) return;
+      const batch = db.batch();
+      snap.docs.forEach(doc => {
+        batch.set(divesCol.doc(doc.id), doc.data());
+      });
+      return batch.commit();
+    }).then(() => {
+      localStorage.setItem('dives_migrated_' + user.uid, '1');
+      console.log('Migration complete');
+    }).catch(e => console.warn('Migration error:', e));
+  }
+
   // Subscribe to this user's dives only
   if (unsubDives) unsubDives();
   unsubDives = divesCol.orderBy('createdAt','desc').onSnapshot(snap => {
