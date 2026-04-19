@@ -25,7 +25,8 @@ const T = {
     importBtn:'📥 Import Suunto',
     importSuccess:'✅ Suunto dive imported!',
     avgDepth:'Avg Depth', device:'Device', gpsMap:'GPS Map',
-    gpsLabel:'GPS Location', gpsBtn:'📍', gpsGetting:'Getting location...'  },
+    gpsLabel:'GPS Location', gpsBtn:'📍', gpsGetting:'Getting location...', googleBtn:'Sign in with Google',
+    emailSignIn:'Sign in', emailRegister:'Create account', toggleToRegister:'No account? Register', toggleToLogin:'Have an account? Sign in', orText:'or'  },
   pl: {
     logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep',
     newEntry:'Nowy', diveEntry:'Wpis nurkowy',
@@ -52,7 +53,8 @@ const T = {
     importBtn:'📥 Import Suunto',
     importSuccess:'✅ Nurkowanie z Suunto zaimportowane!',
     avgDepth:'Śr. głęb.', device:'Urządzenie', gpsMap:'Mapa GPS',
-    gpsLabel:'Lokalizacja GPS', gpsBtn:'📍', gpsGetting:'Pobieranie lokalizacji...'
+    gpsLabel:'Lokalizacja GPS', gpsBtn:'📍', gpsGetting:'Pobieranie lokalizacji...', googleBtn:'Zaloguj się przez Google',
+    emailSignIn:'Zaloguj się', emailRegister:'Utwórz konto', toggleToRegister:'Nie masz konta? Zarejestruj się', toggleToLogin:'Masz konto? Zaloguj się', orText:'lub'
   }
 };
 
@@ -110,6 +112,14 @@ function applyLang() {
   document.getElementById('import-btn-text').textContent = t('importBtn');
   const gpsLabel = document.getElementById('l-gps');
   if(gpsLabel) gpsLabel.textContent = t('gpsLabel');
+  const googleBtnText = document.getElementById('google-btn-text');
+  if(googleBtnText) googleBtnText.textContent = t('googleBtn');
+  const loginOr = document.getElementById('login-or');
+  if(loginOr) loginOr.textContent = t('orText');
+  const btnEmail = document.getElementById('btn-email-submit');
+  if(btnEmail) btnEmail.textContent = isRegisterMode ? t('emailRegister') : t('emailSignIn');
+  const toggleText = document.getElementById('toggle-mode-text');
+  if(toggleText) toggleText.textContent = isRegisterMode ? t('toggleToLogin') : t('toggleToRegister');
   // Re-render dives
   renderDives();
 }
@@ -125,17 +135,79 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 const divesCol = db.collection('dives');
+const auth = firebase.auth();
+const googleProvider = new firebase.auth.GoogleAuthProvider();
 
 let dives = [];
 let currentRating = 0;
+let unsubDives = null;
 
 document.getElementById('f-date').valueAsDate = new Date();
 
-divesCol.orderBy('createdAt','desc').onSnapshot(snap => {
-  dives = snap.docs.map(doc => ({ id:doc.id, ...doc.data() }));
-  dives.forEach((d,i) => d.num = dives.length - i);
-  updateStats();
-  if(document.getElementById('panel-history').classList.contains('active')) renderDives();
+function signInGoogle() {
+  auth.signInWithPopup(googleProvider).catch(e => {
+    const el = document.getElementById('login-error');
+    el.textContent = e.message; el.style.display = 'block';
+  });
+}
+
+let isRegisterMode = false;
+
+function toggleAuthMode() {
+  isRegisterMode = !isRegisterMode;
+  document.getElementById('btn-email-submit').textContent = isRegisterMode ? t('emailRegister') : t('emailSignIn');
+  document.getElementById('toggle-mode-text').textContent = isRegisterMode ? t('toggleToLogin') : t('toggleToRegister');
+  document.getElementById('login-error').style.display = 'none';
+}
+
+function handleEmailAuth(e) {
+  e.preventDefault();
+  const email = document.getElementById('f-email').value;
+  const pass = document.getElementById('f-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  const action = isRegisterMode
+    ? auth.createUserWithEmailAndPassword(email, pass)
+    : auth.signInWithEmailAndPassword(email, pass);
+  action.catch(err => { errEl.textContent = err.message; errEl.style.display = 'block'; });
+  return false;
+}
+
+function logOut() {
+  auth.signOut();
+}
+
+function showApp(user) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-header').style.display = '';
+  document.getElementById('app-container').style.display = '';
+  document.getElementById('user-menu').style.display = 'flex';
+  const avatar = document.getElementById('user-avatar');
+  avatar.src = user.photoURL || '';
+  avatar.title = user.displayName || user.email || '';
+
+  // Subscribe to dives (shared collection — everyone sees all)
+  if (unsubDives) unsubDives();
+  unsubDives = divesCol.orderBy('createdAt','desc').onSnapshot(snap => {
+    dives = snap.docs.map(doc => ({ id:doc.id, ...doc.data() }));
+    dives.forEach((d,i) => d.num = dives.length - i);
+    updateStats();
+    if(document.getElementById('panel-history').classList.contains('active')) renderDives();
+  });
+}
+
+function hideApp() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app-header').style.display = 'none';
+  document.getElementById('app-container').style.display = 'none';
+  document.getElementById('user-menu').style.display = 'none';
+  if (unsubDives) { unsubDives(); unsubDives = null; }
+  dives = [];
+}
+
+auth.onAuthStateChanged(user => {
+  if (user) showApp(user);
+  else hideApp();
 });
 
 function updateStats() {
