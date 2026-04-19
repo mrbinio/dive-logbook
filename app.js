@@ -134,7 +134,7 @@ firebase.initializeApp({
   appId: "1:416389167201:web:2f2ad02160f2606d315220"
 });
 const db = firebase.firestore();
-const divesCol = db.collection('dives');
+let divesCol;
 const auth = firebase.auth();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 
@@ -186,7 +186,10 @@ function showApp(user) {
   avatar.src = user.photoURL || '';
   avatar.title = user.displayName || user.email || '';
 
-  // Subscribe to dives (shared collection — everyone sees all)
+  // Set user-specific collection
+  divesCol = db.collection('users').doc(user.uid).collection('dives');
+
+  // Subscribe to this user's dives only
   if (unsubDives) unsubDives();
   unsubDives = divesCol.orderBy('createdAt','desc').onSnapshot(snap => {
     dives = snap.docs.map(doc => ({ id:doc.id, ...doc.data() }));
