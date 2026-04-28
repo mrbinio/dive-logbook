@@ -337,6 +337,7 @@
           <input type="text" id="cl-site" class="edit-input" placeholder="Dive site..." onchange="saveTripMeta()">
         </label>
       </div>
+      <button id="cl-cal-btn" onclick="addToCalendar()" style="display:none;width:100%;margin-bottom:12px;background:transparent;border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--accent);font-size:0.72rem;cursor:pointer;font-family:inherit;">📅 Add to calendar</button>
       <div style="display:flex;gap:6px;margin-bottom:12px;">
         <input type="email" id="cl-buddy-email" class="edit-input" style="flex:1;" placeholder="Buddy email (to share list)...">
         <button onclick="inviteBuddy()" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;padding:6px 12px;color:var(--accent);font-weight:700;cursor:pointer;font-size:0.75rem;white-space:nowrap;">🤝 Invite</button>

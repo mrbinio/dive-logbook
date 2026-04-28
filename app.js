@@ -691,6 +691,8 @@ function renderChecklist(trip) {
   const uid = myUid();
   document.getElementById('cl-next-date').value = trip.date || '';
   document.getElementById('cl-site').value = trip.site || '';
+  const calBtn = document.getElementById('cl-cal-btn');
+  if (calBtn) calBtn.style.display = trip.date ? '' : 'none';
 
   // Buddies display
   const buddyDiv = document.getElementById('cl-buddies');
@@ -762,6 +764,34 @@ async function saveTripMeta() {
   const site = document.getElementById('cl-site').value || '';
   await tripRef().update({ date, site });
   scheduleNotification(date);
+  // Show/hide calendar button
+  const calBtn = document.getElementById('cl-cal-btn');
+  if (calBtn) calBtn.style.display = date ? '' : 'none';
+}
+
+function addToCalendar() {
+  const date = document.getElementById('cl-next-date').value;
+  const site = document.getElementById('cl-site').value || 'Dive';
+  if (!date) return;
+  const d = date.replace(/-/g, '');
+  const title = '🤿 ' + site;
+  const desc = 'Dive trip - check your checklist!';
+  // Generate .ics file
+  const ics = [
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//MrBinioDive//EN',
+    'BEGIN:VEVENT',
+    'DTSTART;VALUE=DATE:' + d,
+    'DTEND;VALUE=DATE:' + d,
+    'SUMMARY:' + title,
+    'DESCRIPTION:' + desc,
+    'END:VEVENT','END:VCALENDAR'
+  ].join('\r\n');
+  const blob = new Blob([ics], {type:'text/calendar'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'dive-' + date + '.ics';
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 async function toggleShared(i) {
