@@ -93,7 +93,7 @@ function applyLang() {
   // Form labels
   const labels = {
     'l-site':t('diveSite'),'l-loc':t('location'),'l-date':t('date'),
-    'l-type':t('diveType'),'l-depth':t('maxDepth'),'l-dur':t('bottomTime'),
+    'l-type':t('diveType'),'l-depth':t('maxDepth'),'l-avg-depth':t('avgDepth'),'l-dur':t('bottomTime'),
     'l-temp':t('waterTemp'),'l-vis':t('visibility'),
     'l-buddy':t('buddy'),'l-cert':t('cert'),'l-rating':t('rating'),'l-notes':t('notes'),
     'l-weights':t('weights'),'l-suit':t('suit'),'l-tank-size':t('tankSize'),
@@ -321,6 +321,7 @@ async function saveDive() {
     date: document.getElementById('f-date').value,
     type: document.getElementById('f-type').value,
     depth: parseFloat(document.getElementById('f-depth').value)||0,
+    avgDepth: parseFloat(document.getElementById('f-avg-depth').value)||null,
     duration: parseInt(document.getElementById('f-duration').value)||0,
     temp: document.getElementById('f-temp').value,
     visibility: document.getElementById('f-visibility').value,
@@ -351,7 +352,7 @@ async function saveDive() {
 }
 
 function resetForm() {
-  ['f-site','f-location','f-depth','f-duration','f-temp','f-visibility','f-buddy','f-cert','f-notes','f-weights','f-tank-size','f-tank-start','f-tank-end'].forEach(id=>{
+  ['f-site','f-location','f-depth','f-avg-depth','f-duration','f-temp','f-visibility','f-buddy','f-cert','f-notes','f-weights','f-tank-size','f-tank-start','f-tank-end'].forEach(id=>{
     document.getElementById(id).value='';
   });
   ['f-suit','f-tank-mat','f-current','f-waves','f-entry','f-feeling'].forEach(id=>{
@@ -523,6 +524,7 @@ function openEditMode(id) {
       <label style="display:flex;flex-direction:column;gap:2px;">${t('location')}<input id="e-location" value="${d.location||''}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('date')}<input id="e-date" type="date" value="${d.date||''}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('maxDepth')}<input id="e-depth" type="number" value="${d.depth||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('avgDepth')}<input id="e-avg-depth" type="number" step="0.1" value="${d.avgDepth||''}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('bottomTime')}<input id="e-duration" type="number" value="${d.duration||''}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('waterTemp')}<input id="e-temp" type="number" value="${d.temp||''}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('visibility')}<input id="e-visibility" type="number" value="${d.visibility||''}" class="edit-input"></label>
@@ -559,6 +561,7 @@ async function saveEdit(id) {
     location: document.getElementById('e-location').value.trim(),
     date: document.getElementById('e-date').value,
     depth: parseFloat(document.getElementById('e-depth').value)||0,
+    avgDepth: parseFloat(document.getElementById('e-avg-depth').value)||null,
     duration: parseInt(document.getElementById('e-duration').value)||0,
     temp: document.getElementById('e-temp').value||null,
     visibility: document.getElementById('e-visibility').value||null,

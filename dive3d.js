@@ -44,9 +44,9 @@ function render3DViz(containerId, dive) {
           pts.push({ x: gx, y: -p.depth, z: gz, depth: p.depth });
         });
       } else {
-        // Option A: Faithful profile — X = time, Y = depth, Z = 0
+        // Option A: Faithful profile — X = time, Y = depth, Z = slight depth-based offset for 3D feel
         profile.forEach(function(p) {
-          pts.push({ x: p.time / maxT * 30, y: -p.depth, z: 0, depth: p.depth });
+          pts.push({ x: p.time / maxT * 30, y: -p.depth, z: (p.depth / maxD) * 6, depth: p.depth });
         });
       }
 
