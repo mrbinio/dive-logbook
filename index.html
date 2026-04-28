@@ -277,6 +277,7 @@
           <label id="l-gps">GPS Location</label>
           <div style="display:flex;gap:6px;">
             <input type="text" id="f-gps" placeholder="lat, lng" readonly style="flex:1;cursor:pointer;font-size:0.78rem;" onclick="getGPS()">
+            <button type="button" onclick="searchFormGPS()" style="background:var(--accent-dim);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--accent);cursor:pointer;font-size:0.82rem;white-space:nowrap;" title="Search by site name">🔍</button>
             <button type="button" onclick="getGPS()" style="background:var(--accent-dim);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--accent);cursor:pointer;font-size:0.82rem;white-space:nowrap;" id="btn-gps">📍</button>
           </div>
           <div id="f-gps-map" style="display:none;height:200px;border-radius:8px;overflow:hidden;margin-top:4px;border:1px solid var(--border);"></div>

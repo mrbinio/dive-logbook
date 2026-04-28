@@ -319,6 +319,41 @@ function switchTab(tab) {
 let formGps = null;
 let formMap = null;
 
+async function searchGPSByName(siteFieldId, locFieldId, gpsFieldId, callback) {
+  const site = document.getElementById(siteFieldId)?.value?.trim() || '';
+  const loc = document.getElementById(locFieldId)?.value?.trim() || '';
+  const query = (site + ' ' + loc).trim();
+  if (!query) { showToast(lang==='pl'?'Wpisz nazwę miejsca':'Enter site name first'); return; }
+  const gpsField = document.getElementById(gpsFieldId);
+  gpsField.value = lang==='pl'?'Szukam...':'Searching...';
+  try {
+    const resp = await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(query)+'&format=json&limit=1');
+    const results = await resp.json();
+    if (results.length) {
+      const lat = Math.round(parseFloat(results[0].lat)*10000)/10000;
+      const lng = Math.round(parseFloat(results[0].lon)*10000)/10000;
+      gpsField.value = lat + ', ' + lng;
+      if (callback) callback(lat, lng);
+    } else {
+      gpsField.value = '';
+      showToast(lang==='pl'?'Nie znaleziono':'Location not found');
+    }
+  } catch(e) { gpsField.value = ''; showToast('❌ ' + e.message); }
+}
+
+function searchFormGPS() {
+  searchGPSByName('f-site', 'f-location', 'f-gps', function(lat, lng) {
+    formGps = {lat, lng};
+    getGPS(); // open map centered on found location
+  });
+}
+
+function searchEditGPS() {
+  searchGPSByName('e-site', 'e-location', 'e-gps', function(lat, lng) {
+    openEditMap(); // open map centered on found location
+  });
+}
+
 function getGPS() {
   const mapEl = document.getElementById('f-gps-map');
   mapEl.style.display = 'block';
@@ -584,7 +619,7 @@ function openEditMode(id) {
       <label style="display:flex;flex-direction:column;gap:2px;">${t('diveSite')}<input id="e-site" value="${d.site||''}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('location')}<input id="e-location" value="${d.location||''}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;grid-column:1/-1;">${t('gpsLabel')}
-        <div style="display:flex;gap:6px;"><input id="e-gps" class="edit-input" style="flex:1;" value="${d.gps?d.gps.lat+', '+d.gps.lng:''}" placeholder="lat, lng — click 📍 to pick on map"><button type="button" onclick="openEditMap()" style="background:var(--accent-dim);border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--accent);cursor:pointer;">📍</button></div>
+        <div style="display:flex;gap:6px;"><input id="e-gps" class="edit-input" style="flex:1;" value="${d.gps?d.gps.lat+', '+d.gps.lng:''}" placeholder="Search 🔍 or pick on map 📍"><button type="button" onclick="searchEditGPS()" style="background:var(--accent-dim);border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--accent);cursor:pointer;">🔍</button><button type="button" onclick="openEditMap()" style="background:var(--accent-dim);border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--accent);cursor:pointer;">📍</button></div>
         <div id="e-gps-map" style="display:none;height:200px;border-radius:8px;overflow:hidden;margin-top:4px;border:1px solid var(--border);"></div>
       </label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('date')}<input id="e-date" type="date" value="${d.date||''}" class="edit-input"></label>
