@@ -1,6 +1,6 @@
 const T = {
   en: {
-    logDive:'Log Dive', myDives:'My Dives', shop:'Shop', checklist:'Checklist', diveMap:'Map', stats:'Stats', certs:'Certs',
+    logDive:'Log Dive', myDives:'My Dives', shop:'Shop', checklist:'Checklist', diveMap:'Map', stats:'Stats', certs:'Certs', gear:'Gear',
     newEntry:'New', diveEntry:'Dive Entry',
     diveSite:'Dive Site', sitePh:'e.g. Blue Hole, Dahab',
     location:'Location / Country', locPh:'e.g. Egypt',
@@ -34,7 +34,7 @@ const T = {
     entry:'Entry', entryShore:'Shore', entryBoat:'Boat', entryPlatform:'Platform', entryOther:'Other',
     feeling:'Feeling'  },
   pl: {
-    logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep', checklist:'Checklista', diveMap:'Mapa', stats:'Statystyki', certs:'Certyfikaty',
+    logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep', checklist:'Checklista', diveMap:'Mapa', stats:'Statystyki', certs:'Certyfikaty', gear:'Sprzęt',
     newEntry:'Nowy', diveEntry:'Wpis nurkowy',
     diveSite:'Miejsce nurkowania', sitePh:'np. Blue Hole, Dahab',
     location:'Lokalizacja / Kraj', locPh:'np. Egipt',
@@ -92,6 +92,7 @@ function applyLang() {
   document.getElementById('tab-stats').innerHTML = '📊 ' + t('stats');
   document.getElementById('tab-map').innerHTML = '🗺 ' + t('diveMap');
   document.getElementById('tab-certs').innerHTML = '🎓 ' + t('certs');
+  document.getElementById('tab-gear').innerHTML = '🔧 ' + t('gear');
   document.getElementById('tab-checklist').innerHTML = '✅ ' + t('checklist');
   document.getElementById('tab-shop').innerHTML = '🛒 ' + t('shop');
   // Form labels
@@ -269,6 +270,7 @@ function showApp(user) {
   // Load or join shared trip checklist
   joinPendingTrip().then(joined => { if (!joined) loadOrCreateTrip(); });
   subscribeCerts();
+  subscribeGear();
 }
 
 function hideApp() {
@@ -279,8 +281,9 @@ function hideApp() {
   if (unsubDives) { unsubDives(); unsubDives = null; }
   if (unsubTrip) { unsubTrip(); unsubTrip = null; }
   if (unsubCerts) { unsubCerts(); unsubCerts = null; }
+  if (unsubGear) { unsubGear(); unsubGear = null; }
   currentTripId = null;
-  dives = []; certs = [];
+  dives = []; certs = []; gear = [];
 }
 
 if (!checkSharedMap()) {
@@ -311,7 +314,7 @@ function setRating(n) {
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    const tabs=['log','history','stats','map','certs','checklist','shop'];
+    const tabs=['log','history','stats','map','certs','gear','checklist','shop'];
     t.classList.toggle('active', tabs[i]===tab);
   });
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -320,6 +323,7 @@ function switchTab(tab) {
   if(tab==='stats') renderStats();
   if(tab==='map') renderDiveMap();
   if(tab==='certs') renderCerts();
+  if(tab==='gear') renderGear();
   if(tab==='checklist' && !currentTripId) loadOrCreateTrip();
 }
 
@@ -874,6 +878,77 @@ async function deleteCert(id) {
   if (!confirm(lang==='pl'?'Usunąć ten certyfikat?':'Delete this certification?')) return;
   const uid = myUid();
   await db.collection('users').doc(uid).collection('certs').doc(id).delete();
+}
+
+
+// === GEAR ===
+let gear = [];
+let unsubGear = null;
+
+function subscribeGear() {
+  const uid = myUid(); if (!uid) return;
+  if (unsubGear) unsubGear();
+  unsubGear = db.collection('users').doc(uid).collection('gear').orderBy('category').onSnapshot(snap => {
+    gear = snap.docs.map(doc => ({id:doc.id, ...doc.data()}));
+    if (document.getElementById('panel-gear').classList.contains('active')) renderGear();
+  });
+}
+
+function renderGear() {
+  const list = document.getElementById('gear-list');
+  if (!gear.length) {
+    list.innerHTML = `<div style="text-align:center;color:var(--text-dim);padding:20px;font-size:0.78rem;">${lang==='pl'?'Brak sprzętu. Dodaj swój pierwszy!':'No gear yet. Add your first!'}</div>`;
+    return;
+  }
+  const now = new Date();
+  list.innerHTML = gear.map(g => {
+    let serviceStatus = '';
+    if (g.lastService && g.intervalMonths) {
+      const next = new Date(g.lastService);
+      next.setMonth(next.getMonth() + parseInt(g.intervalMonths));
+      const daysLeft = Math.round((next - now) / (1000*60*60*24));
+      if (daysLeft < 0) serviceStatus = `<span style="color:var(--danger);font-weight:700;">⚠️ ${lang==='pl'?'Przeterminowany!':'Overdue!'}</span>`;
+      else if (daysLeft < 30) serviceStatus = `<span style="color:#f59e0b;font-weight:600;">⏰ ${daysLeft}d left</span>`;
+      else serviceStatus = `<span style="color:var(--text-muted);">✅ ${lang==='pl'?'Następny':'Next'}: ${next.toISOString().substring(0,10)}</span>`;
+    }
+    const catIcons = {Regulator:'🫧',['BCD/Wing']:'🦺',Computer:'⌚',Drysuit:'🥶',Wetsuit:'🩱',Fins:'🦶',Mask:'🤿',Light:'🔦',Tank:'🛢',Other:'📦'};
+    return `
+    <div style="padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;position:relative;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:1.2rem;">${catIcons[g.category]||'📦'}</span>
+        <div style="flex:1;">
+          <div style="font-weight:800;font-size:0.82rem;">${g.name}</div>
+          <div style="font-size:0.68rem;color:var(--text-dim);">${g.category}${g.purchased?' · Bought '+g.purchased:''}</div>
+        </div>
+      </div>
+      ${serviceStatus?'<div style="font-size:0.68rem;margin-top:6px;">'+serviceStatus+'</div>':''}
+      <button onclick="deleteGear('${g.id}')" style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.8rem;opacity:0.5;">✕</button>
+    </div>`;
+  }).join('');
+}
+
+async function addGear() {
+  const name = document.getElementById('g-name').value.trim();
+  if (!name) { showToast(lang==='pl'?'Wpisz nazwę sprzętu':'Enter gear name'); return; }
+  const item = {
+    name,
+    category: document.getElementById('g-category').value,
+    purchased: document.getElementById('g-purchased').value || null,
+    lastService: document.getElementById('g-last-service').value || null,
+    intervalMonths: document.getElementById('g-interval').value || null,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  const uid = myUid();
+  await db.collection('users').doc(uid).collection('gear').add(item);
+  ['g-name','g-purchased','g-last-service'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('g-interval').value = '';
+  showToast(lang==='pl'?'✅ Sprzęt dodany!':'✅ Gear added!');
+}
+
+async function deleteGear(id) {
+  if (!confirm(lang==='pl'?'Usunąć ten sprzęt?':'Delete this gear?')) return;
+  const uid = myUid();
+  await db.collection('users').doc(uid).collection('gear').doc(id).delete();
 }
 
 // === STATS ===

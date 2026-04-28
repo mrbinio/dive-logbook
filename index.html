@@ -134,6 +134,7 @@
     <button class="tab" id="tab-stats" onclick="switchTab('stats')">📊 Stats</button>
     <button class="tab" id="tab-map" onclick="switchTab('map')">🗺 Map</button>
     <button class="tab" id="tab-certs" onclick="switchTab('certs')">🎓 Certs</button>
+    <button class="tab" id="tab-gear" onclick="switchTab('gear')">🔧 Gear</button>
     <button class="tab" id="tab-checklist" onclick="switchTab('checklist')">✅ Checklist</button>
     <button class="tab" id="tab-shop" onclick="switchTab('shop')">🛒 Shop</button>
   </div>
@@ -360,6 +361,39 @@
           <input type="text" id="c-number" class="edit-input" placeholder="Cert number (optional)">
           <input type="text" id="c-instructor" class="edit-input" placeholder="Instructor (optional)">
           <button onclick="addCert()" style="background:var(--accent);border:none;border-radius:8px;padding:8px;color:#000;font-weight:700;cursor:pointer;font-size:0.78rem;">+ Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-gear">
+    <div class="card">
+      <div class="card-title">🔧 <span class="accent" id="gear-title">My Gear</span></div>
+      <div id="gear-list"></div>
+      <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <input type="text" id="g-name" class="edit-input" placeholder="e.g. Apex XTX50 regulator">
+          <select id="g-category" class="edit-input">
+            <option value="Regulator">Regulator</option>
+            <option value="BCD/Wing">BCD / Wing</option>
+            <option value="Computer">Computer</option>
+            <option value="Drysuit">Drysuit</option>
+            <option value="Wetsuit">Wetsuit</option>
+            <option value="Fins">Fins</option>
+            <option value="Mask">Mask</option>
+            <option value="Light">Light</option>
+            <option value="Tank">Tank</option>
+            <option value="Other">Other</option>
+          </select>
+          <input type="date" id="g-purchased" class="edit-input" placeholder="Purchased">
+          <input type="date" id="g-last-service" class="edit-input" placeholder="Last service">
+          <select id="g-interval" class="edit-input">
+            <option value="">Service interval</option>
+            <option value="6">Every 6 months</option>
+            <option value="12">Every 12 months</option>
+            <option value="24">Every 24 months</option>
+          </select>
+          <button onclick="addGear()" style="background:var(--accent);border:none;border-radius:8px;padding:8px;color:#000;font-weight:700;cursor:pointer;font-size:0.78rem;">+ Add</button>
         </div>
       </div>
     </div>
