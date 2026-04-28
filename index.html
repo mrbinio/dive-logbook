@@ -131,6 +131,7 @@
   <div class="tabs-bar">
     <button class="tab active" id="tab-log" onclick="switchTab('log')">📋 Log Dive</button>
     <button class="tab" id="tab-history" onclick="switchTab('history')">🌊 My Dives</button>
+    <button class="tab" id="tab-checklist" onclick="switchTab('checklist')">✅ Checklist</button>
     <button class="tab" id="tab-shop" onclick="switchTab('shop')">🛒 Shop</button>
   </div>
 
@@ -320,6 +321,30 @@
       </select>
     </div>
     <div class="dives-list" id="dives-grid"></div>
+  </div>
+
+  <div class="panel" id="panel-checklist">
+    <div class="card">
+      <div class="card-title">✅ <span class="accent" id="checklist-title">Dive Checklist</span></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+        <label style="font-size:0.72rem;color:var(--text-dim);" id="cl-next-label">Next dive:</label>
+        <input type="date" id="cl-next-date" class="edit-input" style="flex:1;max-width:180px;" onchange="saveChecklist()">
+      </div>
+      <div id="checklist-items"></div>
+      <div style="display:flex;gap:6px;margin-top:12px;">
+        <input type="text" id="cl-new-item" class="edit-input" style="flex:1;" placeholder="Add item..." onkeydown="if(event.key==='Enter')addChecklistItem()">
+        <button onclick="addChecklistItem()" style="background:var(--accent);border:none;border-radius:8px;padding:6px 14px;color:#000;font-weight:700;cursor:pointer;font-size:0.8rem;">+</button>
+      </div>
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;" id="cl-wishlist-title">📝 Next time / Wishlist</div>
+        <div id="wishlist-items"></div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <input type="text" id="cl-new-wish" class="edit-input" style="flex:1;" placeholder="Forgot something? Add for next time..." onkeydown="if(event.key==='Enter')addWishlistItem()">
+          <button onclick="addWishlistItem()" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;padding:6px 14px;color:var(--accent);font-weight:700;cursor:pointer;font-size:0.8rem;">+</button>
+        </div>
+      </div>
+      <button onclick="resetChecklist()" style="margin-top:16px;width:100%;background:transparent;border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-dim);font-size:0.72rem;cursor:pointer;font-family:inherit;" id="cl-reset-btn">🔄 Reset checklist (after dive)</button>
+    </div>
   </div>
 
   <div class="panel" id="panel-shop">

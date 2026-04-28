@@ -1,6 +1,6 @@
 const T = {
   en: {
-    logDive:'Log Dive', myDives:'My Dives', shop:'Shop',
+    logDive:'Log Dive', myDives:'My Dives', shop:'Shop', checklist:'Checklist',
     newEntry:'New', diveEntry:'Dive Entry',
     diveSite:'Dive Site', sitePh:'e.g. Blue Hole, Dahab',
     location:'Location / Country', locPh:'e.g. Egypt',
@@ -34,7 +34,7 @@ const T = {
     entry:'Entry', entryShore:'Shore', entryBoat:'Boat', entryPlatform:'Platform', entryOther:'Other',
     feeling:'Feeling'  },
   pl: {
-    logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep',
+    logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep', checklist:'Checklista',
     newEntry:'Nowy', diveEntry:'Wpis nurkowy',
     diveSite:'Miejsce nurkowania', sitePh:'np. Blue Hole, Dahab',
     location:'Lokalizacja / Kraj', locPh:'np. Egipt',
@@ -89,6 +89,7 @@ function applyLang() {
   // Tabs
   document.getElementById('tab-log').innerHTML = '📋 ' + t('logDive');
   document.getElementById('tab-history').innerHTML = '🌊 ' + t('myDives');
+  document.getElementById('tab-checklist').innerHTML = '✅ ' + t('checklist');
   document.getElementById('tab-shop').innerHTML = '🛒 ' + t('shop');
   // Form labels
   const labels = {
@@ -260,6 +261,7 @@ function showApp(user) {
     updateStats();
     if(document.getElementById('panel-history').classList.contains('active')) renderDives();
   });
+  checkReminder();
 }
 
 function hideApp() {
@@ -297,12 +299,13 @@ function setRating(n) {
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    const tabs=['log','history','shop'];
+    const tabs=['log','history','checklist','shop'];
     t.classList.toggle('active', tabs[i]===tab);
   });
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+tab).classList.add('active');
   if(tab==='history') renderDives();
+  if(tab==='checklist') renderChecklist();
 }
 
 let formGps = null;
@@ -622,6 +625,160 @@ function showToast(msg){
   const el=document.getElementById('toast');
   el.textContent=msg; el.classList.add('show');
   setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+
+// === CHECKLIST ===
+const DEFAULT_CHECKLIST = [
+  'Komputer nurkowy','Maska','Płetwy','Automaty','Suchar / Pianka','Buty nurkowe',
+  'Kaptur','Rękawice','Latarka','Bojka + kołowrotek','Wing / BCD','Balast',
+  'Butle','Klucze (imbus, 14, 15, 17)','Ocieplacz / Undersuit','Skarpety',
+  'Ręcznik','Woda do picia','Czapka','Talk do suchara','Spray do nosa',
+  'Zapasowe baterie','Ładowarka do latarki','Kamera','Nóż / Easy cut',
+  'Marker / Zippo','Manszety zapasowe','Linery do rękawic'
+];
+
+function getChecklist() {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return { items: [], checked: [], wishlist: [], nextDate: '' };
+  const stored = localStorage.getItem('checklist_' + uid);
+  if (stored) return JSON.parse(stored);
+  return { items: [...DEFAULT_CHECKLIST], checked: [], wishlist: [], nextDate: '' };
+}
+
+function saveChecklist() {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return;
+  const data = getChecklist();
+  data.nextDate = document.getElementById('cl-next-date').value || '';
+  localStorage.setItem('checklist_' + uid, JSON.stringify(data));
+  scheduleNotification(data.nextDate);
+}
+
+function renderChecklist() {
+  const data = getChecklist();
+  const container = document.getElementById('checklist-items');
+  document.getElementById('cl-next-date').value = data.nextDate || '';
+  container.innerHTML = data.items.map((item, i) => {
+    const checked = data.checked.includes(i);
+    return `<div class="cl-item" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:0.78rem;">
+      <input type="checkbox" ${checked?'checked':''} onchange="toggleCheckItem(${i})" style="accent-color:var(--accent);width:18px;height:18px;cursor:pointer;">
+      <span style="${checked?'text-decoration:line-through;opacity:0.5;':''}flex:1;">${item}</span>
+      <button onclick="removeCheckItem(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.9rem;padding:2px 6px;">✕</button>
+    </div>`;
+  }).join('');
+  // Progress
+  const pct = data.items.length ? Math.round(data.checked.length / data.items.length * 100) : 0;
+  container.insertAdjacentHTML('beforebegin',
+    document.getElementById('cl-progress') ? '' :
+    `<div id="cl-progress" style="margin-bottom:8px;"></div>`);
+  const prog = document.getElementById('cl-progress');
+  if (prog) prog.innerHTML = `<div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden;"><div style="background:var(--accent);height:100%;width:${pct}%;transition:width 0.3s;"></div></div><div style="font-size:0.65rem;color:var(--text-dim);margin-top:3px;">${data.checked.length}/${data.items.length} — ${pct}%</div>`;
+  // Wishlist
+  const wContainer = document.getElementById('wishlist-items');
+  wContainer.innerHTML = data.wishlist.map((item, i) => {
+    return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:0.75rem;color:var(--accent);">
+      <span style="flex:1;">• ${item}</span>
+      <button onclick="promoteWish(${i})" title="Add to checklist" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.8rem;">↑</button>
+      <button onclick="removeWish(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.8rem;">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function toggleCheckItem(i) {
+  const uid = auth.currentUser?.uid; if (!uid) return;
+  const data = getChecklist();
+  const idx = data.checked.indexOf(i);
+  if (idx >= 0) data.checked.splice(idx, 1); else data.checked.push(i);
+  localStorage.setItem('checklist_' + uid, JSON.stringify(data));
+  renderChecklist();
+}
+
+function addChecklistItem() {
+  const input = document.getElementById('cl-new-item');
+  const val = input.value.trim(); if (!val) return;
+  const uid = auth.currentUser?.uid; if (!uid) return;
+  const data = getChecklist();
+  data.items.push(val);
+  localStorage.setItem('checklist_' + uid, JSON.stringify(data));
+  input.value = '';
+  renderChecklist();
+}
+
+function removeCheckItem(i) {
+  const uid = auth.currentUser?.uid; if (!uid) return;
+  const data = getChecklist();
+  data.items.splice(i, 1);
+  data.checked = data.checked.filter(c => c !== i).map(c => c > i ? c-1 : c);
+  localStorage.setItem('checklist_' + uid, JSON.stringify(data));
+  renderChecklist();
+}
+
+function addWishlistItem() {
+  const input = document.getElementById('cl-new-wish');
+  const val = input.value.trim(); if (!val) return;
+  const uid = auth.currentUser?.uid; if (!uid) return;
+  const data = getChecklist();
+  data.wishlist.push(val);
+  localStorage.setItem('checklist_' + uid, JSON.stringify(data));
+  input.value = '';
+  renderChecklist();
+}
+
+function removeWish(i) {
+  const uid = auth.currentUser?.uid; if (!uid) return;
+  const data = getChecklist();
+  data.wishlist.splice(i, 1);
+  localStorage.setItem('checklist_' + uid, JSON.stringify(data));
+  renderChecklist();
+}
+
+function promoteWish(i) {
+  const uid = auth.currentUser?.uid; if (!uid) return;
+  const data = getChecklist();
+  const item = data.wishlist.splice(i, 1)[0];
+  data.items.push(item);
+  localStorage.setItem('checklist_' + uid, JSON.stringify(data));
+  renderChecklist();
+}
+
+function resetChecklist() {
+  const uid = auth.currentUser?.uid; if (!uid) return;
+  const data = getChecklist();
+  // Move wishlist items to main checklist
+  data.wishlist.forEach(w => { if (!data.items.includes(w)) data.items.push(w); });
+  data.checked = [];
+  data.wishlist = [];
+  data.nextDate = '';
+  localStorage.setItem('checklist_' + uid, JSON.stringify(data));
+  renderChecklist();
+  showToast(lang==='pl'?'✅ Checklista zresetowana!':'✅ Checklist reset!');
+}
+
+function scheduleNotification(dateStr) {
+  if (!dateStr || !('Notification' in window)) return;
+  if (Notification.permission === 'default') Notification.requestPermission();
+  // Store reminder date — check on app load
+  const uid = auth.currentUser?.uid; if (!uid) return;
+  localStorage.setItem('cl_remind_' + uid, dateStr);
+}
+
+function checkReminder() {
+  const uid = auth.currentUser?.uid; if (!uid) return;
+  const dateStr = localStorage.getItem('cl_remind_' + uid);
+  if (!dateStr) return;
+  const diveDate = new Date(dateStr);
+  const now = new Date();
+  const diff = (diveDate - now) / (1000*60*60);
+  // Remind if dive is within 24h
+  if (diff > 0 && diff <= 24 && Notification.permission === 'granted') {
+    const data = getChecklist();
+    const unchecked = data.items.length - data.checked.length;
+    if (unchecked > 0) {
+      new Notification('🤿 Dive tomorrow!', { body: `${unchecked} items unchecked on your checklist`, icon: 'icon.svg' });
+    }
+    localStorage.removeItem('cl_remind_' + uid);
+  }
 }
 
 applyLang();
