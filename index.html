@@ -133,6 +133,7 @@
     <button class="tab" id="tab-history" onclick="switchTab('history')">🌊 My Dives</button>
     <button class="tab" id="tab-stats" onclick="switchTab('stats')">📊 Stats</button>
     <button class="tab" id="tab-map" onclick="switchTab('map')">🗺 Map</button>
+    <button class="tab" id="tab-certs" onclick="switchTab('certs')">🎓 Certs</button>
     <button class="tab" id="tab-checklist" onclick="switchTab('checklist')">✅ Checklist</button>
     <button class="tab" id="tab-shop" onclick="switchTab('shop')">🛒 Shop</button>
   </div>
@@ -343,6 +344,23 @@
       <div id="dive-world-map" style="height:400px;border-radius:8px;overflow:hidden;border:1px solid var(--border);"></div>
       <div style="margin-top:8px;display:flex;gap:12px;font-size:0.65rem;color:var(--text-dim);padding:0 4px;">
         <span>🟢 4-5⭐</span><span>🟡 3⭐</span><span>🔵 1-2⭐</span><span>⚪ No rating</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-certs">
+    <div class="card">
+      <div class="card-title">🎓 <span class="accent" id="certs-title">Certifications</span></div>
+      <div id="certs-list"></div>
+      <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <input type="text" id="c-name" class="edit-input" placeholder="e.g. PADI Advanced OW">
+          <input type="text" id="c-agency" class="edit-input" placeholder="Agency (PADI, SSI...)">
+          <input type="date" id="c-date" class="edit-input">
+          <input type="text" id="c-number" class="edit-input" placeholder="Cert number (optional)">
+          <input type="text" id="c-instructor" class="edit-input" placeholder="Instructor (optional)">
+          <button onclick="addCert()" style="background:var(--accent);border:none;border-radius:8px;padding:8px;color:#000;font-weight:700;cursor:pointer;font-size:0.78rem;">+ Add</button>
+        </div>
       </div>
     </div>
   </div>

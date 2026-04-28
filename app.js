@@ -1,6 +1,6 @@
 const T = {
   en: {
-    logDive:'Log Dive', myDives:'My Dives', shop:'Shop', checklist:'Checklist', diveMap:'Map', stats:'Stats',
+    logDive:'Log Dive', myDives:'My Dives', shop:'Shop', checklist:'Checklist', diveMap:'Map', stats:'Stats', certs:'Certs',
     newEntry:'New', diveEntry:'Dive Entry',
     diveSite:'Dive Site', sitePh:'e.g. Blue Hole, Dahab',
     location:'Location / Country', locPh:'e.g. Egypt',
@@ -34,7 +34,7 @@ const T = {
     entry:'Entry', entryShore:'Shore', entryBoat:'Boat', entryPlatform:'Platform', entryOther:'Other',
     feeling:'Feeling'  },
   pl: {
-    logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep', checklist:'Checklista', diveMap:'Mapa', stats:'Statystyki',
+    logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep', checklist:'Checklista', diveMap:'Mapa', stats:'Statystyki', certs:'Certyfikaty',
     newEntry:'Nowy', diveEntry:'Wpis nurkowy',
     diveSite:'Miejsce nurkowania', sitePh:'np. Blue Hole, Dahab',
     location:'Lokalizacja / Kraj', locPh:'np. Egipt',
@@ -91,6 +91,7 @@ function applyLang() {
   document.getElementById('tab-history').innerHTML = '🌊 ' + t('myDives');
   document.getElementById('tab-stats').innerHTML = '📊 ' + t('stats');
   document.getElementById('tab-map').innerHTML = '🗺 ' + t('diveMap');
+  document.getElementById('tab-certs').innerHTML = '🎓 ' + t('certs');
   document.getElementById('tab-checklist').innerHTML = '✅ ' + t('checklist');
   document.getElementById('tab-shop').innerHTML = '🛒 ' + t('shop');
   // Form labels
@@ -266,6 +267,7 @@ function showApp(user) {
   checkReminder();
   // Load or join shared trip checklist
   joinPendingTrip().then(joined => { if (!joined) loadOrCreateTrip(); });
+  subscribeCerts();
 }
 
 function hideApp() {
@@ -275,8 +277,9 @@ function hideApp() {
   document.getElementById('user-menu').style.display = 'none';
   if (unsubDives) { unsubDives(); unsubDives = null; }
   if (unsubTrip) { unsubTrip(); unsubTrip = null; }
+  if (unsubCerts) { unsubCerts(); unsubCerts = null; }
   currentTripId = null;
-  dives = [];
+  dives = []; certs = [];
 }
 
 if (!checkSharedMap()) {
@@ -307,7 +310,7 @@ function setRating(n) {
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    const tabs=['log','history','stats','map','checklist','shop'];
+    const tabs=['log','history','stats','map','certs','checklist','shop'];
     t.classList.toggle('active', tabs[i]===tab);
   });
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -315,6 +318,7 @@ function switchTab(tab) {
   if(tab==='history') renderDives();
   if(tab==='stats') renderStats();
   if(tab==='map') renderDiveMap();
+  if(tab==='certs') renderCerts();
   if(tab==='checklist' && !currentTripId) loadOrCreateTrip();
 }
 
@@ -742,6 +746,63 @@ function showToast(msg){
 
 
 
+
+
+// === CERTS ===
+let certs = [];
+let unsubCerts = null;
+
+function subscribeCerts() {
+  const uid = myUid(); if (!uid) return;
+  if (unsubCerts) unsubCerts();
+  unsubCerts = db.collection('users').doc(uid).collection('certs').orderBy('date','desc').onSnapshot(snap => {
+    certs = snap.docs.map(doc => ({id:doc.id, ...doc.data()}));
+    if (document.getElementById('panel-certs').classList.contains('active')) renderCerts();
+  });
+}
+
+function renderCerts() {
+  const list = document.getElementById('certs-list');
+  if (!certs.length) {
+    list.innerHTML = `<div style="text-align:center;color:var(--text-dim);padding:20px;font-size:0.78rem;">${lang==='pl'?'Brak certyfikatów. Dodaj swój pierwszy!':'No certifications yet. Add your first!'}</div>`;
+    return;
+  }
+  list.innerHTML = certs.map(c => `
+    <div style="padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;position:relative;">
+      <div style="font-weight:800;font-size:0.85rem;color:var(--accent);">${c.name}</div>
+      <div style="font-size:0.72rem;color:var(--text-dim);margin-top:2px;">
+        ${c.agency?'<span style="background:var(--accent-dim);padding:2px 8px;border-radius:4px;font-weight:600;">'+c.agency+'</span> ':''}
+        ${c.date?'📅 '+c.date:''}
+      </div>
+      ${c.number?'<div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;">🔢 '+c.number+'</div>':''}
+      ${c.instructor?'<div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">👨‍🏫 '+c.instructor+'</div>':''}
+      <button onclick="deleteCert('${c.id}')" style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.8rem;opacity:0.5;">✕</button>
+    </div>
+  `).join('');
+}
+
+async function addCert() {
+  const name = document.getElementById('c-name').value.trim();
+  if (!name) { showToast(lang==='pl'?'Wpisz nazwę certyfikatu':'Enter certification name'); return; }
+  const cert = {
+    name,
+    agency: document.getElementById('c-agency').value.trim() || null,
+    date: document.getElementById('c-date').value || null,
+    number: document.getElementById('c-number').value.trim() || null,
+    instructor: document.getElementById('c-instructor').value.trim() || null,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  const uid = myUid();
+  await db.collection('users').doc(uid).collection('certs').add(cert);
+  ['c-name','c-agency','c-date','c-number','c-instructor'].forEach(id => document.getElementById(id).value = '');
+  showToast(lang==='pl'?'✅ Certyfikat dodany!':'✅ Certification added!');
+}
+
+async function deleteCert(id) {
+  if (!confirm(lang==='pl'?'Usunąć ten certyfikat?':'Delete this certification?')) return;
+  const uid = myUid();
+  await db.collection('users').doc(uid).collection('certs').doc(id).delete();
+}
 
 // === STATS ===
 function renderStats() {
