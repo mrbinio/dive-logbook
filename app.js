@@ -776,16 +776,38 @@ function addToCalendar() {
   const d = date.replace(/-/g, '');
   const title = '🤿 ' + site;
   const desc = 'Dive trip - check your checklist!';
-  // Generate .ics file
-  const ics = [
+  // Build .ics with attendees if buddies exist
+  const lines = [
     'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//MrBinioDive//EN',
+    'METHOD:REQUEST',
     'BEGIN:VEVENT',
     'DTSTART;VALUE=DATE:' + d,
     'DTEND;VALUE=DATE:' + d,
     'SUMMARY:' + title,
     'DESCRIPTION:' + desc,
-    'END:VEVENT','END:VCALENDAR'
-  ].join('\r\n');
+    'ORGANIZER;CN=' + myName() + ':mailto:' + myEmail()
+  ];
+  // Add buddies as attendees
+  if (currentTripId) {
+    tripsCol().doc(currentTripId).get().then(snap => {
+      const trip = snap.data();
+      const emails = trip.memberEmails || [];
+      emails.forEach((email, i) => {
+        if (email !== myEmail()) {
+          const name = (trip.memberNames||[])[i] || email;
+          lines.push('ATTENDEE;CN=' + name + ';RSVP=TRUE:mailto:' + email);
+        }
+      });
+      finishIcs(lines, date);
+    });
+  } else {
+    finishIcs(lines, date);
+  }
+}
+
+function finishIcs(lines, date) {
+  lines.push('END:VEVENT','END:VCALENDAR');
+  const ics = lines.join('\r\n');
   const blob = new Blob([ics], {type:'text/calendar'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
