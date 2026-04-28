@@ -333,6 +333,7 @@
       <div class="card-title">📊 <span class="accent" id="stats-title">Dive Statistics</span></div>
       <div id="stats-summary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;"></div>
       <div id="stats-charts"></div>
+      <button onclick="exportPDF()" style="margin-top:16px;width:100%;background:transparent;border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--accent);font-size:0.72rem;cursor:pointer;font-family:inherit;">📄 Export PDF Logbook</button>
     </div>
   </div>
 
@@ -510,6 +511,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="shearwater.js"></script>
 <script src="suunto.js"></script>
 <script src="dive3d.js"></script>
