@@ -1,6 +1,6 @@
 const T = {
   en: {
-    logDive:'Log Dive', myDives:'My Dives', shop:'Shop', checklist:'Checklist', diveMap:'Map',
+    logDive:'Log Dive', myDives:'My Dives', shop:'Shop', checklist:'Checklist', diveMap:'Map', stats:'Stats',
     newEntry:'New', diveEntry:'Dive Entry',
     diveSite:'Dive Site', sitePh:'e.g. Blue Hole, Dahab',
     location:'Location / Country', locPh:'e.g. Egypt',
@@ -34,7 +34,7 @@ const T = {
     entry:'Entry', entryShore:'Shore', entryBoat:'Boat', entryPlatform:'Platform', entryOther:'Other',
     feeling:'Feeling'  },
   pl: {
-    logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep', checklist:'Checklista', diveMap:'Mapa',
+    logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep', checklist:'Checklista', diveMap:'Mapa', stats:'Statystyki',
     newEntry:'Nowy', diveEntry:'Wpis nurkowy',
     diveSite:'Miejsce nurkowania', sitePh:'np. Blue Hole, Dahab',
     location:'Lokalizacja / Kraj', locPh:'np. Egipt',
@@ -89,6 +89,7 @@ function applyLang() {
   // Tabs
   document.getElementById('tab-log').innerHTML = '📋 ' + t('logDive');
   document.getElementById('tab-history').innerHTML = '🌊 ' + t('myDives');
+  document.getElementById('tab-stats').innerHTML = '📊 ' + t('stats');
   document.getElementById('tab-map').innerHTML = '🗺 ' + t('diveMap');
   document.getElementById('tab-checklist').innerHTML = '✅ ' + t('checklist');
   document.getElementById('tab-shop').innerHTML = '🛒 ' + t('shop');
@@ -306,12 +307,13 @@ function setRating(n) {
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    const tabs=['log','history','map','checklist','shop'];
+    const tabs=['log','history','stats','map','checklist','shop'];
     t.classList.toggle('active', tabs[i]===tab);
   });
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+tab).classList.add('active');
   if(tab==='history') renderDives();
+  if(tab==='stats') renderStats();
   if(tab==='map') renderDiveMap();
   if(tab==='checklist' && !currentTripId) loadOrCreateTrip();
 }
@@ -739,6 +741,114 @@ function showToast(msg){
 }
 
 
+
+
+// === STATS ===
+function renderStats() {
+  if (!dives.length) {
+    document.getElementById('stats-summary').innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:20px;">No dives yet</div>';
+    document.getElementById('stats-charts').innerHTML = '';
+    return;
+  }
+
+  const totalDives = dives.length;
+  const totalTime = dives.reduce((s,d) => s + (d.duration||0), 0);
+  const maxDepth = Math.max(...dives.map(d => d.depth||0));
+  const avgDepth = Math.round(dives.reduce((s,d) => s + (d.depth||0), 0) / totalDives * 10) / 10;
+  const totalHours = Math.round(totalTime / 60 * 10) / 10;
+  const uniqueSites = [...new Set(dives.map(d => d.site).filter(Boolean))].length;
+  const avgTemp = dives.filter(d=>d.temp).length ? Math.round(dives.filter(d=>d.temp).reduce((s,d)=>s+parseFloat(d.temp),0)/dives.filter(d=>d.temp).length*10)/10 : null;
+
+  // SAC rates
+  const sacDives = dives.filter(d => d.tank&&d.tank.start&&d.tank.end&&d.tank.size&&d.duration&&(d.avgDepth||d.depth));
+  const avgSac = sacDives.length ? Math.round(sacDives.reduce((s,d) => {
+    const avg = d.avgDepth || d.depth*0.6;
+    return s + ((d.tank.start-d.tank.end)*d.tank.size)/((avg/10)+1)/d.duration;
+  }, 0) / sacDives.length * 10) / 10 : null;
+
+  const summaryHTML = [
+    {val: totalDives, label: lang==='pl'?'Nurkowań':'Dives'},
+    {val: totalHours+'h', label: lang==='pl'?'Czas pod wodą':'Time underwater'},
+    {val: maxDepth+'m', label: lang==='pl'?'Maks. głębokość':'Max depth'},
+    {val: avgDepth+'m', label: lang==='pl'?'Śr. głębokość':'Avg depth'},
+    {val: uniqueSites, label: lang==='pl'?'Miejsc':'Sites'},
+    {val: avgTemp?avgTemp+'°C':'—', label: lang==='pl'?'Śr. temp.':'Avg temp'},
+  ];
+  if (avgSac) summaryHTML.push({val: avgSac+' L/min', label: 'Avg SAC'});
+
+  document.getElementById('stats-summary').innerHTML = summaryHTML.map(s =>
+    `<div style="text-align:center;padding:10px;background:var(--surface);border-radius:8px;border:1px solid var(--border);">
+      <div style="font-size:1.2rem;font-weight:800;color:var(--accent);">${s.val}</div>
+      <div style="font-size:0.6rem;color:var(--text-dim);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;">${s.label}</div>
+    </div>`).join('');
+
+  // Charts
+  let chartsHTML = '';
+
+  // Dives per month (last 12 months)
+  const months = {};
+  dives.forEach(d => { if(d.date) { const m = d.date.substring(0,7); months[m] = (months[m]||0)+1; } });
+  const sortedMonths = Object.keys(months).sort().slice(-12);
+  if (sortedMonths.length > 1) {
+    const maxCount = Math.max(...sortedMonths.map(m => months[m]));
+    chartsHTML += `<div style="margin-top:16px;"><div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;">${lang==='pl'?'Nurkowań / miesiąc':'Dives / month'}</div>
+      <div style="display:flex;align-items:flex-end;gap:3px;height:80px;">
+        ${sortedMonths.map(m => {
+          const h = Math.max(4, (months[m]/maxCount)*100);
+          return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+            <div style="font-size:0.55rem;color:var(--text-dim);">${months[m]}</div>
+            <div style="width:100%;height:${h}%;background:var(--accent);border-radius:3px;min-height:4px;"></div>
+            <div style="font-size:0.5rem;color:var(--text-muted);transform:rotate(-45deg);white-space:nowrap;">${m.substring(5)}</div>
+          </div>`;
+        }).join('')}
+      </div></div>`;
+  }
+
+  // Depth trend
+  const divesByDate = [...dives].filter(d=>d.date&&d.depth).sort((a,b)=>a.date.localeCompare(b.date));
+  if (divesByDate.length > 2) {
+    const maxD = Math.max(...divesByDate.map(d=>d.depth));
+    chartsHTML += `<div style="margin-top:16px;"><div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;">${lang==='pl'?'Trend głębokości':'Depth trend'}</div>
+      <div style="display:flex;align-items:flex-end;gap:2px;height:60px;">
+        ${divesByDate.slice(-30).map(d => {
+          const h = Math.max(4, (d.depth/maxD)*100);
+          return `<div style="flex:1;background:linear-gradient(to top,#8b5cf6,#2dd4bf);border-radius:2px;height:${h}%;" title="${d.date}: ${d.depth}m"></div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.5rem;color:var(--text-muted);margin-top:2px;">
+        <span>${divesByDate[Math.max(0,divesByDate.length-30)].date}</span><span>${divesByDate[divesByDate.length-1].date}</span>
+      </div></div>`;
+  }
+
+  // Top sites
+  const siteCounts = {};
+  dives.forEach(d => { if(d.site) siteCounts[d.site] = (siteCounts[d.site]||0)+1; });
+  const topSites = Object.entries(siteCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  if (topSites.length) {
+    const topMax = topSites[0][1];
+    chartsHTML += `<div style="margin-top:16px;"><div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;">${lang==='pl'?'Ulubione miejsca':'Top sites'}</div>
+      ${topSites.map(([site,count]) => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:0.72rem;">
+          <div style="flex:1;background:var(--border);border-radius:3px;height:8px;overflow:hidden;"><div style="height:100%;width:${count/topMax*100}%;background:var(--accent);border-radius:3px;"></div></div>
+          <span style="white-space:nowrap;color:var(--text-dim);min-width:20px;text-align:right;">${count}</span>
+          <span style="white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;">${site}</span>
+        </div>`).join('')}
+      </div>`;
+  }
+
+  // Dive types pie-like
+  const typeCounts = {};
+  dives.forEach(d => { typeCounts[d.type||'Other'] = (typeCounts[d.type||'Other']||0)+1; });
+  const typeColors = {Recreational:'#2dd4bf',Technical:'#8b5cf6',Cave:'#f59e0b',Night:'#6366f1',Wreck:'#ef4444',Drift:'#06b6d4',Deep:'#ec4899',Training:'#22c55e'};
+  chartsHTML += `<div style="margin-top:16px;"><div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;">${lang==='pl'?'Typy nurkowań':'Dive types'}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      ${Object.entries(typeCounts).map(([type,count]) => `
+        <div style="padding:4px 10px;border-radius:12px;font-size:0.68rem;font-weight:600;background:${typeColors[type]||'#64748b'}22;color:${typeColors[type]||'#64748b'};border:1px solid ${typeColors[type]||'#64748b'}44;">${type} (${count})</div>
+      `).join('')}
+    </div></div>`;
+
+  document.getElementById('stats-charts').innerHTML = chartsHTML;
+}
 
 // === DIVE MAP ===
 let worldMap = null;

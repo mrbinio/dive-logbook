@@ -131,6 +131,7 @@
   <div class="tabs-bar">
     <button class="tab active" id="tab-log" onclick="switchTab('log')">📋 Log Dive</button>
     <button class="tab" id="tab-history" onclick="switchTab('history')">🌊 My Dives</button>
+    <button class="tab" id="tab-stats" onclick="switchTab('stats')">📊 Stats</button>
     <button class="tab" id="tab-map" onclick="switchTab('map')">🗺 Map</button>
     <button class="tab" id="tab-checklist" onclick="switchTab('checklist')">✅ Checklist</button>
     <button class="tab" id="tab-shop" onclick="switchTab('shop')">🛒 Shop</button>
@@ -323,6 +324,14 @@
       </select>
     </div>
     <div class="dives-list" id="dives-grid"></div>
+  </div>
+
+  <div class="panel" id="panel-stats">
+    <div class="card">
+      <div class="card-title">📊 <span class="accent" id="stats-title">Dive Statistics</span></div>
+      <div id="stats-summary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;"></div>
+      <div id="stats-charts"></div>
+    </div>
   </div>
 
   <div class="panel" id="panel-map">
