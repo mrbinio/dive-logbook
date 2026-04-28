@@ -262,6 +262,8 @@ function showApp(user) {
     if(document.getElementById('panel-history').classList.contains('active')) renderDives();
   });
   checkReminder();
+  // Load or join shared trip checklist
+  joinPendingTrip().then(joined => { if (!joined) loadOrCreateTrip(); });
 }
 
 function hideApp() {
@@ -270,6 +272,8 @@ function hideApp() {
   document.getElementById('app-container').style.display = 'none';
   document.getElementById('user-menu').style.display = 'none';
   if (unsubDives) { unsubDives(); unsubDives = null; }
+  if (unsubTrip) { unsubTrip(); unsubTrip = null; }
+  currentTripId = null;
   dives = [];
 }
 
@@ -305,7 +309,7 @@ function switchTab(tab) {
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+tab).classList.add('active');
   if(tab==='history') renderDives();
-  if(tab==='checklist') renderChecklist();
+  if(tab==='checklist' && !currentTripId) loadOrCreateTrip();
 }
 
 let formGps = null;
@@ -628,155 +632,310 @@ function showToast(msg){
 }
 
 
-// === CHECKLIST ===
-const DEFAULT_CHECKLIST = [
+// === CHECKLIST (Firestore shared trips) ===
+const DEFAULT_PERSONAL = [
   'Komputer nurkowy','Maska','Płetwy','Automaty','Suchar / Pianka','Buty nurkowe',
   'Kaptur','Rękawice','Latarka','Bojka + kołowrotek','Wing / BCD','Balast',
-  'Butle','Klucze (imbus, 14, 15, 17)','Ocieplacz / Undersuit','Skarpety',
-  'Ręcznik','Woda do picia','Czapka','Talk do suchara','Spray do nosa',
-  'Zapasowe baterie','Ładowarka do latarki','Kamera','Nóż / Easy cut',
-  'Marker / Zippo','Manszety zapasowe','Linery do rękawic'
+  'Ocieplacz / Undersuit','Skarpety','Nóż / Easy cut','Manszety zapasowe','Linery do rękawic'
+];
+const DEFAULT_SHARED = [
+  'Butle','Klucze (imbus, 14, 15, 17)','Ręcznik','Woda do picia','Czapka',
+  'Talk do suchara','Spray do nosa','Zapasowe baterie','Ładowarka do latarki',
+  'Kamera','Marker / Zippo'
 ];
 
-function getChecklist() {
-  const uid = auth.currentUser?.uid;
-  if (!uid) return { items: [], checked: [], wishlist: [], nextDate: '' };
-  const stored = localStorage.getItem('checklist_' + uid);
-  if (stored) return JSON.parse(stored);
-  return { items: [...DEFAULT_CHECKLIST], checked: [], wishlist: [], nextDate: '' };
+let currentTripId = null;
+let unsubTrip = null;
+
+function tripsCol() { return db.collection('trips'); }
+
+function myEmail() { return auth.currentUser?.email || ''; }
+function myUid() { return auth.currentUser?.uid || ''; }
+function myName() { return auth.currentUser?.displayName || myEmail().split('@')[0] || ''; }
+
+async function loadOrCreateTrip() {
+  const uid = myUid(); if (!uid) return;
+  // Find active trip where I'm a member
+  const snap = await tripsCol().where('members','array-contains',uid).where('active','==',true).limit(1).get();
+  if (!snap.empty) {
+    currentTripId = snap.docs[0].id;
+  } else {
+    // Create new trip
+    const doc = await tripsCol().add({
+      active: true,
+      date: '',
+      site: '',
+      createdBy: uid,
+      members: [uid],
+      memberEmails: [myEmail()],
+      memberNames: [myName()],
+      shared: DEFAULT_SHARED.map(name => ({name, checked: false})),
+      personal: { [uid]: DEFAULT_PERSONAL.map(name => ({name, checked: false})) },
+      wishlist: { [uid]: [] }
+    });
+    currentTripId = doc.id;
+  }
+  subscribeTrip();
 }
 
-function saveChecklist() {
-  const uid = auth.currentUser?.uid;
-  if (!uid) return;
-  const data = getChecklist();
-  data.nextDate = document.getElementById('cl-next-date').value || '';
-  localStorage.setItem('checklist_' + uid, JSON.stringify(data));
-  scheduleNotification(data.nextDate);
+function subscribeTrip() {
+  if (unsubTrip) unsubTrip();
+  if (!currentTripId) return;
+  unsubTrip = tripsCol().doc(currentTripId).onSnapshot(snap => {
+    if (snap.exists) renderChecklist(snap.data());
+  });
 }
 
-function renderChecklist() {
-  const data = getChecklist();
-  const container = document.getElementById('checklist-items');
-  document.getElementById('cl-next-date').value = data.nextDate || '';
-  container.innerHTML = data.items.map((item, i) => {
-    const checked = data.checked.includes(i);
-    return `<div class="cl-item" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:0.78rem;">
-      <input type="checkbox" ${checked?'checked':''} onchange="toggleCheckItem(${i})" style="accent-color:var(--accent);width:18px;height:18px;cursor:pointer;">
-      <span style="${checked?'text-decoration:line-through;opacity:0.5;':''}flex:1;">${item}</span>
-      <button onclick="removeCheckItem(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.9rem;padding:2px 6px;">✕</button>
-    </div>`;
-  }).join('');
+function renderChecklist(trip) {
+  if (!trip) return;
+  const uid = myUid();
+  document.getElementById('cl-next-date').value = trip.date || '';
+  document.getElementById('cl-site').value = trip.site || '';
+
+  // Buddies display
+  const buddyDiv = document.getElementById('cl-buddies');
+  const others = (trip.memberNames||trip.memberEmails||[]).filter((_,i) => trip.members[i] !== uid);
+  buddyDiv.innerHTML = others.length
+    ? `<div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:4px;">🤝 ${lang==='pl'?'Buddy':'Buddies'}: <strong style="color:var(--accent);">${others.join(', ')}</strong></div>`
+    : '';
+
+  // Shared items
+  const sharedDiv = document.getElementById('cl-shared-items');
+  const shared = trip.shared || [];
+  sharedDiv.innerHTML = shared.map((item, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:0.78rem;">
+      <input type="checkbox" ${item.checked?'checked':''} onchange="toggleShared(${i})" style="accent-color:var(--accent);width:18px;height:18px;cursor:pointer;">
+      <span style="${item.checked?'text-decoration:line-through;opacity:0.5;':''}flex:1;">${item.name}</span>
+      <button onclick="removeShared(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.85rem;">✕</button>
+    </div>`).join('');
+
+  // Personal items
+  const persDiv = document.getElementById('cl-personal-items');
+  const pers = (trip.personal && trip.personal[uid]) || [];
+  persDiv.innerHTML = pers.map((item, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:0.78rem;">
+      <input type="checkbox" ${item.checked?'checked':''} onchange="togglePersonal(${i})" style="accent-color:#8b5cf6;width:18px;height:18px;cursor:pointer;">
+      <span style="${item.checked?'text-decoration:line-through;opacity:0.5;':''}flex:1;">${item.name}</span>
+      <button onclick="removePersonal(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.85rem;">✕</button>
+    </div>`).join('');
+
+  // Buddy personal sections (read-only)
+  const buddySections = document.getElementById('cl-buddy-sections');
+  let bhtml = '';
+  for (const mid of trip.members) {
+    if (mid === uid) continue;
+    const idx = trip.members.indexOf(mid);
+    const bname = (trip.memberNames||[])[idx] || (trip.memberEmails||[])[idx] || mid;
+    const bitems = (trip.personal && trip.personal[mid]) || [];
+    if (!bitems.length) continue;
+    const bChecked = bitems.filter(x=>x.checked).length;
+    bhtml += `<div style="margin-top:10px;"><div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);margin-bottom:4px;">👤 ${bname} (${bChecked}/${bitems.length})</div>`;
+    bhtml += bitems.map(item => `
+      <div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:0.72rem;opacity:0.6;">
+        <span style="${item.checked?'text-decoration:line-through;':''}flex:1;">${item.checked?'✅':'⬜'} ${item.name}</span>
+      </div>`).join('');
+    bhtml += '</div>';
+  }
+  buddySections.innerHTML = bhtml;
+
   // Progress
-  const pct = data.items.length ? Math.round(data.checked.length / data.items.length * 100) : 0;
-  container.insertAdjacentHTML('beforebegin',
-    document.getElementById('cl-progress') ? '' :
-    `<div id="cl-progress" style="margin-bottom:8px;"></div>`);
-  const prog = document.getElementById('cl-progress');
-  if (prog) prog.innerHTML = `<div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden;"><div style="background:var(--accent);height:100%;width:${pct}%;transition:width 0.3s;"></div></div><div style="font-size:0.65rem;color:var(--text-dim);margin-top:3px;">${data.checked.length}/${data.items.length} — ${pct}%</div>`;
+  const allItems = shared.length + pers.length;
+  const allChecked = shared.filter(x=>x.checked).length + pers.filter(x=>x.checked).length;
+  const pct = allItems ? Math.round(allChecked/allItems*100) : 0;
+  document.getElementById('cl-progress').innerHTML = `<div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden;"><div style="background:var(--accent);height:100%;width:${pct}%;transition:width 0.3s;"></div></div><div style="font-size:0.65rem;color:var(--text-dim);margin-top:3px;">${allChecked}/${allItems} — ${pct}%</div>`;
+
   // Wishlist
-  const wContainer = document.getElementById('wishlist-items');
-  wContainer.innerHTML = data.wishlist.map((item, i) => {
-    return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:0.75rem;color:var(--accent);">
+  const wish = (trip.wishlist && trip.wishlist[uid]) || [];
+  document.getElementById('wishlist-items').innerHTML = wish.map((item, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:0.75rem;color:var(--accent);">
       <span style="flex:1;">• ${item}</span>
-      <button onclick="promoteWish(${i})" title="Add to checklist" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.8rem;">↑</button>
+      <button onclick="promoteWish(${i})" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.8rem;">↑</button>
       <button onclick="removeWish(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.8rem;">✕</button>
-    </div>`;
-  }).join('');
+    </div>`).join('');
 }
 
-function toggleCheckItem(i) {
-  const uid = auth.currentUser?.uid; if (!uid) return;
-  const data = getChecklist();
-  const idx = data.checked.indexOf(i);
-  if (idx >= 0) data.checked.splice(idx, 1); else data.checked.push(i);
-  localStorage.setItem('checklist_' + uid, JSON.stringify(data));
-  renderChecklist();
+function tripRef() { return tripsCol().doc(currentTripId); }
+
+async function saveTripMeta() {
+  if (!currentTripId) return;
+  const date = document.getElementById('cl-next-date').value || '';
+  const site = document.getElementById('cl-site').value || '';
+  await tripRef().update({ date, site });
+  scheduleNotification(date);
 }
 
-function addChecklistItem() {
-  const input = document.getElementById('cl-new-item');
+async function toggleShared(i) {
+  const snap = await tripRef().get(); const d = snap.data();
+  d.shared[i].checked = !d.shared[i].checked;
+  await tripRef().update({ shared: d.shared });
+}
+
+async function togglePersonal(i) {
+  const uid = myUid();
+  const snap = await tripRef().get(); const d = snap.data();
+  d.personal[uid][i].checked = !d.personal[uid][i].checked;
+  await tripRef().update({ ['personal.'+uid]: d.personal[uid] });
+}
+
+async function addSharedItem() {
+  const input = document.getElementById('cl-new-shared');
   const val = input.value.trim(); if (!val) return;
-  const uid = auth.currentUser?.uid; if (!uid) return;
-  const data = getChecklist();
-  data.items.push(val);
-  localStorage.setItem('checklist_' + uid, JSON.stringify(data));
+  const snap = await tripRef().get(); const d = snap.data();
+  d.shared.push({name:val, checked:false});
+  await tripRef().update({ shared: d.shared });
   input.value = '';
-  renderChecklist();
 }
 
-function removeCheckItem(i) {
-  const uid = auth.currentUser?.uid; if (!uid) return;
-  const data = getChecklist();
-  data.items.splice(i, 1);
-  data.checked = data.checked.filter(c => c !== i).map(c => c > i ? c-1 : c);
-  localStorage.setItem('checklist_' + uid, JSON.stringify(data));
-  renderChecklist();
+async function addPersonalItem() {
+  const input = document.getElementById('cl-new-personal');
+  const val = input.value.trim(); if (!val) return;
+  const uid = myUid();
+  const snap = await tripRef().get(); const d = snap.data();
+  if (!d.personal[uid]) d.personal[uid] = [];
+  d.personal[uid].push({name:val, checked:false});
+  await tripRef().update({ ['personal.'+uid]: d.personal[uid] });
+  input.value = '';
 }
 
-function addWishlistItem() {
+async function removeShared(i) {
+  const snap = await tripRef().get(); const d = snap.data();
+  d.shared.splice(i, 1);
+  await tripRef().update({ shared: d.shared });
+}
+
+async function removePersonal(i) {
+  const uid = myUid();
+  const snap = await tripRef().get(); const d = snap.data();
+  d.personal[uid].splice(i, 1);
+  await tripRef().update({ ['personal.'+uid]: d.personal[uid] });
+}
+
+async function inviteBuddy() {
+  const input = document.getElementById('cl-buddy-email');
+  const email = input.value.trim().toLowerCase(); if (!email) return;
+  // Find user by email
+  // We store the email and resolve uid when they open the app
+  const snap = await tripRef().get(); const d = snap.data();
+  if (d.memberEmails && d.memberEmails.includes(email)) {
+    showToast(lang==='pl'?'Buddy już dodany':'Buddy already added'); return;
+  }
+  const emails = d.memberEmails || [];
+  const names = d.memberNames || [];
+  emails.push(email);
+  names.push(email.split('@')[0]);
+  await tripRef().update({ memberEmails: emails, memberNames: names, pendingInvites: firebase.firestore.FieldValue.arrayUnion(email) });
+  input.value = '';
+  showToast(lang==='pl'?'📨 Zaproszenie wysłane!':'📨 Invite sent!');
+}
+
+async function joinPendingTrip() {
+  const uid = myUid(); const email = myEmail();
+  // Check if there's a trip with my email in pendingInvites
+  const snap = await tripsCol().where('pendingInvites','array-contains',email).where('active','==',true).limit(1).get();
+  if (snap.empty) return false;
+  const doc = snap.docs[0];
+  const d = doc.data();
+  // Add me as member
+  const members = d.members || [];
+  if (!members.includes(uid)) members.push(uid);
+  // Update my name in memberNames
+  const idx = (d.memberEmails||[]).indexOf(email);
+  const names = d.memberNames || [];
+  if (idx >= 0) names[idx] = myName();
+  // Init my personal list
+  const personal = d.personal || {};
+  if (!personal[uid]) personal[uid] = DEFAULT_PERSONAL.map(name => ({name, checked:false}));
+  const wishlist = d.wishlist || {};
+  if (!wishlist[uid]) wishlist[uid] = [];
+  await tripsCol().doc(doc.id).update({
+    members, memberNames: names, personal, wishlist,
+    pendingInvites: firebase.firestore.FieldValue.arrayRemove(email)
+  });
+  currentTripId = doc.id;
+  subscribeTrip();
+  return true;
+}
+
+async function addWishlistItem() {
   const input = document.getElementById('cl-new-wish');
   const val = input.value.trim(); if (!val) return;
-  const uid = auth.currentUser?.uid; if (!uid) return;
-  const data = getChecklist();
-  data.wishlist.push(val);
-  localStorage.setItem('checklist_' + uid, JSON.stringify(data));
+  const uid = myUid();
+  const snap = await tripRef().get(); const d = snap.data();
+  const wish = (d.wishlist && d.wishlist[uid]) || [];
+  wish.push(val);
+  await tripRef().update({ ['wishlist.'+uid]: wish });
   input.value = '';
-  renderChecklist();
 }
 
-function removeWish(i) {
-  const uid = auth.currentUser?.uid; if (!uid) return;
-  const data = getChecklist();
-  data.wishlist.splice(i, 1);
-  localStorage.setItem('checklist_' + uid, JSON.stringify(data));
-  renderChecklist();
+async function removeWish(i) {
+  const uid = myUid();
+  const snap = await tripRef().get(); const d = snap.data();
+  const wish = d.wishlist[uid] || [];
+  wish.splice(i, 1);
+  await tripRef().update({ ['wishlist.'+uid]: wish });
 }
 
-function promoteWish(i) {
-  const uid = auth.currentUser?.uid; if (!uid) return;
-  const data = getChecklist();
-  const item = data.wishlist.splice(i, 1)[0];
-  data.items.push(item);
-  localStorage.setItem('checklist_' + uid, JSON.stringify(data));
-  renderChecklist();
+async function promoteWish(i) {
+  const uid = myUid();
+  const snap = await tripRef().get(); const d = snap.data();
+  const wish = d.wishlist[uid] || [];
+  const item = wish.splice(i, 1)[0];
+  const pers = d.personal[uid] || [];
+  pers.push({name:item, checked:false});
+  await tripRef().update({ ['wishlist.'+uid]: wish, ['personal.'+uid]: pers });
 }
 
-function resetChecklist() {
-  const uid = auth.currentUser?.uid; if (!uid) return;
-  const data = getChecklist();
-  // Move wishlist items to main checklist
-  data.wishlist.forEach(w => { if (!data.items.includes(w)) data.items.push(w); });
-  data.checked = [];
-  data.wishlist = [];
-  data.nextDate = '';
-  localStorage.setItem('checklist_' + uid, JSON.stringify(data));
-  renderChecklist();
+async function resetChecklist() {
+  if (!confirm(lang==='pl'?'Zresetować checklistę? Wishlist trafi do listy osobistej.':'Reset checklist? Wishlist items will move to personal list.')) return;
+  const uid = myUid();
+  const snap = await tripRef().get(); const d = snap.data();
+  // Uncheck shared
+  d.shared.forEach(x => x.checked = false);
+  // Move wishlist to personal, uncheck personal
+  const pers = (d.personal[uid]||[]).map(x => ({...x, checked:false}));
+  const wish = (d.wishlist&&d.wishlist[uid]) || [];
+  wish.forEach(w => { if (!pers.find(p=>p.name===w)) pers.push({name:w, checked:false}); });
+  await tripRef().update({
+    shared: d.shared,
+    ['personal.'+uid]: pers,
+    ['wishlist.'+uid]: [],
+    date: '', site: ''
+  });
   showToast(lang==='pl'?'✅ Checklista zresetowana!':'✅ Checklist reset!');
+}
+
+async function newTrip() {
+  if (!confirm(lang==='pl'?'Zakończyć ten trip i stworzyć nowy?':'End this trip and create a new one?')) return;
+  // Deactivate current
+  if (currentTripId) await tripRef().update({ active: false });
+  const uid = myUid();
+  const doc = await tripsCol().add({
+    active: true, date: '', site: '',
+    createdBy: uid, members: [uid],
+    memberEmails: [myEmail()], memberNames: [myName()],
+    shared: DEFAULT_SHARED.map(name => ({name, checked:false})),
+    personal: { [uid]: DEFAULT_PERSONAL.map(name => ({name, checked:false})) },
+    wishlist: { [uid]: [] }
+  });
+  currentTripId = doc.id;
+  subscribeTrip();
+  showToast(lang==='pl'?'🆕 Nowy trip!':'🆕 New trip!');
 }
 
 function scheduleNotification(dateStr) {
   if (!dateStr || !('Notification' in window)) return;
   if (Notification.permission === 'default') Notification.requestPermission();
-  // Store reminder date — check on app load
-  const uid = auth.currentUser?.uid; if (!uid) return;
+  const uid = myUid(); if (!uid) return;
   localStorage.setItem('cl_remind_' + uid, dateStr);
 }
 
 function checkReminder() {
-  const uid = auth.currentUser?.uid; if (!uid) return;
+  const uid = myUid(); if (!uid) return;
   const dateStr = localStorage.getItem('cl_remind_' + uid);
   if (!dateStr) return;
-  const diveDate = new Date(dateStr);
-  const now = new Date();
-  const diff = (diveDate - now) / (1000*60*60);
-  // Remind if dive is within 24h
+  const diff = (new Date(dateStr) - new Date()) / (1000*60*60);
   if (diff > 0 && diff <= 24 && Notification.permission === 'granted') {
-    const data = getChecklist();
-    const unchecked = data.items.length - data.checked.length;
-    if (unchecked > 0) {
-      new Notification('🤿 Dive tomorrow!', { body: `${unchecked} items unchecked on your checklist`, icon: 'icon.svg' });
-    }
+    new Notification('🤿 Dive tomorrow!', { body: 'Check your dive checklist!', icon: 'icon.svg' });
     localStorage.removeItem('cl_remind_' + uid);
   }
 }

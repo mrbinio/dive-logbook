@@ -326,15 +326,39 @@
   <div class="panel" id="panel-checklist">
     <div class="card">
       <div class="card-title">✅ <span class="accent" id="checklist-title">Dive Checklist</span></div>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
-        <label style="font-size:0.72rem;color:var(--text-dim);" id="cl-next-label">Next dive:</label>
-        <input type="date" id="cl-next-date" class="edit-input" style="flex:1;max-width:180px;" onchange="saveChecklist()">
+      <div id="cl-buddies"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+        <label style="font-size:0.7rem;color:var(--text-dim);display:flex;flex-direction:column;gap:2px;">
+          <span id="cl-next-label">Next dive</span>
+          <input type="date" id="cl-next-date" class="edit-input" onchange="saveTripMeta()">
+        </label>
+        <label style="font-size:0.7rem;color:var(--text-dim);display:flex;flex-direction:column;gap:2px;">
+          <span>Site</span>
+          <input type="text" id="cl-site" class="edit-input" placeholder="Dive site..." onchange="saveTripMeta()">
+        </label>
       </div>
-      <div id="checklist-items"></div>
-      <div style="display:flex;gap:6px;margin-top:12px;">
-        <input type="text" id="cl-new-item" class="edit-input" style="flex:1;" placeholder="Add item..." onkeydown="if(event.key==='Enter')addChecklistItem()">
-        <button onclick="addChecklistItem()" style="background:var(--accent);border:none;border-radius:8px;padding:6px 14px;color:#000;font-weight:700;cursor:pointer;font-size:0.8rem;">+</button>
+      <div style="display:flex;gap:6px;margin-bottom:12px;">
+        <input type="email" id="cl-buddy-email" class="edit-input" style="flex:1;" placeholder="Buddy email (to share list)...">
+        <button onclick="inviteBuddy()" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;padding:6px 12px;color:var(--accent);font-weight:700;cursor:pointer;font-size:0.75rem;white-space:nowrap;">🤝 Invite</button>
       </div>
+      <div id="cl-progress" style="margin-bottom:8px;"></div>
+
+      <div style="font-size:0.75rem;font-weight:700;color:var(--text-dim);margin-bottom:6px;">🤝 Shared (trip gear)</div>
+      <div id="cl-shared-items"></div>
+      <div style="display:flex;gap:6px;margin-top:6px;margin-bottom:16px;">
+        <input type="text" id="cl-new-shared" class="edit-input" style="flex:1;" placeholder="Add shared item..." onkeydown="if(event.key==='Enter')addSharedItem()">
+        <button onclick="addSharedItem()" style="background:var(--accent);border:none;border-radius:8px;padding:6px 14px;color:#000;font-weight:700;cursor:pointer;font-size:0.8rem;">+</button>
+      </div>
+
+      <div style="font-size:0.75rem;font-weight:700;color:#8b5cf6;margin-bottom:6px;">👤 My gear (personal)</div>
+      <div id="cl-personal-items"></div>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <input type="text" id="cl-new-personal" class="edit-input" style="flex:1;" placeholder="Add personal item..." onkeydown="if(event.key==='Enter')addPersonalItem()">
+        <button onclick="addPersonalItem()" style="background:#8b5cf6;border:none;border-radius:8px;padding:6px 14px;color:#fff;font-weight:700;cursor:pointer;font-size:0.8rem;">+</button>
+      </div>
+
+      <div id="cl-buddy-sections"></div>
+
       <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">
         <div style="font-size:0.75rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;" id="cl-wishlist-title">📝 Next time / Wishlist</div>
         <div id="wishlist-items"></div>
@@ -343,7 +367,10 @@
           <button onclick="addWishlistItem()" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;padding:6px 14px;color:var(--accent);font-weight:700;cursor:pointer;font-size:0.8rem;">+</button>
         </div>
       </div>
-      <button onclick="resetChecklist()" style="margin-top:16px;width:100%;background:transparent;border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-dim);font-size:0.72rem;cursor:pointer;font-family:inherit;" id="cl-reset-btn">🔄 Reset checklist (after dive)</button>
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button onclick="resetChecklist()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-dim);font-size:0.72rem;cursor:pointer;font-family:inherit;" id="cl-reset-btn">🔄 Reset</button>
+        <button onclick="newTrip()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-dim);font-size:0.72rem;cursor:pointer;font-family:inherit;">🆕 New trip</button>
+      </div>
     </div>
   </div>
 
