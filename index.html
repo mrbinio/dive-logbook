@@ -46,6 +46,9 @@
     <button class="login-toggle" id="btn-toggle-mode" onclick="toggleAuthMode()">
       <span id="toggle-mode-text">No account? Register</span>
     </button>
+    <button class="login-toggle" id="btn-forgot" onclick="resetPassword()" style="margin-top:4px;">
+      <span id="forgot-text">Forgot password?</span>
+    </button>
     <div id="login-error" style="color:var(--danger);font-size:0.72rem;margin-top:12px;display:none;"></div>
   </div>
 </div>
@@ -188,6 +191,82 @@
           <label id="l-cert">Certification / Agency</label>
           <input type="text" id="f-cert" placeholder="e.g. PADI OW, SSI">
         </div>
+        <div class="form-group">
+          <label id="l-weights">Ballast (kg)</label>
+          <input type="number" id="f-weights" placeholder="0" min="0" max="30" step="0.5">
+        </div>
+        <div class="form-group">
+          <label id="l-suit">Suit</label>
+          <select id="f-suit">
+            <option value="">—</option>
+            <option value="None">None</option>
+            <option value="Shorty">Shorty</option>
+            <option value="Wetsuit">Wetsuit</option>
+            <option value="Semi-dry">Semi-dry</option>
+            <option value="Drysuit">Drysuit</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label id="l-tank-size">Tank (L)</label>
+          <input type="number" id="f-tank-size" placeholder="12" min="1" max="30" step="0.5">
+        </div>
+        <div class="form-group">
+          <label id="l-tank-mat">Material</label>
+          <select id="f-tank-mat">
+            <option value="">—</option>
+            <option value="Steel">Steel</option>
+            <option value="Aluminium">Aluminium</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label id="l-tank-start">Start (bar)</label>
+          <input type="number" id="f-tank-start" placeholder="200" min="0" max="300">
+        </div>
+        <div class="form-group">
+          <label id="l-tank-end">End (bar)</label>
+          <input type="number" id="f-tank-end" placeholder="50" min="0" max="300">
+        </div>
+        <div class="form-group">
+          <label id="l-current">Current</label>
+          <select id="f-current">
+            <option value="">—</option>
+            <option value="None">None</option>
+            <option value="Light">Light</option>
+            <option value="Medium">Medium</option>
+            <option value="Strong">Strong</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label id="l-waves">Waves</label>
+          <select id="f-waves">
+            <option value="">—</option>
+            <option value="None">None</option>
+            <option value="Light">Light</option>
+            <option value="Medium">Medium</option>
+            <option value="Heavy">Heavy</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label id="l-entry">Entry</label>
+          <select id="f-entry">
+            <option value="">—</option>
+            <option value="Shore">Shore</option>
+            <option value="Boat">Boat</option>
+            <option value="Platform">Platform</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label id="l-feeling">Feeling</label>
+          <select id="f-feeling">
+            <option value="">—</option>
+            <option value="1">1 😟</option>
+            <option value="2">2 😐</option>
+            <option value="3">3 🙂</option>
+            <option value="4">4 😊</option>
+            <option value="5">5 🤩</option>
+          </select>
+        </div>
         <div class="form-group full">
           <label id="l-gps">GPS Location</label>
           <div style="display:flex;gap:6px;">
@@ -285,6 +364,7 @@
     <div class="modal-stats" id="m-stats"></div>
     <div id="m-notes-wrap"></div>
     <button class="btn-delete" id="m-delete">🗑 Delete</button>
+    <button class="btn-edit" id="m-edit">✏️ Edit</button>
     <div id="m-attach-wrap"></div>
   </div>
 </div>

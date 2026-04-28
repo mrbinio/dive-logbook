@@ -62,6 +62,7 @@ function parseSuuntoJSON(json) {
 
   const device = dl.Device?.Name || 'Suunto';
   const sw = dl.Device?.Info?.SW || '';
+  const feeling = h.Feeling || null;
 
   return {
     site: '',
@@ -75,8 +76,15 @@ function parseSuuntoJSON(json) {
     visibility: '',
     buddy: '',
     cert: '',
+    weights: null,
+    suit: null,
+    tank: { size: null, material: null, start: null, end: null },
+    current: null,
+    waves: null,
+    entry: null,
+    feeling: feeling,
     rating: 0,
-    notes: '',
+    notes: h.Notes || '',
     source: 'suunto',
     device: device + (sw ? ' v' + sw : ''),
     safetyStop: safetyStop,

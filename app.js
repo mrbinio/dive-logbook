@@ -26,7 +26,13 @@ const T = {
     importSuccess:'✅ Dive imported!',
     avgDepth:'Avg Depth', device:'Device', gpsMap:'GPS Map',
     gpsLabel:'GPS Location', gpsBtn:'📍', gpsGetting:'Getting location...', googleBtn:'Sign in with Google',
-    emailSignIn:'Sign in', emailRegister:'Create account', toggleToRegister:'No account? Register', toggleToLogin:'Have an account? Sign in', orText:'or'  },
+    emailSignIn:'Sign in', emailRegister:'Create account', toggleToRegister:'No account? Register', toggleToLogin:'Have an account? Sign in', orText:'or', forgot:'Forgot password?', resetSent:'📧 Reset link sent! Check your email.', resetError:'Enter your email above first.',
+    weights:'Ballast (kg)', suit:'Suit', suitNone:'None', suitShorty:'Shorty', suitWet:'Wetsuit', suitSemi:'Semi-dry', suitDry:'Drysuit',
+    tank:'Tank', tankSize:'Size (L)', tankStart:'Start (bar)', tankEnd:'End (bar)', tankMat:'Material', tankSteel:'Steel', tankAlu:'Aluminium',
+    current:'Current', currentNone:'None', currentLight:'Light', currentMedium:'Medium', currentStrong:'Strong',
+    waves:'Waves', wavesNone:'None', wavesLight:'Light', wavesMedium:'Medium', wavesHeavy:'Heavy',
+    entry:'Entry', entryShore:'Shore', entryBoat:'Boat', entryPlatform:'Platform', entryOther:'Other',
+    feeling:'Feeling'  },
   pl: {
     logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep',
     newEntry:'Nowy', diveEntry:'Wpis nurkowy',
@@ -54,7 +60,13 @@ const T = {
     importSuccess:'✅ Nurkowanie zaimportowane!',
     avgDepth:'Śr. głęb.', device:'Urządzenie', gpsMap:'Mapa GPS',
     gpsLabel:'Lokalizacja GPS', gpsBtn:'📍', gpsGetting:'Pobieranie lokalizacji...', googleBtn:'Zaloguj się przez Google',
-    emailSignIn:'Zaloguj się', emailRegister:'Utwórz konto', toggleToRegister:'Nie masz konta? Zarejestruj się', toggleToLogin:'Masz konto? Zaloguj się', orText:'lub'
+    emailSignIn:'Zaloguj się', emailRegister:'Utwórz konto', toggleToRegister:'Nie masz konta? Zarejestruj się', toggleToLogin:'Masz konto? Zaloguj się', orText:'lub', forgot:'Zapomniałem hasła', resetSent:'📧 Link wysłany! Sprawdź email.', resetError:'Wpisz najpierw email powyżej.',
+    weights:'Balast (kg)', suit:'Pianka', suitNone:'Brak', suitShorty:'Shorty', suitWet:'Mokra', suitSemi:'Półsucha', suitDry:'Sucha',
+    tank:'Butla', tankSize:'Rozmiar (L)', tankStart:'Start (bar)', tankEnd:'Koniec (bar)', tankMat:'Materiał', tankSteel:'Stal', tankAlu:'Aluminium',
+    current:'Prąd', currentNone:'Brak', currentLight:'Słaby', currentMedium:'Średni', currentStrong:'Silny',
+    waves:'Fale', wavesNone:'Brak', wavesLight:'Lekkie', wavesMedium:'Średnie', wavesHeavy:'Duże',
+    entry:'Wejście', entryShore:'Z brzegu', entryBoat:'Z łodzi', entryPlatform:'Z platformy', entryOther:'Inne',
+    feeling:'Samopoczucie'
   }
 };
 
@@ -83,7 +95,10 @@ function applyLang() {
     'l-site':t('diveSite'),'l-loc':t('location'),'l-date':t('date'),
     'l-type':t('diveType'),'l-depth':t('maxDepth'),'l-dur':t('bottomTime'),
     'l-temp':t('waterTemp'),'l-vis':t('visibility'),
-    'l-buddy':t('buddy'),'l-cert':t('cert'),'l-rating':t('rating'),'l-notes':t('notes')
+    'l-buddy':t('buddy'),'l-cert':t('cert'),'l-rating':t('rating'),'l-notes':t('notes'),
+    'l-weights':t('weights'),'l-suit':t('suit'),'l-tank-size':t('tankSize'),
+    'l-tank-mat':t('tankMat'),'l-tank-start':t('tankStart'),'l-tank-end':t('tankEnd'),
+    'l-current':t('current'),'l-waves':t('waves'),'l-entry':t('entry'),'l-feeling':t('feeling')
   };
   for(const[id,txt] of Object.entries(labels)) {
     const el = document.getElementById(id);
@@ -120,6 +135,8 @@ function applyLang() {
   if(btnEmail) btnEmail.textContent = isRegisterMode ? t('emailRegister') : t('emailSignIn');
   const toggleText = document.getElementById('toggle-mode-text');
   if(toggleText) toggleText.textContent = isRegisterMode ? t('toggleToLogin') : t('toggleToRegister');
+  const forgotText = document.getElementById('forgot-text');
+  if(forgotText) forgotText.textContent = t('forgot');
   // Re-render dives
   renderDives();
 }
@@ -149,6 +166,17 @@ function signInGoogle() {
     const el = document.getElementById('login-error');
     el.textContent = e.message; el.style.display = 'block';
   });
+}
+
+function resetPassword() {
+  const email = document.getElementById('f-email').value.trim();
+  const errEl = document.getElementById('login-error');
+  if (!email) { errEl.textContent = t('resetError'); errEl.style.display = 'block'; return; }
+  auth.sendPasswordResetEmail(email).then(() => {
+    errEl.style.color = 'var(--accent)';
+    errEl.textContent = t('resetSent'); errEl.style.display = 'block';
+    setTimeout(() => { errEl.style.color = ''; }, 5000);
+  }).catch(e => { errEl.textContent = e.message; errEl.style.display = 'block'; });
 }
 
 let isRegisterMode = false;
@@ -189,9 +217,10 @@ function showApp(user) {
   // Set user-specific collection
   divesCol = db.collection('users').doc(user.uid).collection('dives');
 
-  // One-time migration from old shared 'dives' collection
+  // One-time migration from old shared 'dives' collection — only for original owner
+  const OWNER_EMAIL = 'damianbiniarz@gmail.com';
   const migrated = localStorage.getItem('dives_migrated_' + user.uid);
-  if (!migrated) {
+  if (!migrated && user.email === OWNER_EMAIL) {
     db.collection('dives').get().then(snap => {
       if (snap.empty) return;
       const batch = db.batch();
@@ -297,6 +326,18 @@ async function saveDive() {
     visibility: document.getElementById('f-visibility').value,
     buddy: document.getElementById('f-buddy').value.trim(),
     cert: document.getElementById('f-cert').value.trim(),
+    weights: parseFloat(document.getElementById('f-weights').value)||null,
+    suit: document.getElementById('f-suit').value||null,
+    tank: {
+      size: parseFloat(document.getElementById('f-tank-size').value)||null,
+      material: document.getElementById('f-tank-mat').value||null,
+      start: parseInt(document.getElementById('f-tank-start').value)||null,
+      end: parseInt(document.getElementById('f-tank-end').value)||null
+    },
+    current: document.getElementById('f-current').value||null,
+    waves: document.getElementById('f-waves').value||null,
+    entry: document.getElementById('f-entry').value||null,
+    feeling: parseInt(document.getElementById('f-feeling').value)||null,
     rating: currentRating,
     notes: document.getElementById('f-notes').value.trim(),
     gps: formGps || null,
@@ -310,7 +351,10 @@ async function saveDive() {
 }
 
 function resetForm() {
-  ['f-site','f-location','f-depth','f-duration','f-temp','f-visibility','f-buddy','f-cert','f-notes'].forEach(id=>{
+  ['f-site','f-location','f-depth','f-duration','f-temp','f-visibility','f-buddy','f-cert','f-notes','f-weights','f-tank-size','f-tank-start','f-tank-end'].forEach(id=>{
+    document.getElementById(id).value='';
+  });
+  ['f-suit','f-tank-mat','f-current','f-waves','f-entry','f-feeling'].forEach(id=>{
     document.getElementById(id).value='';
   });
   document.getElementById('f-date').valueAsDate = new Date();
@@ -384,6 +428,20 @@ function openModal(id) {
   ];
   if(d.safetyStop) stats.push({val:'✅',label:'Safety Stop'});
   if(d.minNDL!=null) stats.push({val:d.minNDL+' min',label:'Min NDL'});
+  if(d.weights) stats.push({val:d.weights+' kg',label:t('weights')});
+  if(d.suit) stats.push({val:d.suit,label:t('suit')});
+  if(d.tank&&d.tank.size) stats.push({val:d.tank.size+'L'+(d.tank.material?' '+d.tank.material:''),label:t('tank')});
+  if(d.tank&&d.tank.start) stats.push({val:d.tank.start+'→'+(d.tank.end||'?')+' bar',label:'Pressure'});
+  // SAC rate auto-calculation
+  if(d.tank&&d.tank.start&&d.tank.end&&d.tank.size&&d.duration&&(d.avgDepth||d.depth)){
+    const avgD = d.avgDepth || d.depth * 0.6;
+    const sac = ((d.tank.start - d.tank.end) * d.tank.size) / ((avgD/10)+1) / d.duration;
+    if(sac>0&&sac<50) stats.push({val:sac.toFixed(1)+' L/min',label:'SAC Rate'});
+  }
+  if(d.current) stats.push({val:d.current,label:t('current')});
+  if(d.waves) stats.push({val:d.waves,label:t('waves')});
+  if(d.entry) stats.push({val:d.entry,label:t('entry')});
+  if(d.feeling) stats.push({val:['😟','😐','🙂','😊','🤩'][d.feeling-1]||d.feeling,label:t('feeling')});
   if(d.weather) stats.push({val:d.weather.condition||'—',label:'Weather'});
   if(d.weather?.wind) stats.push({val:d.weather.wind+' km/h',label:'Wind'});
   if(d.weather?.airTempMax) stats.push({val:d.weather.airTempMin+'–'+d.weather.airTempMax+'°C',label:'Air Temp'});
@@ -408,6 +466,12 @@ function openModal(id) {
 
   document.getElementById('m-delete').textContent = t('deleteDive');
   document.getElementById('m-delete').onclick = ()=>deleteDive(id);
+  document.getElementById('m-delete').style.display = '';
+  document.getElementById('m-edit').style.display = '';
+
+  // Edit button
+  document.getElementById('m-edit').textContent = lang==='pl'?'✏️ Edytuj':'✏️ Edit';
+  document.getElementById('m-edit').onclick = ()=>openEditMode(id);
 
   // Attach Suunto button (only if no depth profile yet)
   const attachWrap = document.getElementById('m-attach-wrap');
@@ -441,6 +505,84 @@ function openModal(id) {
       setTimeout(()=>map.invalidateSize(),100);
     }, 100);
   }
+}
+
+function openEditMode(id) {
+  const d = dives.find(x=>x.id===id);
+  if(!d) return;
+  const modal = document.querySelector('.modal');
+  const suitOpts = ['','None','Shorty','Wetsuit','Semi-dry','Drysuit'].map(v=>`<option value="${v}"${d.suit===v?' selected':''}>${v||'—'}</option>`).join('');
+  const currentOpts = ['','None','Light','Medium','Strong'].map(v=>`<option value="${v}"${d.current===v?' selected':''}>${v||'—'}</option>`).join('');
+  const wavesOpts = ['','None','Light','Medium','Heavy'].map(v=>`<option value="${v}"${d.waves===v?' selected':''}>${v||'—'}</option>`).join('');
+  const entryOpts = ['','Shore','Boat','Platform','Other'].map(v=>`<option value="${v}"${d.entry===v?' selected':''}>${v||'—'}</option>`).join('');
+  const feelOpts = ['',1,2,3,4,5].map(v=>`<option value="${v}"${d.feeling==v?' selected':''}>${v?v+' '+['😟','😐','🙂','😊','🤩'][v-1]:'—'}</option>`).join('');
+
+  const editHTML = `
+    <div class="edit-form" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;font-size:0.75rem;">
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('diveSite')}<input id="e-site" value="${d.site||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('location')}<input id="e-location" value="${d.location||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('date')}<input id="e-date" type="date" value="${d.date||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('maxDepth')}<input id="e-depth" type="number" value="${d.depth||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('bottomTime')}<input id="e-duration" type="number" value="${d.duration||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('waterTemp')}<input id="e-temp" type="number" value="${d.temp||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('visibility')}<input id="e-visibility" type="number" value="${d.visibility||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('buddy')}<input id="e-buddy" value="${d.buddy||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('cert')}<input id="e-cert" value="${d.cert||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('weights')}<input id="e-weights" type="number" step="0.5" value="${d.weights||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('suit')}<select id="e-suit" class="edit-input">${suitOpts}</select></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('tankSize')}<input id="e-tank-size" type="number" value="${d.tank?.size||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('tankMat')}<input id="e-tank-mat" value="${d.tank?.material||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('tankStart')}<input id="e-tank-start" type="number" value="${d.tank?.start||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('tankEnd')}<input id="e-tank-end" type="number" value="${d.tank?.end||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('current')}<select id="e-current" class="edit-input">${currentOpts}</select></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('waves')}<select id="e-waves" class="edit-input">${wavesOpts}</select></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('entry')}<select id="e-entry" class="edit-input">${entryOpts}</select></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('feeling')}<select id="e-feeling" class="edit-input">${feelOpts}</select></label>
+      <label style="display:flex;flex-direction:column;gap:2px;grid-column:1/-1;">${t('notes')}<textarea id="e-notes" class="edit-input" rows="3">${d.notes||''}</textarea></label>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-primary" style="flex:1;" onclick="saveEdit('${id}')">💾 ${lang==='pl'?'Zapisz':'Save'}</button>
+      <button class="btn-delete" style="flex:1;" onclick="openModal('${id}')">✕ ${lang==='pl'?'Anuluj':'Cancel'}</button>
+    </div>
+  `;
+
+  document.getElementById('m-stats').innerHTML = '';
+  document.getElementById('m-notes-wrap').innerHTML = editHTML;
+  document.getElementById('m-delete').style.display = 'none';
+  document.getElementById('m-edit').style.display = 'none';
+  document.getElementById('m-attach-wrap').innerHTML = '';
+}
+
+async function saveEdit(id) {
+  const update = {
+    site: document.getElementById('e-site').value.trim(),
+    location: document.getElementById('e-location').value.trim(),
+    date: document.getElementById('e-date').value,
+    depth: parseFloat(document.getElementById('e-depth').value)||0,
+    duration: parseInt(document.getElementById('e-duration').value)||0,
+    temp: document.getElementById('e-temp').value||null,
+    visibility: document.getElementById('e-visibility').value||null,
+    buddy: document.getElementById('e-buddy').value.trim(),
+    cert: document.getElementById('e-cert').value.trim(),
+    weights: parseFloat(document.getElementById('e-weights').value)||null,
+    suit: document.getElementById('e-suit').value||null,
+    tank: {
+      size: parseFloat(document.getElementById('e-tank-size').value)||null,
+      material: document.getElementById('e-tank-mat').value||null,
+      start: parseInt(document.getElementById('e-tank-start').value)||null,
+      end: parseInt(document.getElementById('e-tank-end').value)||null
+    },
+    current: document.getElementById('e-current').value||null,
+    waves: document.getElementById('e-waves').value||null,
+    entry: document.getElementById('e-entry').value||null,
+    feeling: parseInt(document.getElementById('e-feeling').value)||null,
+    notes: document.getElementById('e-notes').value.trim()
+  };
+  try {
+    await divesCol.doc(id).update(update);
+    showToast(lang==='pl'?'✅ Zapisano!':'✅ Saved!');
+    setTimeout(()=>openModal(id), 200);
+  } catch(e) { showToast('❌ ' + e.message); }
 }
 
 async function deleteDive(id) {

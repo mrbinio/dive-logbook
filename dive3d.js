@@ -5,10 +5,6 @@ function render3DViz(containerId, dive) {
   el.style.cssText = 'width:100%;height:280px;position:relative;border-radius:8px;overflow:hidden;background:#1a2744;';
   el.innerHTML = '';
 
-  // Use dive id as unique seed
-  var idSeed = 0;
-  if (dive.id) for(var i=0;i<dive.id.length;i++) idSeed += dive.id.charCodeAt(i) * (i*37+1);
-
   setTimeout(function() {
     try {
       var W = el.clientWidth || 400, H = 280;
@@ -16,30 +12,52 @@ function render3DViz(containerId, dive) {
       var maxD = 0, maxT = profile[profile.length-1].time;
       for (var i=0;i<profile.length;i++) if(profile[i].depth>maxD) maxD=profile[i].depth;
 
-      // Unique path per dive based on data
-      var seed = idSeed || Date.now();
-      function rng(){ seed=(seed*16807+12345)%2147483647; return (seed&0xffff)/0xffff; }
-      // Pre-generate path parameters to ensure uniqueness
-      var pathAngle = 1.2 + rng()*1.5;
-      var pathWave = 1.5 + rng()*3;
-      var pathDriftX = 4 + rng()*10;
-      var pathDriftZ = 3 + rng()*8;
-      var pathBaseR = 3 + rng()*5;
-      var pathWaveR = 2 + rng()*4;
-
       var pts = [];
-      profile.forEach(function(p) {
-        var r = p.time / maxT;
-        var a = r * Math.PI * pathAngle;
-        var rad = pathBaseR + Math.sin(r * Math.PI * pathWave) * pathWaveR;
-        pts.push({ x: Math.cos(a)*rad + r*pathDriftX, y: -p.depth, z: Math.sin(a)*rad + r*pathDriftZ, depth: p.depth });
-      });
+      var hasGPS = dive.gpsTrack && dive.gpsTrack.length >= 2;
 
-      // Normalize
+      if (hasGPS) {
+        // Option B: Use real GPS track for X/Z, depth for Y
+        var track = dive.gpsTrack;
+        // Convert lat/lng to local meters (approximate)
+        var lat0 = track[0].lat, lng0 = track[0].lng;
+        var mPerDegLat = 111320;
+        var mPerDegLng = 111320 * Math.cos(lat0 * Math.PI / 180);
+
+        var gpsPoints = track.map(function(g) {
+          return { x: (g.lng - lng0) * mPerDegLng, z: (g.lat - lat0) * mPerDegLat, time: g.time };
+        });
+
+        // For each depth sample, interpolate GPS position by time
+        profile.forEach(function(p) {
+          var gx = 0, gz = 0;
+          // Find two GPS points surrounding this time
+          var gi = 0;
+          for (var i = 0; i < gpsPoints.length - 1; i++) {
+            if (gpsPoints[i+1].time >= p.time) { gi = i; break; }
+            gi = i;
+          }
+          var g0 = gpsPoints[gi], g1 = gpsPoints[Math.min(gi+1, gpsPoints.length-1)];
+          var dt = g1.time - g0.time;
+          var t = dt > 0 ? Math.max(0, Math.min(1, (p.time - g0.time) / dt)) : 0;
+          gx = g0.x + (g1.x - g0.x) * t;
+          gz = g0.z + (g1.z - g0.z) * t;
+          pts.push({ x: gx, y: -p.depth, z: gz, depth: p.depth });
+        });
+      } else {
+        // Option A: Faithful profile — X = time, Y = depth, Z = 0
+        profile.forEach(function(p) {
+          pts.push({ x: p.time / maxT * 30, y: -p.depth, z: 0, depth: p.depth });
+        });
+      }
+
+      // Normalize to fit scene
       var minX=1e9,maxX=-1e9,minZ=1e9,maxZ=-1e9;
       pts.forEach(function(p){if(p.x<minX)minX=p.x;if(p.x>maxX)maxX=p.x;if(p.z<minZ)minZ=p.z;if(p.z>maxZ)maxZ=p.z;});
-      var range = Math.max(1, Math.max(maxX-minX, maxZ-minZ));
-      var sc = 30/range, ox=(maxX+minX)/2, oz=(maxZ+minZ)/2, ds=20/Math.max(1,maxD);
+      var rangeX = maxX - minX || 1, rangeZ = maxZ - minZ || 1;
+      var range = Math.max(rangeX, rangeZ);
+      var sc = 30 / range;
+      var ox = (maxX+minX)/2, oz = (maxZ+minZ)/2;
+      var ds = 20 / Math.max(1, maxD);
       pts = pts.map(function(p){return{x:(p.x-ox)*sc, y:p.y*ds, z:(p.z-oz)*sc, depth:p.depth};});
 
       var scene = new THREE.Scene();
@@ -93,8 +111,9 @@ function render3DViz(containerId, dive) {
 
       scene.add(new THREE.AmbientLight(0xffffff,0.5));
 
-      // Camera orbit
+      // Camera position
       var theta=Math.PI/4, phi=Math.PI/5, radius=40;
+      if (!hasGPS) { theta = 0; phi = Math.PI/6; radius = 35; }
       function updateCam(){
         camera.position.set(radius*Math.sin(theta)*Math.cos(phi), radius*Math.sin(phi), radius*Math.cos(theta)*Math.cos(phi));
         camera.lookAt(0,-maxD*ds*0.35,0);
@@ -125,7 +144,7 @@ function render3DViz(containerId, dive) {
 
       var lbl=document.createElement('div');
       lbl.style.cssText='position:absolute;bottom:8px;left:8px;font-size:0.6rem;color:#3a4a6b;letter-spacing:1px;pointer-events:none;';
-      lbl.innerHTML='MAX '+maxD.toFixed(1)+'m · '+Math.round(maxT/60)+' min · <span style="color:#ef4444">━</span> surface <span style="color:#2dd4bf">━</span> depth';
+      lbl.innerHTML='MAX '+maxD.toFixed(1)+'m · '+Math.round(maxT/60)+' min · <span style="color:#ef4444">━</span> surface <span style="color:#2dd4bf">━</span> depth' + (hasGPS ? ' · 📍 GPS' : '');
       el.appendChild(lbl);
     } catch(e) {
       el.innerHTML='<div style="color:#ef4444;text-align:center;padding:20px;font-size:0.7rem;">3D: '+e.message+'</div>';
