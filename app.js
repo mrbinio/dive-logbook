@@ -1,6 +1,6 @@
 const T = {
   en: {
-    logDive:'Log Dive', myDives:'My Dives', shop:'Shop', checklist:'Checklist',
+    logDive:'Log Dive', myDives:'My Dives', shop:'Shop', checklist:'Checklist', diveMap:'Map',
     newEntry:'New', diveEntry:'Dive Entry',
     diveSite:'Dive Site', sitePh:'e.g. Blue Hole, Dahab',
     location:'Location / Country', locPh:'e.g. Egypt',
@@ -34,7 +34,7 @@ const T = {
     entry:'Entry', entryShore:'Shore', entryBoat:'Boat', entryPlatform:'Platform', entryOther:'Other',
     feeling:'Feeling'  },
   pl: {
-    logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep', checklist:'Checklista',
+    logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep', checklist:'Checklista', diveMap:'Mapa',
     newEntry:'Nowy', diveEntry:'Wpis nurkowy',
     diveSite:'Miejsce nurkowania', sitePh:'np. Blue Hole, Dahab',
     location:'Lokalizacja / Kraj', locPh:'np. Egipt',
@@ -89,6 +89,7 @@ function applyLang() {
   // Tabs
   document.getElementById('tab-log').innerHTML = '📋 ' + t('logDive');
   document.getElementById('tab-history').innerHTML = '🌊 ' + t('myDives');
+  document.getElementById('tab-map').innerHTML = '🗺 ' + t('diveMap');
   document.getElementById('tab-checklist').innerHTML = '✅ ' + t('checklist');
   document.getElementById('tab-shop').innerHTML = '🛒 ' + t('shop');
   // Form labels
@@ -277,10 +278,12 @@ function hideApp() {
   dives = [];
 }
 
-auth.onAuthStateChanged(user => {
-  if (user) showApp(user);
-  else hideApp();
-});
+if (!checkSharedMap()) {
+  auth.onAuthStateChanged(user => {
+    if (user) showApp(user);
+    else hideApp();
+  });
+}
 
 function updateStats() {
   document.getElementById('total-dives').textContent = dives.length;
@@ -303,12 +306,13 @@ function setRating(n) {
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    const tabs=['log','history','checklist','shop'];
+    const tabs=['log','history','map','checklist','shop'];
     t.classList.toggle('active', tabs[i]===tab);
   });
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+tab).classList.add('active');
   if(tab==='history') renderDives();
+  if(tab==='map') renderDiveMap();
   if(tab==='checklist' && !currentTripId) loadOrCreateTrip();
 }
 
@@ -631,6 +635,106 @@ function showToast(msg){
   setTimeout(()=>el.classList.remove('show'),3000);
 }
 
+
+
+// === DIVE MAP ===
+let worldMap = null;
+let mapMarkers = [];
+
+function renderDiveMap() {
+  const el = document.getElementById('dive-world-map');
+  const sitesWithGps = dives.filter(d => d.gps && d.gps.lat && d.gps.lng);
+
+  if (!worldMap) {
+    worldMap = L.map(el, { zoomControl: true, attributionControl: false }).setView([20, 0], 2);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(worldMap);
+  }
+
+  // Clear old markers
+  mapMarkers.forEach(m => worldMap.removeLayer(m));
+  mapMarkers = [];
+
+  if (!sitesWithGps.length) {
+    setTimeout(() => worldMap.invalidateSize(), 100);
+    return;
+  }
+
+  // Group dives by site (same GPS within ~100m)
+  const sites = [];
+  sitesWithGps.forEach(d => {
+    const existing = sites.find(s =>
+      Math.abs(s.lat - d.gps.lat) < 0.001 && Math.abs(s.lng - d.gps.lng) < 0.001
+    );
+    if (existing) { existing.dives.push(d); }
+    else { sites.push({ lat: d.gps.lat, lng: d.gps.lng, dives: [d] }); }
+  });
+
+  sites.forEach(site => {
+    const best = site.dives.reduce((a, b) => (b.rating || 0) > (a.rating || 0) ? b : a, site.dives[0]);
+    const maxRating = Math.max(...site.dives.map(d => d.rating || 0));
+    const color = maxRating >= 4 ? '#22c55e' : maxRating === 3 ? '#eab308' : maxRating >= 1 ? '#3b82f6' : '#94a3b8';
+
+    const marker = L.circleMarker([site.lat, site.lng], {
+      radius: 8 + site.dives.length * 2,
+      color: color, fillColor: color, fillOpacity: 0.4, weight: 2
+    }).addTo(worldMap);
+
+    const popupHTML = `
+      <div style="font-family:Inter,system-ui;min-width:160px;">
+        <div style="font-weight:800;font-size:0.85rem;margin-bottom:4px;">${best.site || 'Dive Site'}</div>
+        <div style="font-size:0.7rem;color:#666;margin-bottom:6px;">${best.location || ''}</div>
+        ${site.dives.map(d => `
+          <div style="font-size:0.68rem;padding:3px 0;border-top:1px solid #eee;">
+            ${d.date ? '📅 '+d.date+' · ' : ''}${d.depth}m · ${d.duration}min
+            ${d.rating ? ' · '+'⭐'.repeat(d.rating) : ''}
+          </div>
+        `).join('')}
+        <div style="font-size:0.65rem;color:#888;margin-top:4px;">${site.dives.length} dive${site.dives.length>1?'s':''}</div>
+      </div>`;
+    marker.bindPopup(popupHTML);
+    mapMarkers.push(marker);
+  });
+
+  // Fit bounds
+  const bounds = L.latLngBounds(sites.map(s => [s.lat, s.lng]));
+  worldMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
+  setTimeout(() => worldMap.invalidateSize(), 100);
+}
+
+function shareMap() {
+  const uid = myUid();
+  const url = window.location.origin + window.location.pathname + '?shared_map=' + uid;
+  if (navigator.share) {
+    navigator.share({ title: 'My Dive Map', url: url });
+  } else {
+    navigator.clipboard.writeText(url).then(() => {
+      showToast(lang==='pl' ? '🔗 Link skopiowany!' : '🔗 Link copied!');
+    });
+  }
+}
+
+// Handle shared map view (public, read-only)
+function checkSharedMap() {
+  const params = new URLSearchParams(window.location.search);
+  const sharedUid = params.get('shared_map');
+  if (!sharedUid) return false;
+  // Show map in full-screen mode without login
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-header').style.display = 'none';
+  document.getElementById('app-container').style.display = '';
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-map').classList.add('active');
+  document.querySelector('.tabs-bar').style.display = 'none';
+  // Load shared user's dives (read-only)
+  db.collection('users').doc(sharedUid).collection('dives').orderBy('createdAt','desc').get().then(snap => {
+    dives = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    document.getElementById('map-title').textContent = '🗺 Shared Dive Map (' + dives.length + ' dives)';
+    renderDiveMap();
+  }).catch(() => {
+    document.getElementById('dive-world-map').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim);">Map not available</div>';
+  });
+  return true;
+}
 
 // === CHECKLIST (Firestore shared trips) ===
 const DEFAULT_PERSONAL = [

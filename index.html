@@ -131,6 +131,7 @@
   <div class="tabs-bar">
     <button class="tab active" id="tab-log" onclick="switchTab('log')">📋 Log Dive</button>
     <button class="tab" id="tab-history" onclick="switchTab('history')">🌊 My Dives</button>
+    <button class="tab" id="tab-map" onclick="switchTab('map')">🗺 Map</button>
     <button class="tab" id="tab-checklist" onclick="switchTab('checklist')">✅ Checklist</button>
     <button class="tab" id="tab-shop" onclick="switchTab('shop')">🛒 Shop</button>
   </div>
@@ -321,6 +322,19 @@
       </select>
     </div>
     <div class="dives-list" id="dives-grid"></div>
+  </div>
+
+  <div class="panel" id="panel-map">
+    <div class="card" style="padding:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:0 4px;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text-dim);" id="map-title">🗺 My Dive Sites</div>
+        <button onclick="shareMap()" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--accent);font-size:0.68rem;cursor:pointer;font-family:inherit;">🔗 Share</button>
+      </div>
+      <div id="dive-world-map" style="height:400px;border-radius:8px;overflow:hidden;border:1px solid var(--border);"></div>
+      <div style="margin-top:8px;display:flex;gap:12px;font-size:0.65rem;color:var(--text-dim);padding:0 4px;">
+        <span>🟢 4-5⭐</span><span>🟡 3⭐</span><span>🔵 1-2⭐</span><span>⚪ No rating</span>
+      </div>
+    </div>
   </div>
 
   <div class="panel" id="panel-checklist">
