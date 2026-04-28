@@ -175,8 +175,25 @@ function resetPassword() {
   auth.sendPasswordResetEmail(email).then(() => {
     errEl.style.color = 'var(--accent)';
     errEl.textContent = t('resetSent'); errEl.style.display = 'block';
-    setTimeout(() => { errEl.style.color = ''; }, 5000);
+    setTimeout(() => { errEl.style.color = ''; exitForgotMode(); }, 4000);
   }).catch(e => { errEl.textContent = e.message; errEl.style.display = 'block'; });
+}
+
+let isForgotMode = false;
+function enterForgotMode() {
+  isForgotMode = true;
+  document.getElementById('f-password').style.display = 'none';
+  document.getElementById('btn-email-submit').textContent = lang==='pl'?'📧 Wyślij link':'📧 Send reset link';
+  document.getElementById('btn-forgot').style.display = 'none';
+  document.getElementById('btn-toggle-mode').style.display = 'none';
+  document.getElementById('login-error').style.display = 'none';
+}
+function exitForgotMode() {
+  isForgotMode = false;
+  document.getElementById('f-password').style.display = '';
+  document.getElementById('btn-email-submit').textContent = isRegisterMode ? t('emailRegister') : t('emailSignIn');
+  document.getElementById('btn-forgot').style.display = '';
+  document.getElementById('btn-toggle-mode').style.display = '';
 }
 
 let isRegisterMode = false;
@@ -190,6 +207,7 @@ function toggleAuthMode() {
 
 function handleEmailAuth(e) {
   e.preventDefault();
+  if (isForgotMode) { resetPassword(); return false; }
   const email = document.getElementById('f-email').value;
   const pass = document.getElementById('f-password').value;
   const errEl = document.getElementById('login-error');
