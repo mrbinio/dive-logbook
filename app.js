@@ -157,6 +157,7 @@ firebase.initializeApp({
 const db = firebase.firestore();
 let divesCol;
 const auth = firebase.auth();
+const storage = firebase.storage();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 
 let dives = [];
@@ -578,14 +579,25 @@ function openModal(id) {
 
   // Attach Suunto button (only if no depth profile yet)
   const attachWrap = document.getElementById('m-attach-wrap');
+  let attachHTML = '';
   if (!d.depthProfile || d.depthProfile.length < 2) {
-    attachWrap.innerHTML = `<label style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:1px dashed var(--border-light);border-radius:8px;cursor:pointer;color:var(--accent);font-size:0.75rem;font-weight:700;margin-top:12px;transition:all 0.2s;">
+    attachHTML += `<label style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:1px dashed var(--border-light);border-radius:8px;cursor:pointer;color:var(--accent);font-size:0.75rem;font-weight:700;margin-top:12px;transition:all 0.2s;">
       📥 ${lang==='pl'?'Dołącz dane Suunto':'Attach Suunto data'}
       <input type="file" accept=".json" style="display:none" onchange="attachSuuntoToDiv('${id}',this)">
     </label>`;
-  } else {
-    attachWrap.innerHTML = '';
   }
+  // Photos section
+  attachHTML += `<div style="margin-top:12px;">
+    <div id="dive-photos" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+    <label style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:1px dashed var(--border-light);border-radius:8px;cursor:pointer;color:var(--accent);font-size:0.75rem;font-weight:700;transition:all 0.2s;">
+      📷 ${lang==='pl'?'Dodaj zdjęcia':'Add photos'}
+      <input type="file" accept="image/*" multiple style="display:none" onchange="uploadPhotos('${id}',this)">
+    </label>
+  </div>`;
+  attachWrap.innerHTML = attachHTML;
+
+  // Load existing photos
+  loadPhotos(id);
 
   document.getElementById('modal').classList.add('open');
 
@@ -747,6 +759,66 @@ function showToast(msg){
 
 
 
+
+
+// === PHOTOS ===
+async function uploadPhotos(diveId, input) {
+  const files = input.files;
+  if (!files.length) return;
+  const uid = myUid();
+  const photosDiv = document.getElementById('dive-photos');
+  for (const file of files) {
+    const name = Date.now() + '_' + file.name;
+    const ref = storage.ref(`users/${uid}/dives/${diveId}/${name}`);
+    photosDiv.innerHTML += `<div style="padding:8px;font-size:0.7rem;color:var(--text-dim);">⏳ ${lang==='pl'?'Wysyłanie...':'Uploading...'}</div>`;
+    await ref.put(file);
+    const url = await ref.getDownloadURL();
+    // Save photo URL to dive document
+    await divesCol.doc(diveId).update({
+      photos: firebase.firestore.FieldValue.arrayUnion({url, name})
+    });
+  }
+  input.value = '';
+  loadPhotos(diveId);
+  showToast(lang==='pl'?'📷 Zdjęcia dodane!':'📷 Photos added!');
+}
+
+function loadPhotos(diveId) {
+  const d = dives.find(x => x.id === diveId);
+  const photosDiv = document.getElementById('dive-photos');
+  if (!photosDiv) return;
+  const photos = d?.photos || [];
+  if (!photos.length) { photosDiv.innerHTML = ''; return; }
+  photosDiv.innerHTML = photos.map((p, i) => `
+    <div style="position:relative;width:80px;height:80px;border-radius:6px;overflow:hidden;border:1px solid var(--border);">
+      <img src="${p.url}" style="width:100%;height:100%;object-fit:cover;cursor:pointer;" onclick="openPhotoFull('${p.url}')">
+      <button onclick="deletePhoto('${diveId}',${i})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);border:none;color:#fff;border-radius:50%;width:18px;height:18px;font-size:0.6rem;cursor:pointer;line-height:18px;">✕</button>
+    </div>
+  `).join('');
+}
+
+function openPhotoFull(url) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:10000;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+  overlay.innerHTML = `<img src="${url}" style="max-width:95%;max-height:95%;object-fit:contain;border-radius:8px;">`;
+  overlay.onclick = () => overlay.remove();
+  document.body.appendChild(overlay);
+}
+
+async function deletePhoto(diveId, index) {
+  if (!confirm(lang==='pl'?'Usunąć zdjęcie?':'Delete photo?')) return;
+  const d = dives.find(x => x.id === diveId);
+  const photos = [...(d.photos || [])];
+  const photo = photos[index];
+  photos.splice(index, 1);
+  await divesCol.doc(diveId).update({ photos });
+  // Delete from storage
+  try {
+    const uid = myUid();
+    await storage.ref(`users/${uid}/dives/${diveId}/${photo.name}`).delete();
+  } catch(e) { /* file may not exist */ }
+  loadPhotos(diveId);
+}
 
 // === CERTS ===
 let certs = [];
