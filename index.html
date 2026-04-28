@@ -429,6 +429,14 @@
           SAC rate (L/min)
           <input type="number" id="p-sac" class="edit-input" value="15" min="5" max="30" oninput="calcPlan()">
         </label>
+        <label style="font-size:0.7rem;color:var(--text-dim);display:flex;flex-direction:column;gap:2px;">
+          Start pressure (bar)
+          <input type="number" id="p-start-bar" class="edit-input" value="200" min="50" max="300" oninput="calcPlan()">
+        </label>
+        <label style="font-size:0.7rem;color:var(--text-dim);display:flex;flex-direction:column;gap:2px;">
+          Reserve (bar)
+          <input type="number" id="p-reserve" class="edit-input" value="50" min="0" max="100" oninput="calcPlan()">
+        </label>
       </div>
       <div id="plan-results"></div>
     </div>

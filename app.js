@@ -1129,6 +1129,20 @@ function exportPDF() {
 
 
 // === DIVE PLANNER ===
+// NDL table (PADI/DSAT recreational, air, in minutes)
+const NDL_TABLE = {10:219,12:147,14:98,16:72,18:56,20:45,22:37,24:29,25:27,26:25,28:22,30:20,32:16,34:14,35:13,36:12,38:10,40:9,42:8};
+
+function getNDL(depth, fO2) {
+  // Use EAD for nitrox NDL lookup
+  const ead = Math.round((1-fO2)/0.79*(depth+10)-10);
+  const d = ead > 0 ? ead : depth;
+  const depths = Object.keys(NDL_TABLE).map(Number).sort((a,b)=>a-b);
+  for (let i = depths.length-1; i >= 0; i--) {
+    if (d >= depths[i]) return NDL_TABLE[depths[i]];
+  }
+  return 999; // shallower than 10m = essentially unlimited
+}
+
 function calcPlan() {
   const o2 = parseFloat(document.getElementById('p-o2').value) || 21;
   const ppo2 = parseFloat(document.getElementById('p-ppo2').value) || 1.4;
@@ -1136,62 +1150,62 @@ function calcPlan() {
   const time = parseFloat(document.getElementById('p-time').value) || 30;
   const tank = parseFloat(document.getElementById('p-tank').value) || 12;
   const sac = parseFloat(document.getElementById('p-sac').value) || 15;
+  const startBar = parseFloat(document.getElementById('p-start-bar').value) || 200;
+  const reserve = parseFloat(document.getElementById('p-reserve').value) || 50;
 
-  // MOD = (ppO2 / fO2 - 1) * 10
   const fO2 = o2 / 100;
   const mod = Math.floor((ppo2 / fO2 - 1) * 10);
-
-  // EAD (Equivalent Air Depth) = (1-fO2) / 0.79 * (depth+10) - 10
   const fN2 = 1 - fO2;
   const ead = Math.round((fN2 / 0.79) * (depth + 10) - 10);
-
-  // ppO2 at planned depth
   const actualPpO2 = Math.round(fO2 * (depth / 10 + 1) * 100) / 100;
 
-  // Gas consumption at depth
+  // Gas consumption
   const ambientPressure = depth / 10 + 1;
   const gasPerMin = sac * ambientPressure;
   const totalGas = gasPerMin * time;
   const barUsed = Math.round(totalGas / tank);
-  const minBar = 50; // reserve
-  const availableBar = 200 - minBar;
-  const maxTime = Math.round(availableBar * tank / gasPerMin);
+  const availableBar = startBar - reserve;
+  const maxTimeGas = Math.round(availableBar * tank / gasPerMin);
+
+  // NDL
+  const ndl = getNDL(depth, fO2);
+  const ndlOk = time <= ndl;
 
   // Warnings
   const depthOk = depth <= mod;
-  const ppo2Ok = actualPpO2 <= ppo2;
-  const gasOk = barUsed <= (200 - minBar);
+  const gasOk = barUsed <= availableBar;
 
   const results = document.getElementById('plan-results');
   results.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
       <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
         <div style="font-size:1.1rem;font-weight:800;color:${depthOk?'var(--accent)':'var(--danger)'};">${mod}m</div>
-        <div style="font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;">MOD (max depth)</div>
+        <div style="font-size:0.55rem;color:var(--text-dim);text-transform:uppercase;">MOD</div>
       </div>
       <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
-        <div style="font-size:1.1rem;font-weight:800;color:${ppo2Ok?'var(--accent)':'var(--danger)'};">${actualPpO2}</div>
-        <div style="font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;">ppO₂ at ${depth}m</div>
+        <div style="font-size:1.1rem;font-weight:800;color:${actualPpO2<=ppo2?'var(--accent)':'var(--danger)'};">${actualPpO2}</div>
+        <div style="font-size:0.55rem;color:var(--text-dim);text-transform:uppercase;">ppO₂ @${depth}m</div>
+      </div>
+      <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
+        <div style="font-size:1.1rem;font-weight:800;color:${ndlOk?'var(--accent)':'var(--danger)'};">${ndl} min</div>
+        <div style="font-size:0.55rem;color:var(--text-dim);text-transform:uppercase;">NDL</div>
       </div>
       <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
         <div style="font-size:1.1rem;font-weight:800;color:var(--accent);">${ead}m</div>
-        <div style="font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;">EAD (equiv. air)</div>
+        <div style="font-size:0.55rem;color:var(--text-dim);text-transform:uppercase;">EAD</div>
       </div>
       <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
         <div style="font-size:1.1rem;font-weight:800;color:${gasOk?'var(--accent)':'var(--danger)'};">${barUsed} bar</div>
-        <div style="font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;">Gas needed</div>
+        <div style="font-size:0.55rem;color:var(--text-dim);text-transform:uppercase;">Gas needed</div>
       </div>
       <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
-        <div style="font-size:1.1rem;font-weight:800;color:var(--accent);">${maxTime} min</div>
-        <div style="font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;">Max time (50bar res.)</div>
-      </div>
-      <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
-        <div style="font-size:1.1rem;font-weight:800;color:var(--accent);">${Math.round(gasPerMin)} L/min</div>
-        <div style="font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;">Gas at depth</div>
+        <div style="font-size:1.1rem;font-weight:800;color:var(--accent);">${maxTimeGas} min</div>
+        <div style="font-size:0.55rem;color:var(--text-dim);text-transform:uppercase;">Max time (gas)</div>
       </div>
     </div>
-    ${!depthOk?'<div style="margin-top:10px;padding:8px;border-radius:6px;background:rgba(244,63,94,0.1);color:var(--danger);font-size:0.72rem;font-weight:600;">⚠️ Depth exceeds MOD for EAN${o2}!</div>':''}
-    ${!gasOk?'<div style="margin-top:6px;padding:8px;border-radius:6px;background:rgba(244,63,94,0.1);color:var(--danger);font-size:0.72rem;font-weight:600;">⚠️ Not enough gas! Need ${barUsed} bar, only ${availableBar} available (50 bar reserve).</div>':''}
+    ${!depthOk?'<div style="margin-top:8px;padding:8px;border-radius:6px;background:rgba(244,63,94,0.1);color:var(--danger);font-size:0.72rem;font-weight:600;">⚠️ Depth exceeds MOD for EAN${o2}!</div>':''}
+    ${!ndlOk?'<div style="margin-top:6px;padding:8px;border-radius:6px;background:rgba(244,63,94,0.1);color:var(--danger);font-size:0.72rem;font-weight:600;">⚠️ ${time} min exceeds NDL of ${ndl} min at ${depth}m! Deco required.</div>':''}
+    ${!gasOk?'<div style="margin-top:6px;padding:8px;border-radius:6px;background:rgba(244,63,94,0.1);color:var(--danger);font-size:0.72rem;font-weight:600;">⚠️ Not enough gas! Need ${barUsed} bar, available ${availableBar} bar (${startBar}-${reserve} reserve).</div>':''}
     <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);text-align:center;">⚠️ For planning only. Always follow your training and computer.</div>
   `;
 }
