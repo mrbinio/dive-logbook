@@ -1,6 +1,6 @@
 const T = {
   en: {
-    logDive:'Log Dive', myDives:'My Dives', shop:'Shop', checklist:'Checklist', diveMap:'Map', stats:'Stats', certs:'Certs', gear:'Gear',
+    logDive:'Log Dive', myDives:'My Dives', shop:'Shop', checklist:'Checklist', diveMap:'Map', stats:'Stats', certs:'Certs', gear:'Gear', plan:'Plan',
     newEntry:'New', diveEntry:'Dive Entry',
     diveSite:'Dive Site', sitePh:'e.g. Blue Hole, Dahab',
     location:'Location / Country', locPh:'e.g. Egypt',
@@ -34,7 +34,7 @@ const T = {
     entry:'Entry', entryShore:'Shore', entryBoat:'Boat', entryPlatform:'Platform', entryOther:'Other',
     feeling:'Feeling'  },
   pl: {
-    logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep', checklist:'Checklista', diveMap:'Mapa', stats:'Statystyki', certs:'Certyfikaty', gear:'Sprzęt',
+    logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep', checklist:'Checklista', diveMap:'Mapa', stats:'Statystyki', certs:'Certyfikaty', gear:'Sprzęt', plan:'Planer',
     newEntry:'Nowy', diveEntry:'Wpis nurkowy',
     diveSite:'Miejsce nurkowania', sitePh:'np. Blue Hole, Dahab',
     location:'Lokalizacja / Kraj', locPh:'np. Egipt',
@@ -93,6 +93,7 @@ function applyLang() {
   document.getElementById('tab-map').innerHTML = '🗺 ' + t('diveMap');
   document.getElementById('tab-certs').innerHTML = '🎓 ' + t('certs');
   document.getElementById('tab-gear').innerHTML = '🔧 ' + t('gear');
+  document.getElementById('tab-plan').innerHTML = '🧮 ' + t('plan');
   document.getElementById('tab-checklist').innerHTML = '✅ ' + t('checklist');
   document.getElementById('tab-shop').innerHTML = '🛒 ' + t('shop');
   // Form labels
@@ -314,7 +315,7 @@ function setRating(n) {
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    const tabs=['log','history','stats','map','certs','gear','checklist','shop'];
+    const tabs=['log','history','stats','map','certs','gear','plan','checklist','shop'];
     t.classList.toggle('active', tabs[i]===tab);
   });
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -324,6 +325,7 @@ function switchTab(tab) {
   if(tab==='map') renderDiveMap();
   if(tab==='certs') renderCerts();
   if(tab==='gear') renderGear();
+  if(tab==='plan') calcPlan();
   if(tab==='checklist' && !currentTripId) loadOrCreateTrip();
 }
 
@@ -1123,6 +1125,75 @@ function exportPDF() {
 
   doc.save('dive-logbook-' + new Date().toISOString().substring(0,10) + '.pdf');
   showToast(lang==='pl'?'📄 PDF wygenerowany!':'📄 PDF exported!');
+}
+
+
+// === DIVE PLANNER ===
+function calcPlan() {
+  const o2 = parseFloat(document.getElementById('p-o2').value) || 21;
+  const ppo2 = parseFloat(document.getElementById('p-ppo2').value) || 1.4;
+  const depth = parseFloat(document.getElementById('p-depth').value) || 30;
+  const time = parseFloat(document.getElementById('p-time').value) || 30;
+  const tank = parseFloat(document.getElementById('p-tank').value) || 12;
+  const sac = parseFloat(document.getElementById('p-sac').value) || 15;
+
+  // MOD = (ppO2 / fO2 - 1) * 10
+  const fO2 = o2 / 100;
+  const mod = Math.floor((ppo2 / fO2 - 1) * 10);
+
+  // EAD (Equivalent Air Depth) = (1-fO2) / 0.79 * (depth+10) - 10
+  const fN2 = 1 - fO2;
+  const ead = Math.round((fN2 / 0.79) * (depth + 10) - 10);
+
+  // ppO2 at planned depth
+  const actualPpO2 = Math.round(fO2 * (depth / 10 + 1) * 100) / 100;
+
+  // Gas consumption at depth
+  const ambientPressure = depth / 10 + 1;
+  const gasPerMin = sac * ambientPressure;
+  const totalGas = gasPerMin * time;
+  const barUsed = Math.round(totalGas / tank);
+  const minBar = 50; // reserve
+  const availableBar = 200 - minBar;
+  const maxTime = Math.round(availableBar * tank / gasPerMin);
+
+  // Warnings
+  const depthOk = depth <= mod;
+  const ppo2Ok = actualPpO2 <= ppo2;
+  const gasOk = barUsed <= (200 - minBar);
+
+  const results = document.getElementById('plan-results');
+  results.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
+        <div style="font-size:1.1rem;font-weight:800;color:${depthOk?'var(--accent)':'var(--danger)'};">${mod}m</div>
+        <div style="font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;">MOD (max depth)</div>
+      </div>
+      <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
+        <div style="font-size:1.1rem;font-weight:800;color:${ppo2Ok?'var(--accent)':'var(--danger)'};">${actualPpO2}</div>
+        <div style="font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;">ppO₂ at ${depth}m</div>
+      </div>
+      <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
+        <div style="font-size:1.1rem;font-weight:800;color:var(--accent);">${ead}m</div>
+        <div style="font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;">EAD (equiv. air)</div>
+      </div>
+      <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
+        <div style="font-size:1.1rem;font-weight:800;color:${gasOk?'var(--accent)':'var(--danger)'};">${barUsed} bar</div>
+        <div style="font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;">Gas needed</div>
+      </div>
+      <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
+        <div style="font-size:1.1rem;font-weight:800;color:var(--accent);">${maxTime} min</div>
+        <div style="font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;">Max time (50bar res.)</div>
+      </div>
+      <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
+        <div style="font-size:1.1rem;font-weight:800;color:var(--accent);">${Math.round(gasPerMin)} L/min</div>
+        <div style="font-size:0.6rem;color:var(--text-dim);text-transform:uppercase;">Gas at depth</div>
+      </div>
+    </div>
+    ${!depthOk?'<div style="margin-top:10px;padding:8px;border-radius:6px;background:rgba(244,63,94,0.1);color:var(--danger);font-size:0.72rem;font-weight:600;">⚠️ Depth exceeds MOD for EAN${o2}!</div>':''}
+    ${!gasOk?'<div style="margin-top:6px;padding:8px;border-radius:6px;background:rgba(244,63,94,0.1);color:var(--danger);font-size:0.72rem;font-weight:600;">⚠️ Not enough gas! Need ${barUsed} bar, only ${availableBar} available (50 bar reserve).</div>':''}
+    <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);text-align:center;">⚠️ For planning only. Always follow your training and computer.</div>
+  `;
 }
 
 // === DIVE MAP ===

@@ -135,6 +135,7 @@
     <button class="tab" id="tab-map" onclick="switchTab('map')">🗺 Map</button>
     <button class="tab" id="tab-certs" onclick="switchTab('certs')">🎓 Certs</button>
     <button class="tab" id="tab-gear" onclick="switchTab('gear')">🔧 Gear</button>
+    <button class="tab" id="tab-plan" onclick="switchTab('plan')">🧮 Plan</button>
     <button class="tab" id="tab-checklist" onclick="switchTab('checklist')">✅ Checklist</button>
     <button class="tab" id="tab-shop" onclick="switchTab('shop')">🛒 Shop</button>
   </div>
@@ -397,6 +398,39 @@
           <button onclick="addGear()" style="background:var(--accent);border:none;border-radius:8px;padding:8px;color:#000;font-weight:700;cursor:pointer;font-size:0.78rem;">+ Add</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-plan">
+    <div class="card">
+      <div class="card-title">🧮 <span class="accent" id="plan-title">Dive Planner</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+        <label style="font-size:0.7rem;color:var(--text-dim);display:flex;flex-direction:column;gap:2px;">
+          O₂ % (Nitrox)
+          <input type="number" id="p-o2" class="edit-input" value="21" min="21" max="100" oninput="calcPlan()">
+        </label>
+        <label style="font-size:0.7rem;color:var(--text-dim);display:flex;flex-direction:column;gap:2px;">
+          Max ppO₂ (bar)
+          <input type="number" id="p-ppo2" class="edit-input" value="1.4" min="1.0" max="1.6" step="0.1" oninput="calcPlan()">
+        </label>
+        <label style="font-size:0.7rem;color:var(--text-dim);display:flex;flex-direction:column;gap:2px;">
+          Planned depth (m)
+          <input type="number" id="p-depth" class="edit-input" value="30" min="1" max="100" oninput="calcPlan()">
+        </label>
+        <label style="font-size:0.7rem;color:var(--text-dim);display:flex;flex-direction:column;gap:2px;">
+          Planned time (min)
+          <input type="number" id="p-time" class="edit-input" value="30" min="1" max="180" oninput="calcPlan()">
+        </label>
+        <label style="font-size:0.7rem;color:var(--text-dim);display:flex;flex-direction:column;gap:2px;">
+          Tank size (L)
+          <input type="number" id="p-tank" class="edit-input" value="12" min="1" max="30" oninput="calcPlan()">
+        </label>
+        <label style="font-size:0.7rem;color:var(--text-dim);display:flex;flex-direction:column;gap:2px;">
+          SAC rate (L/min)
+          <input type="number" id="p-sac" class="edit-input" value="15" min="5" max="30" oninput="calcPlan()">
+        </label>
+      </div>
+      <div id="plan-results"></div>
     </div>
   </div>
 
