@@ -367,7 +367,7 @@ function getGPS() {
 
   function initMap(lat, lng, zoom) {
     formMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([lat, lng], zoom);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(formMap);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(formMap);
     var marker = null;
     if (formGps) {
       marker = L.marker([formGps.lat, formGps.lng], {draggable: true}).addTo(formMap);
@@ -593,7 +593,7 @@ function openModal(id) {
   if(d.gps && d.gps.lat && d.gps.lng) {
     setTimeout(()=>{
       const map = L.map('dive-map',{zoomControl:false,attributionControl:false}).setView([d.gps.lat, d.gps.lng], 15);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
       L.circleMarker([d.gps.lat, d.gps.lng],{radius:8,color:'#2dd4bf',fillColor:'#2dd4bf',fillOpacity:0.3,weight:2}).addTo(map);
       if(d.gpsTrack && d.gpsTrack.length > 1) {
         const coords = d.gpsTrack.map(p=>[p.lat,p.lng]);
@@ -667,7 +667,7 @@ function openEditMap() {
     lat = parseFloat(parts[0]); lng = parseFloat(parts[1]); zoom = 14;
   }
   editMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([lat, lng], zoom);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(editMap);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(editMap);
   var marker = zoom > 3 ? L.marker([lat, lng], {draggable:true}).addTo(editMap) : null;
   if (marker) marker.on('dragend', function(){ var p=marker.getLatLng(); document.getElementById('e-gps').value=Math.round(p.lat*10000)/10000+', '+Math.round(p.lng*10000)/10000; });
   editMap.on('click', function(e) {
@@ -750,7 +750,7 @@ function renderDiveMap() {
 
   if (!worldMap) {
     worldMap = L.map(el, { zoomControl: true, attributionControl: false }).setView([20, 0], 2);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(worldMap);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(worldMap);
   }
 
   // Clear old markers
