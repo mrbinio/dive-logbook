@@ -583,6 +583,10 @@ function openEditMode(id) {
     <div class="edit-form" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;font-size:0.75rem;">
       <label style="display:flex;flex-direction:column;gap:2px;">${t('diveSite')}<input id="e-site" value="${d.site||''}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('location')}<input id="e-location" value="${d.location||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;grid-column:1/-1;">${t('gpsLabel')}
+        <div style="display:flex;gap:6px;"><input id="e-gps" class="edit-input" style="flex:1;" value="${d.gps?d.gps.lat+', '+d.gps.lng:''}" placeholder="lat, lng — click 📍 to pick on map"><button type="button" onclick="openEditMap()" style="background:var(--accent-dim);border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--accent);cursor:pointer;">📍</button></div>
+        <div id="e-gps-map" style="display:none;height:200px;border-radius:8px;overflow:hidden;margin-top:4px;border:1px solid var(--border);"></div>
+      </label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('date')}<input id="e-date" type="date" value="${d.date||''}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('maxDepth')}<input id="e-depth" type="number" value="${d.depth||''}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('avgDepth')}<input id="e-avg-depth" type="number" step="0.1" value="${d.avgDepth||''}" class="edit-input"></label>
@@ -602,10 +606,6 @@ function openEditMode(id) {
       <label style="display:flex;flex-direction:column;gap:2px;">${t('entry')}<select id="e-entry" class="edit-input">${entryOpts}</select></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('feeling')}<select id="e-feeling" class="edit-input">${feelOpts}</select></label>
       <label style="display:flex;flex-direction:column;gap:2px;grid-column:1/-1;">${t('notes')}<textarea id="e-notes" class="edit-input" rows="3">${d.notes||''}</textarea></label>
-      <label style="display:flex;flex-direction:column;gap:2px;grid-column:1/-1;">${t('gpsLabel')}
-        <div style="display:flex;gap:6px;"><input id="e-gps" class="edit-input" style="flex:1;" value="${d.gps?d.gps.lat+', '+d.gps.lng:''}" placeholder="lat, lng"><button type="button" onclick="openEditMap()" style="background:var(--accent-dim);border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--accent);cursor:pointer;">📍</button></div>
-        <div id="e-gps-map" style="display:none;height:180px;border-radius:8px;overflow:hidden;margin-top:4px;border:1px solid var(--border);"></div>
-      </label>
     </div>
     <div style="display:flex;gap:8px;">
       <button class="btn-primary" style="flex:1;" onclick="saveEdit('${id}')">💾 ${lang==='pl'?'Zapisz':'Save'}</button>
