@@ -320,25 +320,57 @@ let formGps = null;
 let formMap = null;
 
 function getGPS() {
-  if (!navigator.geolocation) { showToast('❌ GPS not supported'); return; }
+  const mapEl = document.getElementById('f-gps-map');
+  mapEl.style.display = 'block';
+  if (formMap) formMap.remove();
+
+  // Start with current location or default
+  const startPos = formGps ? [formGps.lat, formGps.lng] : [50.06, 19.94];
+  const startZoom = formGps ? 14 : 3;
+
   document.getElementById('f-gps').value = t('gpsGetting');
-  navigator.geolocation.getCurrentPosition(pos => {
-    const lat = Math.round(pos.coords.latitude * 10000) / 10000;
-    const lng = Math.round(pos.coords.longitude * 10000) / 10000;
-    formGps = { lat, lng };
-    document.getElementById('f-gps').value = lat + ', ' + lng;
-    // Show mini map
-    const mapEl = document.getElementById('f-gps-map');
-    mapEl.style.display = 'block';
-    if (formMap) formMap.remove();
-    formMap = L.map(mapEl, { zoomControl: false, attributionControl: false }).setView([lat, lng], 14);
+
+  function initMap(lat, lng, zoom) {
+    formMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([lat, lng], zoom);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(formMap);
-    L.circleMarker([lat, lng], { radius: 8, color: '#2dd4bf', fillColor: '#2dd4bf', fillOpacity: 0.3, weight: 2 }).addTo(formMap);
-    setTimeout(() => formMap.invalidateSize(), 100);
-  }, () => {
-    document.getElementById('f-gps').value = '';
-    showToast('❌ ' + (lang==='pl' ? 'Nie udało się pobrać GPS' : 'Could not get GPS'));
-  }, { enableHighAccuracy: true });
+    var marker = null;
+    if (formGps) {
+      marker = L.marker([formGps.lat, formGps.lng], {draggable: true}).addTo(formMap);
+      marker.on('dragend', function() {
+        var p = marker.getLatLng();
+        setFormGps(Math.round(p.lat*10000)/10000, Math.round(p.lng*10000)/10000);
+      });
+    }
+    formMap.on('click', function(e) {
+      var lt = Math.round(e.latlng.lat*10000)/10000;
+      var ln = Math.round(e.latlng.lng*10000)/10000;
+      if (marker) marker.setLatLng([lt, ln]);
+      else { marker = L.marker([lt, ln], {draggable: true}).addTo(formMap); marker.on('dragend', function(){ var p=marker.getLatLng(); setFormGps(Math.round(p.lat*10000)/10000, Math.round(p.lng*10000)/10000); }); }
+      setFormGps(lt, ln);
+    });
+    setTimeout(function(){ formMap.invalidateSize(); }, 100);
+  }
+
+  function setFormGps(lat, lng) {
+    formGps = { lat: lat, lng: lng };
+    document.getElementById('f-gps').value = lat + ', ' + lng;
+  }
+
+  // Try to get current location, but show map immediately
+  if (!formGps && navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      var lat = Math.round(pos.coords.latitude*10000)/10000;
+      var lng = Math.round(pos.coords.longitude*10000)/10000;
+      formMap.setView([lat, lng], 12);
+      document.getElementById('f-gps').value = lang==='pl'?'Kliknij na mapę':'Click on map';
+    }, function() {
+      document.getElementById('f-gps').value = lang==='pl'?'Kliknij na mapę':'Click on map';
+    }, { enableHighAccuracy: true, timeout: 5000 });
+  } else {
+    document.getElementById('f-gps').value = formGps ? formGps.lat+', '+formGps.lng : (lang==='pl'?'Kliknij na mapę':'Click on map');
+  }
+
+  initMap(startPos[0], startPos[1], startZoom);
 }
 
 async function saveDive() {
@@ -570,6 +602,10 @@ function openEditMode(id) {
       <label style="display:flex;flex-direction:column;gap:2px;">${t('entry')}<select id="e-entry" class="edit-input">${entryOpts}</select></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('feeling')}<select id="e-feeling" class="edit-input">${feelOpts}</select></label>
       <label style="display:flex;flex-direction:column;gap:2px;grid-column:1/-1;">${t('notes')}<textarea id="e-notes" class="edit-input" rows="3">${d.notes||''}</textarea></label>
+      <label style="display:flex;flex-direction:column;gap:2px;grid-column:1/-1;">${t('gpsLabel')}
+        <div style="display:flex;gap:6px;"><input id="e-gps" class="edit-input" style="flex:1;" value="${d.gps?d.gps.lat+', '+d.gps.lng:''}" placeholder="lat, lng"><button type="button" onclick="openEditMap()" style="background:var(--accent-dim);border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--accent);cursor:pointer;">📍</button></div>
+        <div id="e-gps-map" style="display:none;height:180px;border-radius:8px;overflow:hidden;margin-top:4px;border:1px solid var(--border);"></div>
+      </label>
     </div>
     <div style="display:flex;gap:8px;">
       <button class="btn-primary" style="flex:1;" onclick="saveEdit('${id}')">💾 ${lang==='pl'?'Zapisz':'Save'}</button>
@@ -582,6 +618,29 @@ function openEditMode(id) {
   document.getElementById('m-delete').style.display = 'none';
   document.getElementById('m-edit').style.display = 'none';
   document.getElementById('m-attach-wrap').innerHTML = '';
+}
+
+let editMap = null;
+function openEditMap() {
+  const mapEl = document.getElementById('e-gps-map');
+  mapEl.style.display = 'block';
+  if (editMap) { editMap.remove(); editMap = null; }
+  const gpsVal = document.getElementById('e-gps').value.trim();
+  let lat = 50.06, lng = 19.94, zoom = 3;
+  if (gpsVal && gpsVal.includes(',')) {
+    const parts = gpsVal.split(',');
+    lat = parseFloat(parts[0]); lng = parseFloat(parts[1]); zoom = 14;
+  }
+  editMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([lat, lng], zoom);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(editMap);
+  var marker = zoom > 3 ? L.marker([lat, lng], {draggable:true}).addTo(editMap) : null;
+  if (marker) marker.on('dragend', function(){ var p=marker.getLatLng(); document.getElementById('e-gps').value=Math.round(p.lat*10000)/10000+', '+Math.round(p.lng*10000)/10000; });
+  editMap.on('click', function(e) {
+    var lt=Math.round(e.latlng.lat*10000)/10000, ln=Math.round(e.latlng.lng*10000)/10000;
+    if(marker) marker.setLatLng([lt,ln]); else { marker=L.marker([lt,ln],{draggable:true}).addTo(editMap); marker.on('dragend',function(){var p=marker.getLatLng();document.getElementById('e-gps').value=Math.round(p.lat*10000)/10000+', '+Math.round(p.lng*10000)/10000;}); }
+    document.getElementById('e-gps').value = lt+', '+ln;
+  });
+  setTimeout(function(){ editMap.invalidateSize(); }, 100);
 }
 
 async function saveEdit(id) {
@@ -610,6 +669,15 @@ async function saveEdit(id) {
     feeling: parseInt(document.getElementById('e-feeling').value)||null,
     notes: document.getElementById('e-notes').value.trim()
   };
+  // Parse GPS from edit field
+  const gpsVal = document.getElementById('e-gps').value.trim();
+  if (gpsVal && gpsVal.includes(',')) {
+    const parts = gpsVal.split(',');
+    update.gps = { lat: parseFloat(parts[0]), lng: parseFloat(parts[1]) };
+  } else {
+    update.gps = null;
+  }
+  if (editMap) { editMap.remove(); editMap = null; }
   try {
     await divesCol.doc(id).update(update);
     showToast(lang==='pl'?'✅ Zapisano!':'✅ Saved!');
