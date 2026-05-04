@@ -839,24 +839,45 @@ function subscribeCerts() {
   });
 }
 
+const AGENCY_LOGOS = {
+  PADI: {color:'#1a4b8c',text:'PADI'},
+  SSI: {color:'#0072bc',text:'SSI'},
+  CMAS: {color:'#003d7a',text:'CMAS'},
+  NAUI: {color:'#1b3a6b',text:'NAUI'},
+  SDI: {color:'#e31837',text:'SDI'},
+  TDI: {color:'#e31837',text:'TDI'},
+  BSAC: {color:'#003087',text:'BSAC'},
+  IANTD: {color:'#8b0000',text:'IANTD'},
+  GUE: {color:'#2e4057',text:'GUE'}
+};
+
 function renderCerts() {
   const list = document.getElementById('certs-list');
   if (!certs.length) {
     list.innerHTML = `<div style="text-align:center;color:var(--text-dim);padding:20px;font-size:0.78rem;">${lang==='pl'?'Brak certyfikatów. Dodaj swój pierwszy!':'No certifications yet. Add your first!'}</div>`;
     return;
   }
-  list.innerHTML = certs.map(c => `
-    <div style="padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;position:relative;">
-      <div style="font-weight:800;font-size:0.85rem;color:var(--accent);">${c.name}</div>
-      <div style="font-size:0.72rem;color:var(--text-dim);margin-top:2px;">
-        ${c.agency?'<span style="background:var(--accent-dim);padding:2px 8px;border-radius:4px;font-weight:600;">'+c.agency+'</span> ':''}
-        ${c.date?'📅 '+c.date:''}
+  list.innerHTML = certs.map(c => {
+    const logo = AGENCY_LOGOS[c.agency];
+    const logoBadge = logo
+      ? `<div style="background:${logo.color};color:#fff;font-weight:900;font-size:0.6rem;padding:4px 8px;border-radius:4px;letter-spacing:1px;">${logo.text}</div>`
+      : (c.agency ? `<div style="background:var(--border);color:var(--text-dim);font-weight:700;font-size:0.6rem;padding:4px 8px;border-radius:4px;">${c.agency}</div>` : '');
+    return `
+    <div style="padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;position:relative;display:flex;gap:10px;align-items:flex-start;">
+      ${c.photoUrl ? `<img src="${c.photoUrl}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;" onclick="openPhotoFull('${c.photoUrl}')">` : ''}
+      <div style="flex:1;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          ${logoBadge}
+          <span style="font-weight:800;font-size:0.82rem;">${c.name}</span>
+        </div>
+        <div style="font-size:0.68rem;color:var(--text-dim);margin-top:4px;">
+          ${c.date?'📅 '+c.date:''}${c.number?' · 🔢 '+c.number:''}
+        </div>
+        ${c.instructor?'<div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">👨‍🏫 '+c.instructor+'</div>':''}
       </div>
-      ${c.number?'<div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;">🔢 '+c.number+'</div>':''}
-      ${c.instructor?'<div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">👨‍🏫 '+c.instructor+'</div>':''}
       <button onclick="deleteCert('${c.id}')" style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.8rem;opacity:0.5;">✕</button>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 async function addCert() {
@@ -864,15 +885,26 @@ async function addCert() {
   if (!name) { showToast(lang==='pl'?'Wpisz nazwę certyfikatu':'Enter certification name'); return; }
   const cert = {
     name,
-    agency: document.getElementById('c-agency').value.trim() || null,
+    agency: document.getElementById('c-agency').value || null,
     date: document.getElementById('c-date').value || null,
     number: document.getElementById('c-number').value.trim() || null,
     instructor: document.getElementById('c-instructor').value.trim() || null,
+    photoUrl: null,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   const uid = myUid();
+  // Upload photo if selected
+  const photoInput = document.getElementById('c-photo');
+  if (photoInput.files.length) {
+    const file = photoInput.files[0];
+    const ref = storage.ref(`users/${uid}/certs/${Date.now()}_${file.name}`);
+    await ref.put(file);
+    cert.photoUrl = await ref.getDownloadURL();
+  }
   await db.collection('users').doc(uid).collection('certs').add(cert);
-  ['c-name','c-agency','c-date','c-number','c-instructor'].forEach(id => document.getElementById(id).value = '');
+  ['c-name','c-date','c-number','c-instructor'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('c-agency').value = '';
+  photoInput.value = '';
   showToast(lang==='pl'?'✅ Certyfikat dodany!':'✅ Certification added!');
 }
 

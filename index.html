@@ -357,13 +357,29 @@
       <div id="certs-list"></div>
       <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-          <input type="text" id="c-name" class="edit-input" placeholder="e.g. PADI Advanced OW">
-          <input type="text" id="c-agency" class="edit-input" placeholder="Agency (PADI, SSI...)">
+          <input type="text" id="c-name" class="edit-input" placeholder="e.g. Advanced Open Water">
+          <select id="c-agency" class="edit-input">
+            <option value="">Agency...</option>
+            <option value="PADI">PADI</option>
+            <option value="SSI">SSI</option>
+            <option value="CMAS">CMAS</option>
+            <option value="NAUI">NAUI</option>
+            <option value="SDI">SDI</option>
+            <option value="TDI">TDI</option>
+            <option value="BSAC">BSAC</option>
+            <option value="IANTD">IANTD</option>
+            <option value="GUE">GUE</option>
+            <option value="Other">Other</option>
+          </select>
           <input type="date" id="c-date" class="edit-input">
           <input type="text" id="c-number" class="edit-input" placeholder="Cert number (optional)">
           <input type="text" id="c-instructor" class="edit-input" placeholder="Instructor (optional)">
-          <button onclick="addCert()" style="background:var(--accent);border:none;border-radius:8px;padding:8px;color:#000;font-weight:700;cursor:pointer;font-size:0.78rem;">+ Add</button>
+          <label style="display:flex;align-items:center;justify-content:center;gap:4px;border:1px dashed var(--border-light);border-radius:8px;padding:6px;cursor:pointer;color:var(--accent);font-size:0.7rem;font-weight:600;">
+            📷 Photo
+            <input type="file" accept="image/*" id="c-photo" style="display:none">
+          </label>
         </div>
+        <button onclick="addCert()" style="margin-top:8px;width:100%;background:var(--accent);border:none;border-radius:8px;padding:10px;color:#000;font-weight:700;cursor:pointer;font-size:0.78rem;">+ Add certification</button>
       </div>
     </div>
   </div>
