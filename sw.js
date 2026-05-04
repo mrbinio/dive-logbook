@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dive-logbook-v1';
+const CACHE_NAME = 'dive-logbook-v2';
 const ASSETS = [
   './',
   './index.html',
