@@ -161,22 +161,23 @@ function handleSuuntoImport(fileInput) {
       if (!updatedData.site) {
         const siteName = prompt(lang==='pl' ? 'Podaj nazwę miejsca nurkowania:' : 'Enter dive site name:', '');
         if (siteName) {
-          const updateObj = { site: siteName.trim() };
-          // Try to geocode the entered name if no GPS
+          const locName = prompt(lang==='pl' ? 'Kraj / lokalizacja:' : 'Country / location:', '');
+          const updateObj = { site: siteName.trim(), location: locName ? locName.trim() : '' };
+          // Try to geocode if no GPS
           if (!updatedData.gps) {
             try {
-              const geoResp = await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(siteName)+'&format=json&limit=1');
+              const query = siteName + (locName ? ' ' + locName : '');
+              const geoResp = await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(query)+'&format=json&limit=1');
               const geoResults = await geoResp.json();
               if (geoResults.length) {
                 updateObj.gps = { lat: parseFloat(geoResults[0].lat), lng: parseFloat(geoResults[0].lon) };
-                updateObj.location = updateObj.location || geoResults[0].display_name.split(',').slice(-2).join(',').trim();
               }
             } catch(e) {}
           }
           await divesCol.doc(docRef.id).update(updateObj);
         }
       } else if (!updatedData.gps && updatedData.site) {
-        // Has site name from geocoding but let's make sure GPS is set
+        // Has site name but no GPS — try geocoding
         try {
           const geoResp = await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(updatedData.site+' '+( updatedData.location||''))+'&format=json&limit=1');
           const geoResults = await geoResp.json();
