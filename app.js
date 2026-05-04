@@ -883,29 +883,34 @@ function renderCerts() {
 async function addCert() {
   const name = document.getElementById('c-name').value.trim();
   if (!name) { showToast(lang==='pl'?'Wpisz nazwę certyfikatu':'Enter certification name'); return; }
-  const cert = {
-    name,
-    agency: document.getElementById('c-agency').value || null,
-    date: document.getElementById('c-date').value || null,
-    number: document.getElementById('c-number').value.trim() || null,
-    instructor: document.getElementById('c-instructor').value.trim() || null,
-    photoUrl: null,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-  const uid = myUid();
-  // Upload photo if selected
-  const photoInput = document.getElementById('c-photo');
-  if (photoInput.files.length) {
-    const file = photoInput.files[0];
-    const ref = storage.ref(`users/${uid}/certs/${Date.now()}_${file.name}`);
-    await ref.put(file);
-    cert.photoUrl = await ref.getDownloadURL();
+  try {
+    const cert = {
+      name,
+      agency: document.getElementById('c-agency').value || null,
+      date: document.getElementById('c-date').value || null,
+      number: document.getElementById('c-number').value.trim() || null,
+      instructor: document.getElementById('c-instructor').value.trim() || null,
+      photoUrl: null,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    const uid = myUid();
+    // Upload photo if selected
+    const photoInput = document.getElementById('c-photo');
+    if (photoInput.files.length) {
+      const file = photoInput.files[0];
+      const ref = storage.ref(`users/${uid}/certs/${Date.now()}_${file.name}`);
+      await ref.put(file);
+      cert.photoUrl = await ref.getDownloadURL();
+    }
+    await db.collection('users').doc(uid).collection('certs').add(cert);
+    ['c-name','c-date','c-number','c-instructor'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('c-agency').value = '';
+    photoInput.value = '';
+    showToast(lang==='pl'?'✅ Certyfikat dodany!':'✅ Certification added!');
+  } catch(e) {
+    showToast('❌ ' + e.message);
+    console.error('addCert error:', e);
   }
-  await db.collection('users').doc(uid).collection('certs').add(cert);
-  ['c-name','c-date','c-number','c-instructor'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('c-agency').value = '';
-  photoInput.value = '';
-  showToast(lang==='pl'?'✅ Certyfikat dodany!':'✅ Certification added!');
 }
 
 async function deleteCert(id) {
