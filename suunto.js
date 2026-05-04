@@ -155,11 +155,35 @@ function handleSuuntoImport(fileInput) {
         } catch(e) { /* geocoding failed, user can edit later */ }
       }
 
-      // If still no site name, prompt
+      // If still no site name, prompt and geocode
       const updatedDoc = await divesCol.doc(docRef.id).get();
-      if (!updatedDoc.data().site) {
+      const updatedData = updatedDoc.data();
+      if (!updatedData.site) {
         const siteName = prompt(lang==='pl' ? 'Podaj nazwę miejsca nurkowania:' : 'Enter dive site name:', '');
-        if (siteName) await divesCol.doc(docRef.id).update({ site: siteName.trim() });
+        if (siteName) {
+          const updateObj = { site: siteName.trim() };
+          // Try to geocode the entered name if no GPS
+          if (!updatedData.gps) {
+            try {
+              const geoResp = await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(siteName)+'&format=json&limit=1');
+              const geoResults = await geoResp.json();
+              if (geoResults.length) {
+                updateObj.gps = { lat: parseFloat(geoResults[0].lat), lng: parseFloat(geoResults[0].lon) };
+                updateObj.location = updateObj.location || geoResults[0].display_name.split(',').slice(-2).join(',').trim();
+              }
+            } catch(e) {}
+          }
+          await divesCol.doc(docRef.id).update(updateObj);
+        }
+      } else if (!updatedData.gps && updatedData.site) {
+        // Has site name from geocoding but let's make sure GPS is set
+        try {
+          const geoResp = await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(updatedData.site+' '+( updatedData.location||''))+'&format=json&limit=1');
+          const geoResults = await geoResp.json();
+          if (geoResults.length) {
+            await divesCol.doc(docRef.id).update({ gps: { lat: parseFloat(geoResults[0].lat), lng: parseFloat(geoResults[0].lon) } });
+          }
+        } catch(e) {}
       }
 
       switchTab('history');
