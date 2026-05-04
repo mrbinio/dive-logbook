@@ -89,7 +89,7 @@ function parseSuuntoJSON(json) {
     device: device + (sw ? ' v' + sw : ''),
     safetyStop: safetyStop,
     minNDL: minNDL,
-    gps: (originLat && originLng) ? { lat: originLat, lng: originLng } : null,
+    gps: (originLat && originLng && Math.abs(originLat) <= 90 && Math.abs(originLng) <= 180) ? { lat: originLat, lng: originLng } : null,
     gpsTrack: gpsTrack.length ? gpsTrack : null,
     depthProfile,
     tempProfile
