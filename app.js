@@ -833,10 +833,11 @@ let unsubCerts = null;
 function subscribeCerts() {
   const uid = myUid(); if (!uid) return;
   if (unsubCerts) unsubCerts();
-  unsubCerts = db.collection('users').doc(uid).collection('certs').orderBy('date','desc').onSnapshot(snap => {
+  unsubCerts = db.collection('users').doc(uid).collection('certs').onSnapshot(snap => {
     certs = snap.docs.map(doc => ({id:doc.id, ...doc.data()}));
+    certs.sort((a,b) => (b.date||'').localeCompare(a.date||''));
     if (document.getElementById('panel-certs').classList.contains('active')) renderCerts();
-  });
+  }, err => { console.error('Certs subscribe error:', err); });
 }
 
 const AGENCY_LOGOS = {
@@ -894,13 +895,15 @@ async function addCert() {
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     const uid = myUid();
-    // Upload photo if selected
+    // Upload photo if Storage is available
     const photoInput = document.getElementById('c-photo');
     if (photoInput.files.length) {
-      const file = photoInput.files[0];
-      const ref = storage.ref(`users/${uid}/certs/${Date.now()}_${file.name}`);
-      await ref.put(file);
-      cert.photoUrl = await ref.getDownloadURL();
+      try {
+        const file = photoInput.files[0];
+        const ref = storage.ref(`users/${uid}/certs/${Date.now()}_${file.name}`);
+        await ref.put(file);
+        cert.photoUrl = await ref.getDownloadURL();
+      } catch(e) { console.warn('Photo upload failed:', e); }
     }
     await db.collection('users').doc(uid).collection('certs').add(cert);
     ['c-name','c-date','c-number','c-instructor'].forEach(id => document.getElementById(id).value = '');
@@ -927,10 +930,11 @@ let unsubGear = null;
 function subscribeGear() {
   const uid = myUid(); if (!uid) return;
   if (unsubGear) unsubGear();
-  unsubGear = db.collection('users').doc(uid).collection('gear').orderBy('category').onSnapshot(snap => {
+  unsubGear = db.collection('users').doc(uid).collection('gear').onSnapshot(snap => {
     gear = snap.docs.map(doc => ({id:doc.id, ...doc.data()}));
+    gear.sort((a,b) => (a.category||'').localeCompare(b.category||''));
     if (document.getElementById('panel-gear').classList.contains('active')) renderGear();
-  });
+  }, err => { console.error('Gear subscribe error:', err); });
 }
 
 function renderGear() {
