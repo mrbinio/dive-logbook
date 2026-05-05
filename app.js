@@ -870,30 +870,40 @@ const AGENCY_LOGOS = {
 function renderCerts() {
   const list = document.getElementById('certs-list');
   if (!certs.length) {
-    list.innerHTML = `<div style="text-align:center;color:var(--text-dim);padding:20px;font-size:0.78rem;">${lang==='pl'?'Brak certyfikatów. Dodaj swój pierwszy!':'No certifications yet. Add your first!'}</div>`;
+    list.innerHTML = `<div style="text-align:center;color:var(--text-dim);padding:20px;font-size:0.78rem;">${lang==='pl'?'Brak certyfikatow. Dodaj swoj pierwszy!':'No certifications yet. Add your first!'}</div>`;
     return;
   }
   list.innerHTML = certs.map(c => {
     const logo = AGENCY_LOGOS[c.agency];
-    const logoBadge = logo
-      ? `<div style="background:${logo.color};color:#fff;font-weight:900;font-size:0.6rem;padding:4px 8px;border-radius:4px;letter-spacing:1px;">${logo.text}</div>`
-      : (c.agency ? `<div style="background:var(--border);color:var(--text-dim);font-weight:700;font-size:0.6rem;padding:4px 8px;border-radius:4px;">${c.agency}</div>` : '');
+    const bgColor = logo ? logo.color : '#1e293b';
+    const hasPhoto = c.photoUrl && c.photoUrl.length > 10;
     return `
-    <div style="padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;position:relative;display:flex;gap:10px;align-items:flex-start;">
-      ${c.photoUrl ? `<img src="${c.photoUrl}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;" onclick="openPhotoFull('${c.photoUrl}')">` : ''}
-      <div style="flex:1;">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          ${logoBadge}
-          <span style="font-weight:800;font-size:0.82rem;">${c.name}</span>
+    <div class="cert-card-wrap" onclick="flipCert(this)" style="perspective:1000px;margin-bottom:14px;cursor:pointer;position:relative;">
+      <div class="cert-card" style="position:relative;width:100%;height:180px;transition:transform 0.6s;transform-style:preserve-3d;">
+        <div style="position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,${bgColor},${bgColor}dd,#0f1923);border:1px solid rgba(255,255,255,0.1);padding:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+          <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.1) 0%,transparent 50%,rgba(255,255,255,0.05) 100%);pointer-events:none;border-radius:14px;"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;">
+            <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(4px);padding:4px 10px;border-radius:6px;font-weight:900;font-size:0.7rem;color:#fff;letter-spacing:1.5px;">${c.agency||'DIVE'}</div>
+            <div style="font-size:0.55rem;color:rgba(255,255,255,0.5);text-align:right;">${c.date||''}</div>
+          </div>
+          <div style="position:relative;">
+            <div style="font-weight:900;font-size:1rem;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,0.3);margin-bottom:4px;">${c.name}</div>
+            <div style="font-size:0.65rem;color:rgba(255,255,255,0.6);">${c.number?'#'+c.number:''}${c.instructor?' \u00b7 '+c.instructor:''}</div>
+          </div>
         </div>
-        <div style="font-size:0.68rem;color:var(--text-dim);margin-top:4px;">
-          ${c.date?'📅 '+c.date:''}${c.number?' · 🔢 '+c.number:''}
+        <div style="position:absolute;inset:0;backface-visibility:hidden;transform:rotateY(180deg);border-radius:14px;overflow:hidden;background:#0f1923;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+          ${hasPhoto ? '<img src="'+c.photoUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">' : '<div style="text-align:center;color:var(--text-dim);font-size:0.72rem;padding:20px;">No photo</div>'}
         </div>
-        ${c.instructor?'<div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">👨‍🏫 '+c.instructor+'</div>':''}
       </div>
-      <button onclick="deleteCert('${c.id}')" style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.8rem;opacity:0.5;">✕</button>
+      <button onclick="event.stopPropagation();deleteCert(\'${c.id}\')" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.5);border:none;color:#fff;cursor:pointer;font-size:0.7rem;border-radius:50%;width:22px;height:22px;z-index:2;opacity:0.4;">x</button>
     </div>`;
   }).join('');
+}
+
+function flipCert(el) {
+  const card = el.querySelector('.cert-card');
+  const isFlipped = card.style.transform === 'rotateY(180deg)';
+  card.style.transform = isFlipped ? '' : 'rotateY(180deg)';
 }
 
 async function addCert() {
