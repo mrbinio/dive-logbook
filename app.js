@@ -95,7 +95,7 @@ function applyLang() {
   document.getElementById('tab-certs').textContent = mob ? t('certs') : '🎓 ' + t('certs');
   document.getElementById('tab-gear').textContent = mob ? t('gear') : '🔧 ' + t('gear');
   document.getElementById('tab-plan').textContent = mob ? t('plan') : '🧮 ' + t('plan');
-  document.getElementById('tab-checklist').textContent = mob ? '✅' : '✅ ' + t('checklist');
+  document.getElementById('tab-checklist').textContent = mob ? t('checklist') : '✅ ' + t('checklist');
   document.getElementById('tab-shop').textContent = mob ? t('shop') : '🛒 ' + t('shop');
   // Form labels
   const labels = {
