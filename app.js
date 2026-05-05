@@ -877,16 +877,19 @@ function renderCerts() {
     const logo = AGENCY_LOGOS[c.agency];
     const bgColor = logo ? logo.color : '#1e293b';
     const hasPhoto = c.photoUrl && c.photoUrl.length > 10;
+    const userName = myName();
     return `
     <div class="cert-card-wrap" onclick="flipCert(this)" style="perspective:1000px;margin-bottom:14px;cursor:pointer;position:relative;">
-      <div class="cert-card" style="position:relative;width:100%;height:180px;transition:transform 0.6s;transform-style:preserve-3d;">
+      <div class="cert-card" style="position:relative;width:100%;height:200px;transition:transform 0.6s;transform-style:preserve-3d;">
         <div style="position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,${bgColor},${bgColor}dd,#0f1923);border:1px solid rgba(255,255,255,0.1);padding:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
           <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.1) 0%,transparent 50%,rgba(255,255,255,0.05) 100%);pointer-events:none;border-radius:14px;"></div>
+          <div style="position:absolute;right:12px;top:45%;transform:translateY(-50%);opacity:0.08;font-size:5rem;pointer-events:none;">🐙</div>
           <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;">
             <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(4px);padding:4px 10px;border-radius:6px;font-weight:900;font-size:0.7rem;color:#fff;letter-spacing:1.5px;">${c.agency||'DIVE'}</div>
             <div style="font-size:0.55rem;color:rgba(255,255,255,0.5);text-align:right;">${c.date||''}</div>
           </div>
           <div style="position:relative;">
+            <div style="font-size:0.7rem;color:rgba(255,255,255,0.7);margin-bottom:2px;letter-spacing:0.5px;">${userName}</div>
             <div style="font-weight:900;font-size:1rem;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,0.3);margin-bottom:4px;">${c.name}</div>
             <div style="font-size:0.65rem;color:rgba(255,255,255,0.6);">${c.number?'#'+c.number:''}${c.instructor?' \u00b7 '+c.instructor:''}</div>
           </div>
