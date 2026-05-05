@@ -92,11 +92,12 @@ function applyLang() {
   document.getElementById('tab-history').textContent = mob ? t('myDives') : '🌊 ' + t('myDives');
   document.getElementById('tab-stats').textContent = mob ? t('stats') : '📊 ' + t('stats');
   document.getElementById('tab-map').textContent = mob ? t('diveMap') : '🗺 ' + t('diveMap');
-  document.getElementById('tab-certs').textContent = mob ? t('certs') : '🎓 ' + t('certs');
-  document.getElementById('tab-gear').textContent = mob ? t('gear') : '🔧 ' + t('gear');
-  document.getElementById('tab-plan').textContent = mob ? t('plan') : '🧮 ' + t('plan');
-  document.getElementById('tab-checklist').textContent = mob ? t('checklist') : '✅ ' + t('checklist');
-  document.getElementById('tab-shop').textContent = mob ? t('shop') : '🛒 ' + t('shop');
+  document.getElementById('tab-certs').textContent = '🎓 ' + t('certs');
+  document.getElementById('tab-gear').textContent = '🔧 ' + t('gear');
+  document.getElementById('tab-plan').textContent = '🧮 ' + t('plan');
+  document.getElementById('tab-checklist').textContent = '✅ ' + t('checklist');
+  document.getElementById('tab-shop').textContent = '🛒 ' + t('shop');
+  if (mob) document.getElementById('tab-more').textContent = 'More';
   // Form labels
   const labels = {
     'l-site':t('diveSite'),'l-loc':t('location'),'l-date':t('date'),
@@ -313,11 +314,18 @@ function setRating(n) {
   document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('active',i<n));
 }
 
+function toggleMoreMenu() { document.getElementById('more-menu').classList.toggle('open'); }
+function closeMore() { document.getElementById('more-menu').classList.remove('open'); }
+
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach((t,i)=>{
-    const tabs=['log','history','stats','map','certs','gear','plan','checklist','shop'];
-    t.classList.toggle('active', tabs[i]===tab);
-  });
+  closeMore();
+  document.querySelectorAll('.tabs-bar .tab').forEach(t => t.classList.remove('active'));
+  const tabEl = document.getElementById('tab-'+tab);
+  if (tabEl) tabEl.classList.add('active');
+  // If it's a "more" tab on mobile, highlight the more button
+  if (window.innerWidth <= 600 && ['certs','gear','plan','checklist','shop'].includes(tab)) {
+    document.getElementById('tab-more').classList.add('active');
+  }
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+tab).classList.add('active');
   if(tab==='history') renderDives();

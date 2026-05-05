@@ -113,20 +113,42 @@ body {
   .tabs-bar {
     position: fixed; bottom: 0; left: 0; right: 0;
     margin: 0; border-radius: 0; z-index: 1000;
-    padding: 4px 4px 8px; gap: 2px;
-    display: grid; grid-template-columns: repeat(5, 1fr);
+    padding: 6px 0 10px; gap: 0;
+    display: flex; justify-content: space-around;
     border: none; border-top: 1px solid var(--border);
     overflow: visible; white-space: normal;
     background: var(--bg-card);
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
   }
   .tab {
-    padding: 7px 2px; font-size: 0.6rem; border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    min-width: 0;
+    padding: 4px 0; font-size: 0.55rem; border-radius: 0;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    min-width: 0; flex: 1; letter-spacing: 0;
   }
-  .tab.active { background: var(--accent-dim); color: var(--accent); box-shadow: none; }
-  .container { padding-bottom: 100px !important; }
+  .tab::before {
+    font-size: 1.2rem; display: block; line-height: 1;
+  }
+  #tab-log::before { content: '📋'; }
+  #tab-history::before { content: '🌊'; }
+  #tab-stats::before { content: '📊'; }
+  #tab-map::before { content: '🗺'; }
+  #tab-more::before { content: '⋯'; }
+  .tab.active { background: none; color: var(--accent); box-shadow: none; }
+  .tab:not(.active) { color: var(--text-muted); }
+  /* Hide secondary tabs on mobile by default */
+  #tab-certs, #tab-gear, #tab-plan, #tab-checklist, #tab-shop { display: none; }
+  #tab-more { display: flex; }
+  .more-menu {
+    display: none; position: fixed; bottom: 64px; right: 8px; left: 8px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 8px; z-index: 1001;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.3);
+    flex-wrap: wrap; gap: 4px; justify-content: center;
+  }
+  .more-menu.open { display: flex; }
+  .more-menu .tab { display: flex; flex: 0 0 auto; padding: 10px 14px; font-size: 0.72rem; border-radius: 8px; flex-direction: row; gap: 6px; }
+  .more-menu .tab::before { display: none; }
+  .container { padding-bottom: 80px !important; }
 }
 .panel { display: none; animation: fadeUp 0.25s ease; }
 .panel.active { display: block; }

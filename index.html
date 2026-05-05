@@ -138,6 +138,14 @@
     <button class="tab" id="tab-plan" onclick="switchTab('plan')">🧮 Plan</button>
     <button class="tab" id="tab-checklist" onclick="switchTab('checklist')">✅ Checklist</button>
     <button class="tab" id="tab-shop" onclick="switchTab('shop')">🛒 Shop</button>
+    <button class="tab" id="tab-more" onclick="toggleMoreMenu()" style="display:none;">⋯ More</button>
+  </div>
+  <div class="more-menu" id="more-menu">
+    <button class="tab" onclick="switchTab('certs');closeMore()">🎓 Certs</button>
+    <button class="tab" onclick="switchTab('gear');closeMore()">🔧 Gear</button>
+    <button class="tab" onclick="switchTab('plan');closeMore()">🧮 Plan</button>
+    <button class="tab" onclick="switchTab('checklist');closeMore()">✅ Checklist</button>
+    <button class="tab" onclick="switchTab('shop');closeMore()">🛒 Shop</button>
   </div>
 
   <div class="panel active" id="panel-log">
