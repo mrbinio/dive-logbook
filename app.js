@@ -895,7 +895,7 @@ function renderCerts() {
           </div>
         </div>
         <div style="position:absolute;inset:0;backface-visibility:hidden;transform:rotateY(180deg);border-radius:14px;overflow:hidden;background:#0f1923;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
-          ${hasPhoto ? '<img src="'+c.photoUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">' : '<div style="text-align:center;color:var(--text-dim);font-size:0.72rem;padding:20px;">No photo</div>'}
+          ${hasPhoto ? '<img src="'+c.photoUrl+'" style="width:100%;height:100%;object-fit:contain;border-radius:14px;padding:4px;">' : '<div style="text-align:center;color:var(--text-dim);font-size:0.72rem;padding:20px;">No photo</div>'}
         </div>
       </div>
       <button onclick="event.stopPropagation();deleteCert(\'${c.id}\')" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.5);border:none;color:#fff;cursor:pointer;font-size:0.7rem;border-radius:50%;width:22px;height:22px;z-index:2;opacity:0.4;">x</button>
