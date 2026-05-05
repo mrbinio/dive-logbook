@@ -879,7 +879,7 @@ function renderCerts() {
     const hasPhoto = c.photoUrl && c.photoUrl.length > 10;
     const userName = myName();
     return `
-    <div class="cert-card-wrap" onclick="flipCert(this)" style="perspective:1000px;margin-bottom:14px;cursor:pointer;position:relative;">
+    <div class="cert-card-wrap" onclick="flipCert(this)" style="perspective:1000px;margin-bottom:14px;cursor:pointer;position:relative;max-width:400px;">
       <div class="cert-card" style="position:relative;width:100%;height:200px;transition:transform 0.6s;transform-style:preserve-3d;">
         <div style="position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,${bgColor},${bgColor}dd,#0f1923);border:1px solid rgba(255,255,255,0.1);padding:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
           <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.1) 0%,transparent 50%,rgba(255,255,255,0.05) 100%);pointer-events:none;border-radius:14px;"></div>
