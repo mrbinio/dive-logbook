@@ -108,6 +108,8 @@ body {
   box-shadow: 0 2px 16px rgba(45,212,191,0.2);
 }
 .tab:not(.active):hover { color: var(--text); background: rgba(255,255,255,0.03); }
+#tab-more { display: none; }
+.more-menu { display: none; }
 
 @media (max-width: 600px) {
   .tabs-bar {
