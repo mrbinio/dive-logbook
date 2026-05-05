@@ -87,15 +87,16 @@ function applyLang() {
   document.getElementById('lang-btn').textContent = lang === 'en' ? '🇵🇱 PL' : '🇬🇧 EN';
   document.getElementById('brand-sub').textContent = t('subtitle');
   // Tabs
-  document.getElementById('tab-log').innerHTML = '📋 ' + t('logDive');
-  document.getElementById('tab-history').innerHTML = '🌊 ' + t('myDives');
-  document.getElementById('tab-stats').innerHTML = '📊 ' + t('stats');
-  document.getElementById('tab-map').innerHTML = '🗺 ' + t('diveMap');
-  document.getElementById('tab-certs').innerHTML = '🎓 ' + t('certs');
-  document.getElementById('tab-gear').innerHTML = '🔧 ' + t('gear');
-  document.getElementById('tab-plan').innerHTML = '🧮 ' + t('plan');
-  document.getElementById('tab-checklist').innerHTML = '✅ ' + t('checklist');
-  document.getElementById('tab-shop').innerHTML = '🛒 ' + t('shop');
+  const mob = window.innerWidth <= 600;
+  document.getElementById('tab-log').textContent = mob ? t('logDive') : '📋 ' + t('logDive');
+  document.getElementById('tab-history').textContent = mob ? t('myDives') : '🌊 ' + t('myDives');
+  document.getElementById('tab-stats').textContent = mob ? t('stats') : '📊 ' + t('stats');
+  document.getElementById('tab-map').textContent = mob ? t('diveMap') : '🗺 ' + t('diveMap');
+  document.getElementById('tab-certs').textContent = mob ? t('certs') : '🎓 ' + t('certs');
+  document.getElementById('tab-gear').textContent = mob ? t('gear') : '🔧 ' + t('gear');
+  document.getElementById('tab-plan').textContent = mob ? t('plan') : '🧮 ' + t('plan');
+  document.getElementById('tab-checklist').textContent = mob ? '✅' : '✅ ' + t('checklist');
+  document.getElementById('tab-shop').textContent = mob ? t('shop') : '🛒 ' + t('shop');
   // Form labels
   const labels = {
     'l-site':t('diveSite'),'l-loc':t('location'),'l-date':t('date'),
