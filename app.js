@@ -159,7 +159,6 @@ firebase.initializeApp({
 const db = firebase.firestore();
 let divesCol;
 const auth = firebase.auth();
-const storage = firebase.storage();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 
 let dives = [];
@@ -767,26 +766,48 @@ function showToast(msg){
 
 
 
+
+function compressImage(file, maxWidth, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > maxWidth) { h = h * maxWidth / w; w = maxWidth; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 // === PHOTOS ===
 async function uploadPhotos(diveId, input) {
   const files = input.files;
   if (!files.length) return;
-  const uid = myUid();
   const photosDiv = document.getElementById('dive-photos');
-  for (const file of files) {
-    const name = Date.now() + '_' + file.name;
-    const ref = storage.ref(`users/${uid}/dives/${diveId}/${name}`);
-    photosDiv.innerHTML += `<div style="padding:8px;font-size:0.7rem;color:var(--text-dim);">⏳ ${lang==='pl'?'Wysyłanie...':'Uploading...'}</div>`;
-    await ref.put(file);
-    const url = await ref.getDownloadURL();
-    // Save photo URL to dive document
-    await divesCol.doc(diveId).update({
-      photos: firebase.firestore.FieldValue.arrayUnion({url, name})
-    });
+  photosDiv.innerHTML = `<div style="padding:8px;font-size:0.7rem;color:var(--text-dim);">⏳ ${lang==='pl'?'Kompresowanie...':'Compressing...'}</div>`;
+  try {
+    for (const file of files) {
+      const dataUrl = await compressImage(file, 1200, 0.6);
+      await divesCol.doc(diveId).update({
+        photos: firebase.firestore.FieldValue.arrayUnion({url: dataUrl, name: file.name})
+      });
+    }
+    input.value = '';
+    loadPhotos(diveId);
+    showToast(lang==='pl'?'📷 Zdjęcia dodane!':'📷 Photos added!');
+  } catch(e) {
+    showToast('❌ ' + e.message);
+    photosDiv.innerHTML = '';
   }
-  input.value = '';
-  loadPhotos(diveId);
-  showToast(lang==='pl'?'📷 Zdjęcia dodane!':'📷 Photos added!');
 }
 
 function loadPhotos(diveId) {
@@ -815,14 +836,8 @@ async function deletePhoto(diveId, index) {
   if (!confirm(lang==='pl'?'Usunąć zdjęcie?':'Delete photo?')) return;
   const d = dives.find(x => x.id === diveId);
   const photos = [...(d.photos || [])];
-  const photo = photos[index];
   photos.splice(index, 1);
   await divesCol.doc(diveId).update({ photos });
-  // Delete from storage
-  try {
-    const uid = myUid();
-    await storage.ref(`users/${uid}/dives/${diveId}/${photo.name}`).delete();
-  } catch(e) { /* file may not exist */ }
   loadPhotos(diveId);
 }
 
@@ -895,15 +910,12 @@ async function addCert() {
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     const uid = myUid();
-    // Upload photo if Storage is available
+    // Compress and store photo as base64 in Firestore (no Storage needed)
     const photoInput = document.getElementById('c-photo');
     if (photoInput.files.length) {
       try {
-        const file = photoInput.files[0];
-        const ref = storage.ref(`users/${uid}/certs/${Date.now()}_${file.name}`);
-        await ref.put(file);
-        cert.photoUrl = await ref.getDownloadURL();
-      } catch(e) { console.warn('Photo upload failed:', e); }
+        cert.photoUrl = await compressImage(photoInput.files[0], 800, 0.7);
+      } catch(e) { console.warn('Photo compress failed:', e); }
     }
     await db.collection('users').doc(uid).collection('certs').add(cert);
     ['c-name','c-date','c-number','c-instructor'].forEach(id => document.getElementById(id).value = '');
