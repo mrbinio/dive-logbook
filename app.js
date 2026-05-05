@@ -884,7 +884,7 @@ function renderCerts() {
       <div class="cert-card" style="position:relative;width:100%;height:200px;transition:transform 0.6s;transform-style:preserve-3d;">
         <div style="position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,${bgColor},${bgColor}dd,#0f1923);border:1px solid rgba(255,255,255,0.1);padding:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
           <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.1) 0%,transparent 50%,rgba(255,255,255,0.05) 100%);pointer-events:none;border-radius:14px;"></div>
-          <img src="octopus.png" style="position:absolute;right:5px;bottom:5px;opacity:0.3;width:110px;height:110px;pointer-events:none;object-fit:contain;">
+          <img src="octopus.png" style="position:absolute;right:5px;bottom:5px;opacity:0.5;width:110px;height:110px;pointer-events:none;object-fit:contain;filter:brightness(1.4) saturate(1.3);">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;">
             <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(4px);padding:4px 10px;border-radius:6px;font-weight:900;font-size:0.7rem;color:#fff;letter-spacing:1.5px;">${c.agency||'DIVE'}</div>
             <div style="font-size:0.55rem;color:rgba(255,255,255,0.5);text-align:right;">${c.date||''}</div>
