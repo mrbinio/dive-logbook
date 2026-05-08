@@ -1,5 +1,7 @@
 *.json
 !manifest.json
+!firebase.json
+!.firebaserc
 *.png
 *.jpg
 *.jpeg
