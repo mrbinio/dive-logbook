@@ -597,6 +597,9 @@ function openModal(id) {
   // Edit button
   document.getElementById('m-edit').textContent = lang==='pl'?'✏️ Edytuj':'✏️ Edit';
   document.getElementById('m-edit').onclick = ()=>openEditMode(id);
+  document.getElementById('m-compare').textContent = lang==='pl'?'⚖️ Porównaj':'⚖️ Compare';
+  document.getElementById('m-compare').onclick = ()=>compareDive(id);
+  document.getElementById('m-compare').style.display = dives.length > 1 ? '' : 'none';
 
   // Attach Suunto button (only if no depth profile yet)
   const attachWrap = document.getElementById('m-attach-wrap');
@@ -691,6 +694,44 @@ function openEditMode(id) {
   document.getElementById('m-notes-wrap').innerHTML = editHTML;
   document.getElementById('m-delete').style.display = 'none';
   document.getElementById('m-edit').style.display = 'none';
+  document.getElementById('m-attach-wrap').innerHTML = '';
+}
+
+
+function compareDive(id) {
+  const current = dives.find(x=>x.id===id);
+  const others = dives.filter(x=>x.id!==id);
+  const options = others.slice(0,20).map(d => `${d.site||'Dive'} (${d.date||'?'})`).join('\n');
+  const choice = prompt((lang==='pl'?'Porównaj z (wpisz numer 1-':'Compare with (enter number 1-')+others.length+'):\n'+others.slice(0,20).map((d,i)=>(i+1)+'. '+( d.site||'Dive')+' — '+( d.date||'')).join('\n'));
+  if (!choice) return;
+  const idx = parseInt(choice) - 1;
+  if (idx < 0 || idx >= others.length) return;
+  const other = others[idx];
+
+  const fields = [
+    ['Site', current.site, other.site],
+    ['Date', current.date, other.date],
+    ['Depth', (current.depth||0)+'m', (other.depth||0)+'m'],
+    ['Avg Depth', (current.avgDepth||'—')+'m', (other.avgDepth||'—')+'m'],
+    ['Duration', (current.duration||0)+' min', (other.duration||0)+' min'],
+    ['Temp', current.temp?current.temp+'°C':'—', other.temp?other.temp+'°C':'—'],
+    ['Visibility', current.visibility?current.visibility+'m':'—', other.visibility?other.visibility+'m':'—'],
+    ['Type', current.type||'—', other.type||'—'],
+    ['Buddy', current.buddy||'—', other.buddy||'—'],
+    ['Rating', current.rating?'⭐'.repeat(current.rating):'—', other.rating?'⭐'.repeat(other.rating):'—'],
+  ];
+
+  document.getElementById('m-stats').innerHTML = '';
+  document.getElementById('m-notes-wrap').innerHTML = `
+    <div style="font-size:0.75rem;font-weight:700;margin-bottom:8px;">⚖️ ${lang==='pl'?'Porównanie':'Comparison'}</div>
+    <table style="width:100%;font-size:0.7rem;border-collapse:collapse;">
+      <tr style="border-bottom:1px solid var(--border);"><th style="text-align:left;padding:4px;color:var(--text-dim);"></th><th style="padding:4px;color:var(--accent);">#${current.num||''}</th><th style="padding:4px;color:#8b5cf6;">#${other.num||''}</th></tr>
+      ${fields.map(([label,a,b]) => `<tr style="border-bottom:1px solid var(--border);"><td style="padding:4px;color:var(--text-dim);">${label}</td><td style="padding:4px;font-weight:600;">${a||'—'}</td><td style="padding:4px;font-weight:600;">${b||'—'}</td></tr>`).join('')}
+    </table>
+    <button class="btn-edit" style="margin-top:12px;width:100%;" onclick="openModal('${id}')">← ${lang==='pl'?'Wróć':'Back'}</button>`;
+  document.getElementById('m-delete').style.display = 'none';
+  document.getElementById('m-edit').style.display = 'none';
+  document.getElementById('m-compare').style.display = 'none';
   document.getElementById('m-attach-wrap').innerHTML = '';
 }
 
@@ -1151,6 +1192,23 @@ function renderStats() {
   }
 
   document.getElementById('stats-charts').innerHTML = chartsHTML;
+
+  // Timeline
+  const timelineEl = document.getElementById('stats-timeline');
+  if (timelineEl) {
+    const sorted = [...dives].filter(d=>d.date).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,20);
+    timelineEl.innerHTML = sorted.length ? `
+      <div style="font-size:0.75rem;font-weight:700;color:var(--text-dim);margin-bottom:10px;">${lang==='pl'?'Ostatnie nurki':'Recent dives'}</div>
+      <div style="position:relative;padding-left:20px;border-left:2px solid var(--border);">
+        ${sorted.map(d => `
+          <div style="position:relative;margin-bottom:14px;">
+            <div style="position:absolute;left:-25px;top:2px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid var(--bg-card);"></div>
+            <div style="font-size:0.65rem;color:var(--text-muted);">${formatDate(d.date)}</div>
+            <div style="font-weight:700;font-size:0.8rem;margin:2px 0;" onclick="openModal('${d.id}')" style="cursor:pointer;">${d.site||'Dive'}</div>
+            <div style="font-size:0.65rem;color:var(--text-dim);">${d.depth}m · ${d.duration}min${d.buddy?' · 👤 '+d.buddy:''}${d.rating?' · '+'⭐'.repeat(d.rating):''}</div>
+          </div>`).join('')}
+      </div>` : '';
+  }
 }
 
 

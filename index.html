@@ -357,6 +357,7 @@
       <div class="card-title">📊 <span class="accent" id="stats-title">Dive Statistics</span></div>
       <div id="stats-summary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;"></div>
       <div id="stats-charts"></div>
+      <div id="stats-timeline" style="margin-top:20px;"></div>
       <button onclick="exportPDF()" style="margin-top:16px;width:100%;background:transparent;border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--accent);font-size:0.72rem;cursor:pointer;font-family:inherit;">📄 Export PDF Logbook</button>
       <button onclick="exportJSON()" style="margin-top:8px;width:100%;background:transparent;border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-dim);font-size:0.72rem;cursor:pointer;font-family:inherit;">💾 Backup all data (JSON)</button>
     </div>
@@ -602,6 +603,7 @@
     <div id="m-notes-wrap"></div>
     <button class="btn-delete" id="m-delete">🗑 Delete</button>
     <button class="btn-edit" id="m-edit">✏️ Edit</button>
+    <button class="btn-edit" id="m-compare" style="margin-top:4px;">⚖️ Compare</button>
     <div id="m-attach-wrap"></div>
   </div>
 </div>
