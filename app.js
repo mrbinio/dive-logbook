@@ -988,7 +988,7 @@ function renderGear() {
       else if (daysLeft < 30) serviceStatus = `<span style="color:#f59e0b;font-weight:600;">⏰ ${daysLeft}d left</span>`;
       else serviceStatus = `<span style="color:var(--text-muted);">✅ ${lang==='pl'?'Następny':'Next'}: ${next.toISOString().substring(0,10)}</span>`;
     }
-    const catIcons = {Regulator:'🫧',['BCD/Wing']:'🦺',Computer:'⌚',Drysuit:'🥶',Wetsuit:'🩱',Fins:'🦶',Mask:'🤿',Light:'🔦',Tank:'🛢',Other:'📦'};
+    const catIcons = {Regulator:'🫧',['BCD/Wing']:'🦺',Computer:'⌚',Drysuit:'🥶',Wetsuit:'🩱',Undersuit:'🧥',Hood:'🎿',Gloves:'🧤',Boots:'🥾',Fins:'🦶',Mask:'🤿',Light:'🔦',['Backup Light']:'🔦',Tank:'🛢',['SMB/Reel']:'🪢',Knife:'🔪',Camera:'📷',Weights:'🏋️',Harness:'⛓️',Sidemount:'⛓️',Stage:'🧪',Bag:'🎒',Other:'📦'};
     return `
     <div style="padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;position:relative;">
       <div style="display:flex;align-items:center;gap:8px;">
