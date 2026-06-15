@@ -187,6 +187,14 @@ function handleSuuntoImport(fileInput) {
         } catch(e) {}
       }
 
+      // Ask for notes and dive type after import
+      const diveType = prompt(lang==='pl' ? 'Typ nurkowania (Recreational, Technical, Sidemount, Training, Night, Cave, Wreck, Deep):' : 'Dive type (Recreational, Technical, Sidemount, Training, Night, Cave, Wreck, Deep):', 'Recreational');
+      const notes = prompt(lang==='pl' ? 'Notatki (sprzęt, warunki, co zabrać następnym razem):' : 'Notes (gear, conditions, what to bring next time):', '');
+      const postUpdate = {};
+      if (diveType) postUpdate.type = diveType.trim();
+      if (notes) postUpdate.notes = notes.trim();
+      if (Object.keys(postUpdate).length) await divesCol.doc(docRef.id).update(postUpdate);
+
       switchTab('history');
       setTimeout(() => openModal(docRef.id), 500);
     } catch(err) {
