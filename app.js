@@ -487,12 +487,19 @@ function resetForm() {
 function renderDives() {
   const q = document.getElementById('search-input').value.toLowerCase();
   const type = document.getElementById('filter-type').value;
+  const sort = document.getElementById('filter-sort').value;
   const grid = document.getElementById('dives-grid');
   let filtered = dives.filter(d=>{
     const mq = !q || d.site.toLowerCase().includes(q)||(d.location||'').toLowerCase().includes(q);
     const mt = !type || d.type===type;
     return mq && mt;
   });
+  // Sort
+  if (sort === 'date-asc') filtered.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  else if (sort === 'depth-desc') filtered.sort((a,b)=>(b.depth||0)-(a.depth||0));
+  else if (sort === 'depth-asc') filtered.sort((a,b)=>(a.depth||0)-(b.depth||0));
+  else if (sort === 'site-asc') filtered.sort((a,b)=>(a.site||'').localeCompare(b.site||''));
+  // default date-desc already from Firestore
   if(!filtered.length){
     grid.innerHTML=`<div class="empty-state">
       <span class="empty-icon">🌊</span>
@@ -1124,13 +1131,24 @@ function renderStats() {
   // Dive types pie-like
   const typeCounts = {};
   dives.forEach(d => { typeCounts[d.type||'Other'] = (typeCounts[d.type||'Other']||0)+1; });
-  const typeColors = {Recreational:'#2dd4bf',Technical:'#8b5cf6',Cave:'#f59e0b',Night:'#6366f1',Wreck:'#ef4444',Drift:'#06b6d4',Deep:'#ec4899',Training:'#22c55e'};
+  const typeColors = {Recreational:'#2dd4bf',Technical:'#8b5cf6',Sidemount:'#06b6d4',Cave:'#f59e0b',Night:'#6366f1',Wreck:'#ef4444',Drift:'#06b6d4',Deep:'#ec4899',Training:'#22c55e',Checkout:'#84cc16',Shore:'#14b8a6',Boat:'#0ea5e9'};
   chartsHTML += `<div style="margin-top:16px;"><div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;">${lang==='pl'?'Typy nurkowań':'Dive types'}</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;">
       ${Object.entries(typeCounts).map(([type,count]) => `
         <div style="padding:4px 10px;border-radius:12px;font-size:0.68rem;font-weight:600;background:${typeColors[type]||'#64748b'}22;color:${typeColors[type]||'#64748b'};border:1px solid ${typeColors[type]||'#64748b'}44;">${type} (${count})</div>
       `).join('')}
     </div></div>`;
+
+  // Buddy stats
+  const buddyCounts = {};
+  dives.forEach(d => { if(d.buddy) d.buddy.split(',').forEach(b => { const name=b.trim(); if(name) buddyCounts[name]=(buddyCounts[name]||0)+1; }); });
+  const topBuddies = Object.entries(buddyCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  if (topBuddies.length) {
+    chartsHTML += `<div style="margin-top:16px;"><div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;">${lang==='pl'?'Buddies':'Dive buddies'}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${topBuddies.map(([name,count]) => `<div style="padding:6px 12px;border-radius:10px;font-size:0.7rem;background:var(--accent-dim);border:1px solid rgba(45,212,191,0.2);color:var(--accent);font-weight:600;">👤 ${name} <span style="opacity:0.6;">(${count})</span></div>`).join('')}
+      </div></div>`;
+  }
 
   document.getElementById('stats-charts').innerHTML = chartsHTML;
 }
@@ -1283,6 +1301,52 @@ function calcPlan() {
     ${!gasOk?'<div style="margin-top:6px;padding:8px;border-radius:6px;background:rgba(244,63,94,0.1);color:var(--danger);font-size:0.72rem;font-weight:600;">⚠️ Not enough gas! Need ${barUsed} bar, available ${availableBar} bar (${startBar}-${reserve} reserve).</div>':''}
     <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);text-align:center;">⚠️ For planning only. Always follow your training and computer.</div>
   `;
+}
+
+
+function exportJSON() {
+  const data = { dives, certs, gear, exportDate: new Date().toISOString(), user: myEmail() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'dive-backup-' + new Date().toISOString().substring(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(lang==='pl'?'💾 Backup pobrany!':'💾 Backup downloaded!');
+}
+
+
+async function fetchDiveWeather() {
+  const site = document.getElementById('p-weather-site').value.trim();
+  if (!site) return;
+  const el = document.getElementById('plan-weather');
+  el.innerHTML = '<div style="font-size:0.7rem;color:var(--text-dim);">Loading...</div>';
+  try {
+    const geoResp = await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(site)+'&format=json&limit=1');
+    const geo = await geoResp.json();
+    if (!geo.length) { el.innerHTML = '<div style="color:var(--danger);font-size:0.7rem;">Location not found</div>'; return; }
+    const lat = geo[0].lat, lon = geo[0].lon;
+    const wResp = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,windspeed_10m,weathercode&daily=temperature_2m_max,temperature_2m_min,windspeed_10m_max,weathercode&timezone=auto&forecast_days=3`);
+    const w = await wResp.json();
+    const wCodes = {0:'☀️ Clear',1:'🌤 Mostly clear',2:'⛅ Partly cloudy',3:'☁️ Overcast',45:'🌫 Fog',51:'🌦 Drizzle',61:'🌧 Rain',63:'🌧 Moderate rain',65:'🌧 Heavy rain',80:'🌦 Showers',95:'⛈ Storm'};
+    const cur = w.current;
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;font-size:0.72rem;">
+        <div style="padding:8px;border-radius:8px;border:1px solid var(--border);text-align:center;">
+          <div style="font-size:1.1rem;">${wCodes[cur.weathercode]||'🌡'}</div>
+          <div style="font-weight:700;">${cur.temperature_2m}°C</div>
+          <div style="font-size:0.6rem;color:var(--text-dim);">Now</div>
+        </div>
+        <div style="padding:8px;border-radius:8px;border:1px solid var(--border);text-align:center;">
+          <div style="font-size:1.1rem;">💨</div>
+          <div style="font-weight:700;">${cur.windspeed_10m} km/h</div>
+          <div style="font-size:0.6rem;color:var(--text-dim);">Wind</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:0.65rem;color:var(--text-dim);">
+        ${w.daily.time.map((d,i) => `<span style="margin-right:10px;">${d.substring(5)}: ${wCodes[w.daily.weathercode[i]]||''} ${w.daily.temperature_2m_min[i]}–${w.daily.temperature_2m_max[i]}°C 💨${w.daily.windspeed_10m_max[i]}</span>`).join('')}
+      </div>`;
+  } catch(e) { el.innerHTML = '<div style="color:var(--danger);font-size:0.7rem;">Error: '+e.message+'</div>'; }
 }
 
 // === DIVE MAP ===

@@ -330,16 +330,23 @@
         <option value="">All Types</option>
         <option value="Recreational">Recreational</option>
         <option value="Technical">Technical</option>
+        <option value="Sidemount">Sidemount</option>
         <option value="Cave">Cave</option>
         <option value="Night">Night</option>
         <option value="Wreck">Wreck</option>
         <option value="Drift">Drift</option>
         <option value="Deep">Deep</option>
-        <option value="Sidemount">Sidemount</option>
         <option value="Shore">Shore</option>
         <option value="Boat">Boat</option>
         <option value="Training">Training / Course</option>
         <option value="Checkout">Checkout dive</option>
+      </select>
+      <select class="filter-select" id="filter-sort" onchange="renderDives()">
+        <option value="date-desc">Newest first</option>
+        <option value="date-asc">Oldest first</option>
+        <option value="depth-desc">Deepest first</option>
+        <option value="depth-asc">Shallowest first</option>
+        <option value="site-asc">Site A→Z</option>
       </select>
     </div>
     <div class="dives-list" id="dives-grid"></div>
@@ -351,6 +358,7 @@
       <div id="stats-summary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;"></div>
       <div id="stats-charts"></div>
       <button onclick="exportPDF()" style="margin-top:16px;width:100%;background:transparent;border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--accent);font-size:0.72rem;cursor:pointer;font-family:inherit;">📄 Export PDF Logbook</button>
+      <button onclick="exportJSON()" style="margin-top:8px;width:100%;background:transparent;border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-dim);font-size:0.72rem;cursor:pointer;font-family:inherit;">💾 Backup all data (JSON)</button>
     </div>
   </div>
 
@@ -484,6 +492,14 @@
         </label>
       </div>
       <div id="plan-results"></div>
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;">🌊 Weather at dive site</div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="p-weather-site" class="edit-input" style="flex:1;" placeholder="Dive site or city name...">
+          <button onclick="fetchDiveWeather()" style="background:var(--accent);border:none;border-radius:8px;padding:6px 12px;color:#000;font-weight:700;cursor:pointer;font-size:0.75rem;">Check</button>
+        </div>
+        <div id="plan-weather" style="margin-top:8px;"></div>
+      </div>
     </div>
   </div>
 
