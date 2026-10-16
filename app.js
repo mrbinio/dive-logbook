@@ -73,6 +73,11 @@ const T = {
 let lang = localStorage.getItem('aq_lang') || 'en';
 function t(key) { return T[lang][key] || T.en[key] || key; }
 
+// Escape user-provided text before inserting it into innerHTML
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 function setLang(l) {
   lang = l;
   localStorage.setItem('aq_lang', l);
@@ -512,17 +517,17 @@ function renderDives() {
     <div class="dive-card" onclick="openModal('${d.id}')">
       <div class="dive-num">#${d.num}</div>
       <div class="dive-info">
-        <h3>${d.site||d.location||(d.source==='suunto'?'Suunto Dive':'Dive')}${d.location&&d.site?` <span style="color:var(--text-dim);font-weight:400">· ${d.location}</span>`:''}</h3>
+        <h3>${esc(d.site||d.location||(d.source==='suunto'?'Suunto Dive':'Dive'))}${d.location&&d.site?` <span style="color:var(--text-dim);font-weight:400">· ${esc(d.location)}</span>`:''}</h3>
         <div class="dive-meta">
           ${d.date?`<div class="chip">📅 <span>${formatDate(d.date)}</span></div>`:''}
-          <div class="chip">🤿 <span>${d.type}</span></div>
+          <div class="chip">🤿 <span>${esc(d.type)}</span></div>
           ${d.duration?`<div class="chip">⏱ <span>${d.duration} min</span></div>`:''}
-          ${d.buddy?`<div class="chip">👤 <span>${d.buddy}</span></div>`:''}
+          ${d.buddy?`<div class="chip">👤 <span>${esc(d.buddy)}</span></div>`:''}
         </div>
         ${d.rating?`<div style="margin-top:4px;font-size:0.75rem">${'⭐'.repeat(d.rating)}</div>`:''}
       </div>
       <div class="dive-depth-col">
-        <div class="depth-big">${d.depth}</div>
+        <div class="depth-big">${esc(d.depth)}</div>
         <div class="depth-unit">meters</div>
       </div>
     </div>
@@ -587,7 +592,7 @@ function openModal(id) {
 
   document.getElementById('m-notes-wrap').innerHTML =
     extraHTML +
-    (d.notes ? `<div class="modal-section-title">Notes</div><div class="modal-notes">${d.notes}</div>` : '');
+    (d.notes ? `<div class="modal-section-title">Notes</div><div class="modal-notes">${esc(d.notes)}</div>` : '');
 
   document.getElementById('m-delete').textContent = t('deleteDive');
   document.getElementById('m-delete').onclick = ()=>deleteDive(id);
@@ -658,31 +663,31 @@ function openEditMode(id) {
 
   const editHTML = `
     <div class="edit-form" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;font-size:0.75rem;">
-      <label style="display:flex;flex-direction:column;gap:2px;">${t('diveSite')}<input id="e-site" value="${d.site||''}" class="edit-input"></label>
-      <label style="display:flex;flex-direction:column;gap:2px;">${t('location')}<input id="e-location" value="${d.location||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('diveSite')}<input id="e-site" value="${esc(d.site)}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('location')}<input id="e-location" value="${esc(d.location)}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;grid-column:1/-1;">${t('gpsLabel')}
         <div style="display:flex;gap:6px;"><input id="e-gps" class="edit-input" style="flex:1;" value="${d.gps?d.gps.lat+', '+d.gps.lng:''}" placeholder="Search 🔍 or pick on map 📍"><button type="button" onclick="searchEditGPS()" style="background:var(--accent-dim);border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--accent);cursor:pointer;">🔍</button><button type="button" onclick="openEditMap()" style="background:var(--accent-dim);border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--accent);cursor:pointer;">📍</button></div>
         <div id="e-gps-map" style="display:none;height:200px;border-radius:8px;overflow:hidden;margin-top:4px;border:1px solid var(--border);"></div>
       </label>
-      <label style="display:flex;flex-direction:column;gap:2px;">${t('date')}<input id="e-date" type="date" value="${d.date||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('date')}<input id="e-date" type="date" value="${esc(d.date)}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('maxDepth')}<input id="e-depth" type="number" value="${d.depth||''}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('avgDepth')}<input id="e-avg-depth" type="number" step="0.1" value="${d.avgDepth||''}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('bottomTime')}<input id="e-duration" type="number" value="${d.duration||''}" class="edit-input"></label>
-      <label style="display:flex;flex-direction:column;gap:2px;">${t('waterTemp')}<input id="e-temp" type="number" value="${d.temp||''}" class="edit-input"></label>
-      <label style="display:flex;flex-direction:column;gap:2px;">${t('visibility')}<input id="e-visibility" type="number" value="${d.visibility||''}" class="edit-input"></label>
-      <label style="display:flex;flex-direction:column;gap:2px;">${t('buddy')}<input id="e-buddy" value="${d.buddy||''}" class="edit-input"></label>
-      <label style="display:flex;flex-direction:column;gap:2px;">${t('cert')}<input id="e-cert" value="${d.cert||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('waterTemp')}<input id="e-temp" type="number" value="${esc(d.temp)}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('visibility')}<input id="e-visibility" type="number" value="${esc(d.visibility)}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('buddy')}<input id="e-buddy" value="${esc(d.buddy)}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('cert')}<input id="e-cert" value="${esc(d.cert)}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('weights')}<input id="e-weights" type="number" step="0.5" value="${d.weights||''}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('suit')}<select id="e-suit" class="edit-input">${suitOpts}</select></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('tankSize')}<input id="e-tank-size" type="number" value="${d.tank?.size||''}" class="edit-input"></label>
-      <label style="display:flex;flex-direction:column;gap:2px;">${t('tankMat')}<input id="e-tank-mat" value="${d.tank?.material||''}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('tankMat')}<input id="e-tank-mat" value="${esc(d.tank?.material)}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('tankStart')}<input id="e-tank-start" type="number" value="${d.tank?.start||''}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('tankEnd')}<input id="e-tank-end" type="number" value="${d.tank?.end||''}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('current')}<select id="e-current" class="edit-input">${currentOpts}</select></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('waves')}<select id="e-waves" class="edit-input">${wavesOpts}</select></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('entry')}<select id="e-entry" class="edit-input">${entryOpts}</select></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('feeling')}<select id="e-feeling" class="edit-input">${feelOpts}</select></label>
-      <label style="display:flex;flex-direction:column;gap:2px;grid-column:1/-1;">${t('notes')}<textarea id="e-notes" class="edit-input" rows="3">${d.notes||''}</textarea></label>
+      <label style="display:flex;flex-direction:column;gap:2px;grid-column:1/-1;">${t('notes')}<textarea id="e-notes" class="edit-input" rows="3">${esc(d.notes)}</textarea></label>
     </div>
     <div style="display:flex;gap:8px;">
       <button class="btn-primary" style="flex:1;" onclick="saveEdit('${id}')">💾 ${lang==='pl'?'Zapisz':'Save'}</button>
@@ -726,7 +731,7 @@ function compareDive(id) {
     <div style="font-size:0.75rem;font-weight:700;margin-bottom:8px;">⚖️ ${lang==='pl'?'Porównanie':'Comparison'}</div>
     <table style="width:100%;font-size:0.7rem;border-collapse:collapse;">
       <tr style="border-bottom:1px solid var(--border);"><th style="text-align:left;padding:4px;color:var(--text-dim);"></th><th style="padding:4px;color:var(--accent);">#${current.num||''}</th><th style="padding:4px;color:#8b5cf6;">#${other.num||''}</th></tr>
-      ${fields.map(([label,a,b]) => `<tr style="border-bottom:1px solid var(--border);"><td style="padding:4px;color:var(--text-dim);">${label}</td><td style="padding:4px;font-weight:600;">${a||'—'}</td><td style="padding:4px;font-weight:600;">${b||'—'}</td></tr>`).join('')}
+      ${fields.map(([label,a,b]) => `<tr style="border-bottom:1px solid var(--border);"><td style="padding:4px;color:var(--text-dim);">${label}</td><td style="padding:4px;font-weight:600;">${esc(a||'—')}</td><td style="padding:4px;font-weight:600;">${b||'—'}</td></tr>`).join('')}
     </table>
     <button class="btn-edit" style="margin-top:12px;width:100%;" onclick="openModal('${id}')">← ${lang==='pl'?'Wróć':'Back'}</button>`;
   document.getElementById('m-delete').style.display = 'none';
@@ -875,7 +880,7 @@ function loadPhotos(diveId) {
   if (!photos.length) { photosDiv.innerHTML = ''; return; }
   photosDiv.innerHTML = photos.map((p, i) => `
     <div style="position:relative;width:80px;height:80px;border-radius:6px;overflow:hidden;border:1px solid var(--border);">
-      <img src="${p.url}" style="width:100%;height:100%;object-fit:cover;cursor:pointer;" onclick="openPhotoFull('${p.url}')">
+      <img src="${esc(p.url)}" style="width:100%;height:100%;object-fit:cover;cursor:pointer;" onclick="openPhotoFull(this.src)">
       <button onclick="deletePhoto('${diveId}',${i})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);border:none;color:#fff;border-radius:50%;width:18px;height:18px;font-size:0.6rem;cursor:pointer;line-height:18px;">✕</button>
     </div>
   `).join('');
@@ -884,7 +889,7 @@ function loadPhotos(diveId) {
 function openPhotoFull(url) {
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:10000;display:flex;align-items:center;justify-content:center;cursor:pointer;';
-  overlay.innerHTML = `<img src="${url}" style="max-width:95%;max-height:95%;object-fit:contain;border-radius:8px;">`;
+  overlay.innerHTML = `<img src="${esc(url)}" style="max-width:95%;max-height:95%;object-fit:contain;border-radius:8px;">`;
   overlay.onclick = () => overlay.remove();
   document.body.appendChild(overlay);
 }
@@ -942,13 +947,13 @@ function renderCerts() {
           <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.1) 0%,transparent 50%,rgba(255,255,255,0.05) 100%);pointer-events:none;border-radius:14px;"></div>
           <img src="octopus.png" style="position:absolute;right:5px;bottom:5px;opacity:0.5;width:110px;height:110px;pointer-events:none;object-fit:contain;filter:brightness(1.4) saturate(1.3);">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;">
-            <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(4px);padding:4px 10px;border-radius:6px;font-weight:900;font-size:0.7rem;color:#fff;letter-spacing:1.5px;">${c.agency||'DIVE'}</div>
-            <div style="font-size:0.55rem;color:rgba(255,255,255,0.5);text-align:right;">${c.date||''}</div>
+            <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(4px);padding:4px 10px;border-radius:6px;font-weight:900;font-size:0.7rem;color:#fff;letter-spacing:1.5px;">${esc(c.agency||'DIVE')}</div>
+            <div style="font-size:0.55rem;color:rgba(255,255,255,0.5);text-align:right;">${esc(c.date)}</div>
           </div>
           <div style="position:relative;">
             <div style="font-size:0.7rem;color:rgba(255,255,255,0.7);margin-bottom:2px;letter-spacing:0.5px;">${userName}</div>
-            <div style="font-weight:900;font-size:1rem;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,0.3);margin-bottom:4px;">${c.name}</div>
-            <div style="font-size:0.65rem;color:rgba(255,255,255,0.6);">${c.number?'#'+c.number:''}${c.instructor?' \u00b7 '+c.instructor:''}</div>
+            <div style="font-weight:900;font-size:1rem;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,0.3);margin-bottom:4px;">${esc(c.name)}</div>
+            <div style="font-size:0.65rem;color:rgba(255,255,255,0.6);">${esc(c.number?'#'+c.number:'')}${esc(c.instructor?' \u00b7 '+c.instructor:'')}</div>
           </div>
         </div>
         <div style="position:absolute;inset:0;backface-visibility:hidden;transform:rotateY(180deg);border-radius:14px;overflow:hidden;background:#0f1923;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
@@ -1042,8 +1047,8 @@ function renderGear() {
       <div style="display:flex;align-items:center;gap:8px;">
         <span style="font-size:1.2rem;">${catIcons[g.category]||'📦'}</span>
         <div style="flex:1;">
-          <div style="font-weight:800;font-size:0.82rem;">${g.name}</div>
-          <div style="font-size:0.68rem;color:var(--text-dim);">${g.category}${g.purchased?' · Bought '+g.purchased:''}</div>
+          <div style="font-weight:800;font-size:0.82rem;">${esc(g.name)}</div>
+          <div style="font-size:0.68rem;color:var(--text-dim);">${esc(g.category)}${esc(g.purchased?' · Bought '+g.purchased:'')}</div>
         </div>
       </div>
       ${serviceStatus?'<div style="font-size:0.68rem;margin-top:6px;">'+serviceStatus+'</div>':''}
@@ -1164,7 +1169,7 @@ function renderStats() {
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:0.72rem;">
           <div style="flex:1;background:var(--border);border-radius:3px;height:8px;overflow:hidden;"><div style="height:100%;width:${count/topMax*100}%;background:var(--accent);border-radius:3px;"></div></div>
           <span style="white-space:nowrap;color:var(--text-dim);min-width:20px;text-align:right;">${count}</span>
-          <span style="white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;">${site}</span>
+          <span style="white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;">${esc(site)}</span>
         </div>`).join('')}
       </div>`;
   }
@@ -1176,7 +1181,7 @@ function renderStats() {
   chartsHTML += `<div style="margin-top:16px;"><div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;">${lang==='pl'?'Typy nurkowań':'Dive types'}</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;">
       ${Object.entries(typeCounts).map(([type,count]) => `
-        <div style="padding:4px 10px;border-radius:12px;font-size:0.68rem;font-weight:600;background:${typeColors[type]||'#64748b'}22;color:${typeColors[type]||'#64748b'};border:1px solid ${typeColors[type]||'#64748b'}44;">${type} (${count})</div>
+        <div style="padding:4px 10px;border-radius:12px;font-size:0.68rem;font-weight:600;background:${typeColors[type]||'#64748b'}22;color:${typeColors[type]||'#64748b'};border:1px solid ${typeColors[type]||'#64748b'}44;">${esc(type)} (${count})</div>
       `).join('')}
     </div></div>`;
 
@@ -1187,7 +1192,7 @@ function renderStats() {
   if (topBuddies.length) {
     chartsHTML += `<div style="margin-top:16px;"><div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;">${lang==='pl'?'Buddies':'Dive buddies'}</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;">
-        ${topBuddies.map(([name,count]) => `<div style="padding:6px 12px;border-radius:10px;font-size:0.7rem;background:var(--accent-dim);border:1px solid rgba(45,212,191,0.2);color:var(--accent);font-weight:600;">👤 ${name} <span style="opacity:0.6;">(${count})</span></div>`).join('')}
+        ${topBuddies.map(([name,count]) => `<div style="padding:6px 12px;border-radius:10px;font-size:0.7rem;background:var(--accent-dim);border:1px solid rgba(45,212,191,0.2);color:var(--accent);font-weight:600;">👤 ${esc(name)} <span style="opacity:0.6;">(${count})</span></div>`).join('')}
       </div></div>`;
   }
 
@@ -1451,11 +1456,11 @@ function renderDiveMap() {
 
     const popupHTML = `
       <div style="font-family:Inter,system-ui;min-width:160px;">
-        <div style="font-weight:800;font-size:0.85rem;margin-bottom:4px;">${best.site || 'Dive Site'}</div>
-        <div style="font-size:0.7rem;color:#666;margin-bottom:6px;">${best.location || ''}</div>
+        <div style="font-weight:800;font-size:0.85rem;margin-bottom:4px;">${esc(best.site || 'Dive Site')}</div>
+        <div style="font-size:0.7rem;color:#666;margin-bottom:6px;">${esc(best.location)}</div>
         ${site.dives.map(d => `
           <div style="font-size:0.68rem;padding:3px 0;border-top:1px solid #eee;">
-            ${d.date ? '📅 '+d.date+' · ' : ''}${d.depth}m · ${d.duration}min
+            ${d.date ? '📅 '+esc(d.date)+' · ' : ''}${esc(d.depth)}m · ${esc(d.duration)}min
             ${d.rating ? ' · '+'⭐'.repeat(d.rating) : ''}
           </div>
         `).join('')}
@@ -1572,7 +1577,7 @@ function renderChecklist(trip) {
   const buddyDiv = document.getElementById('cl-buddies');
   const others = (trip.memberNames||trip.memberEmails||[]).filter((_,i) => trip.members[i] !== uid);
   buddyDiv.innerHTML = others.length
-    ? `<div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:4px;">🤝 ${lang==='pl'?'Buddy':'Buddies'}: <strong style="color:var(--accent);">${others.join(', ')}</strong></div>`
+    ? `<div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:4px;">🤝 ${lang==='pl'?'Buddy':'Buddies'}: <strong style="color:var(--accent);">${others.map(esc).join(', ')}</strong></div>`
     : '';
 
   // Shared items
@@ -1581,7 +1586,7 @@ function renderChecklist(trip) {
   sharedDiv.innerHTML = shared.map((item, i) => `
     <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:0.78rem;">
       <input type="checkbox" ${item.checked?'checked':''} onchange="toggleShared(${i})" style="accent-color:var(--accent);width:18px;height:18px;cursor:pointer;">
-      <span style="${item.checked?'text-decoration:line-through;opacity:0.5;':''}flex:1;">${item.name}</span>
+      <span style="${item.checked?'text-decoration:line-through;opacity:0.5;':''}flex:1;">${esc(item.name)}</span>
       <button onclick="removeShared(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.85rem;">✕</button>
     </div>`).join('');
 
@@ -1591,7 +1596,7 @@ function renderChecklist(trip) {
   persDiv.innerHTML = pers.map((item, i) => `
     <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:0.78rem;">
       <input type="checkbox" ${item.checked?'checked':''} onchange="togglePersonal(${i})" style="accent-color:#8b5cf6;width:18px;height:18px;cursor:pointer;">
-      <span style="${item.checked?'text-decoration:line-through;opacity:0.5;':''}flex:1;">${item.name}</span>
+      <span style="${item.checked?'text-decoration:line-through;opacity:0.5;':''}flex:1;">${esc(item.name)}</span>
       <button onclick="removePersonal(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.85rem;">✕</button>
     </div>`).join('');
 
@@ -1605,10 +1610,10 @@ function renderChecklist(trip) {
     const bitems = (trip.personal && trip.personal[mid]) || [];
     if (!bitems.length) continue;
     const bChecked = bitems.filter(x=>x.checked).length;
-    bhtml += `<div style="margin-top:10px;"><div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);margin-bottom:4px;">👤 ${bname} (${bChecked}/${bitems.length})</div>`;
+    bhtml += `<div style="margin-top:10px;"><div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);margin-bottom:4px;">👤 ${esc(bname)} (${bChecked}/${bitems.length})</div>`;
     bhtml += bitems.map(item => `
       <div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:0.72rem;opacity:0.6;">
-        <span style="${item.checked?'text-decoration:line-through;':''}flex:1;">${item.checked?'✅':'⬜'} ${item.name}</span>
+        <span style="${item.checked?'text-decoration:line-through;':''}flex:1;">${item.checked?'✅':'⬜'} ${esc(item.name)}</span>
       </div>`).join('');
     bhtml += '</div>';
   }
@@ -1624,7 +1629,7 @@ function renderChecklist(trip) {
   const wish = (trip.wishlist && trip.wishlist[uid]) || [];
   document.getElementById('wishlist-items').innerHTML = wish.map((item, i) => `
     <div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:0.75rem;color:var(--accent);">
-      <span style="flex:1;">• ${item}</span>
+      <span style="flex:1;">• ${esc(item)}</span>
       <button onclick="promoteWish(${i})" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.8rem;">↑</button>
       <button onclick="removeWish(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.8rem;">✕</button>
     </div>`).join('');
