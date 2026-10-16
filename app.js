@@ -17,12 +17,12 @@ const T = {
     trySearch:'Try a different search', logFirst:'Log your first dive!',
     shopTitle:'Mr.Binio — Shop', shopDesc:'Dive gear, courses, accessories — all in one place',
     goShop:'🛒 Go to shop justadive.pl',
-    deleteDive:'🗑 Delete this log', confirmDelete:'Delete this dive log?',
-    saved:'✅ Dive saved!', deleted:'🗑 Log deleted',
+    deleteDive:'Delete this log', confirmDelete:'Delete this dive log?',
+    saved:'Dive saved', deleted:'Log deleted',
     enterSite:'⚠️ Enter dive site name', errorSave:'❌ Save error: ',
     errorDelete:'❌ Delete error: ',
     subtitle:'DIVE LOGBOOK',
-    importBtn:'📥 Import Suunto / Shearwater',
+    importBtn:'Import Suunto / Shearwater',
     importSuccess:'✅ Dive imported!',
     avgDepth:'Avg Depth', device:'Device', gpsMap:'GPS Map',
     gpsLabel:'GPS Location', gpsBtn:'📍', gpsGetting:'Getting location...', googleBtn:'Sign in with Google',
@@ -51,12 +51,12 @@ const T = {
     trySearch:'Spróbuj innego wyszukiwania', logFirst:'Zaloguj swoje pierwsze nurkowanie!',
     shopTitle:'Mr.Binio — Sklep', shopDesc:'Sprzęt nurkowy, kursy, akcesoria — wszystko w jednym miejscu',
     goShop:'🛒 Przejdź do sklepu justadive.pl',
-    deleteDive:'🗑 Usuń ten log', confirmDelete:'Usunąć ten log nurkowania?',
-    saved:'✅ Nurkowanie zapisane!', deleted:'🗑 Log usunięty',
+    deleteDive:'Usuń ten log', confirmDelete:'Usunąć ten log nurkowania?',
+    saved:'Nurkowanie zapisane', deleted:'Log usunięty',
     enterSite:'⚠️ Podaj nazwę miejsca nurkowania', errorSave:'❌ Błąd zapisu: ',
     errorDelete:'❌ Błąd usuwania: ',
     subtitle:'DZIENNIK NURKOWY',
-    importBtn:'📥 Import Suunto / Shearwater',
+    importBtn:'Import Suunto / Shearwater',
     importSuccess:'✅ Nurkowanie zaimportowane!',
     avgDepth:'Śr. głęb.', device:'Urządzenie', gpsMap:'Mapa GPS',
     gpsLabel:'Lokalizacja GPS', gpsBtn:'📍', gpsGetting:'Pobieranie lokalizacji...', googleBtn:'Zaloguj się przez Google',
@@ -89,19 +89,19 @@ function toggleLang() {
 }
 
 function applyLang() {
-  document.getElementById('lang-btn').textContent = lang === 'en' ? '🇵🇱 PL' : '🇬🇧 EN';
+  document.getElementById('lang-btn').textContent = lang === 'en' ? 'PL' : 'EN';
   document.getElementById('brand-sub').textContent = t('subtitle');
   // Tabs
   const mob = window.innerWidth <= 600;
-  document.getElementById('tab-log').textContent = mob ? t('logDive') : '📋 ' + t('logDive');
-  document.getElementById('tab-history').textContent = mob ? t('myDives') : '🌊 ' + t('myDives');
-  document.getElementById('tab-stats').textContent = mob ? t('stats') : '📊 ' + t('stats');
-  document.getElementById('tab-map').textContent = mob ? t('diveMap') : '🗺 ' + t('diveMap');
-  document.getElementById('tab-certs').textContent = '🎓 ' + t('certs');
-  document.getElementById('tab-gear').textContent = '🔧 ' + t('gear');
-  document.getElementById('tab-plan').textContent = '🧮 ' + t('plan');
-  document.getElementById('tab-checklist').textContent = '✅ ' + t('checklist');
-  document.getElementById('tab-shop').textContent = '🛒 ' + t('shop');
+  document.getElementById('tab-log').textContent = mob ? t('logDive') : t('logDive');
+  document.getElementById('tab-history').textContent = mob ? t('myDives') : t('myDives');
+  document.getElementById('tab-stats').textContent = mob ? t('stats') : t('stats');
+  document.getElementById('tab-map').textContent = mob ? t('diveMap') : t('diveMap');
+  document.getElementById('tab-certs').textContent = t('certs');
+  document.getElementById('tab-gear').textContent = t('gear');
+  document.getElementById('tab-plan').textContent = t('plan');
+  document.getElementById('tab-checklist').textContent = t('checklist');
+  document.getElementById('tab-shop').textContent = t('shop');
   if (mob) document.getElementById('tab-more').textContent = 'More';
   // Form labels
   const labels = {
@@ -128,7 +128,7 @@ function applyLang() {
   document.getElementById('btn-log').textContent = t('logBtn');
   document.getElementById('filter-type').options[0].text = t('allTypes');
   // Card title
-  document.getElementById('card-title-text').innerHTML = '🧭 ' + t('newEntry') + ' <span class="accent">' + t('diveEntry') + '</span>';
+  document.getElementById('card-title-text').innerHTML = t('newEntry') + ' <span class="accent">' + t('diveEntry') + '</span>';
   // Stats labels
   document.getElementById('sl-dives').textContent = t('dives');
   document.getElementById('sl-depth').textContent = t('maxD');
@@ -530,20 +530,20 @@ function renderDives() {
   }
   grid.innerHTML = filtered.map(d=>`
     <div class="dive-card" onclick="openModal('${d.id}')">
-      <div class="dive-num">#${d.num}</div>
+      <div class="dive-num">${String(d.num).padStart(2,'0')}</div>
       <div class="dive-info">
         <h3>${esc(d.site||d.location||(d.source==='suunto'?'Suunto Dive':'Dive'))}${d.location&&d.site?` <span style="color:var(--text-dim);font-weight:400">· ${esc(d.location)}</span>`:''}</h3>
         <div class="dive-meta">
-          ${d.date?`<div class="chip">📅 <span>${formatDate(d.date)}</span></div>`:''}
-          <div class="chip">🤿 <span>${esc(d.type)}</span></div>
-          ${d.duration?`<div class="chip">⏱ <span>${d.duration} min</span></div>`:''}
-          ${d.buddy?`<div class="chip">👤 <span>${esc(d.buddy)}</span></div>`:''}
+          ${d.date?`<div class="chip"><span>${formatDate(d.date)}</span></div>`:''}
+          <div class="chip"><span>${esc(d.type)}</span></div>
+          ${d.duration?`<div class="chip"><span>${d.duration} min</span></div>`:''}
+          ${d.buddy?`<div class="chip"><span>${esc(d.buddy)}</span></div>`:''}
         </div>
-        ${d.rating?`<div style="margin-top:4px;font-size:0.75rem">${'⭐'.repeat(d.rating)}</div>`:''}
+        ${d.rating?`<div style="margin-top:4px;font-size:0.75rem">${'★'.repeat(d.rating)}</div>`:''}
       </div>
       <div class="dive-depth-col">
         <div class="depth-big">${esc(d.depth)}</div>
-        <div class="depth-unit">meters</div>
+        <div class="depth-unit">m</div>
       </div>
     </div>
   `).join('');
@@ -561,7 +561,7 @@ function openModal(id) {
   if(!d) return;
   document.getElementById('m-num').textContent = 'DIVE #'+d.num;
   document.getElementById('m-site').textContent = (d.site||'Suunto Dive')+(d.location?` — ${d.location}`:'');
-  document.getElementById('m-meta').innerHTML = `${d.date?`📅 ${formatDate(d.date)} &nbsp;·&nbsp; `:''}🤿 ${d.type}${d.rating?' &nbsp;'+'⭐'.repeat(d.rating):''}${d.device?' &nbsp;·&nbsp; ⌚ '+d.device:''}`;
+  document.getElementById('m-meta').innerHTML = `${d.date?`${formatDate(d.date)} &nbsp;·&nbsp; `:''}${esc(d.type)}${d.rating?' &nbsp;·&nbsp; '+'★'.repeat(d.rating):''}${d.device?' &nbsp;·&nbsp; '+esc(d.device):''}`;
 
   const stats=[
     {val:d.depth+'m',label:'Max Depth'},
@@ -615,9 +615,9 @@ function openModal(id) {
   document.getElementById('m-edit').style.display = '';
 
   // Edit button
-  document.getElementById('m-edit').textContent = lang==='pl'?'✏️ Edytuj':'✏️ Edit';
+  document.getElementById('m-edit').textContent = lang==='pl'?'Edytuj':'Edit';
   document.getElementById('m-edit').onclick = ()=>openEditMode(id);
-  document.getElementById('m-compare').textContent = lang==='pl'?'⚖️ Porównaj':'⚖️ Compare';
+  document.getElementById('m-compare').textContent = lang==='pl'?'Porównaj':'Compare';
   document.getElementById('m-compare').onclick = ()=>compareDive(id);
   document.getElementById('m-compare').style.display = dives.length > 1 ? '' : 'none';
 
@@ -626,7 +626,7 @@ function openModal(id) {
   let attachHTML = '';
   if (!d.depthProfile || d.depthProfile.length < 2) {
     attachHTML += `<label style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:1px dashed var(--border-light);border-radius:8px;cursor:pointer;color:var(--accent);font-size:0.75rem;font-weight:700;margin-top:12px;transition:all 0.2s;">
-      📥 ${lang==='pl'?'Dołącz dane Suunto':'Attach Suunto data'}
+      ${lang==='pl'?'Dołącz dane Suunto':'Attach Suunto data'}
       <input type="file" accept=".json" style="display:none" onchange="attachSuuntoToDiv('${id}',this)">
     </label>`;
   }
@@ -634,7 +634,7 @@ function openModal(id) {
   attachHTML += `<div style="margin-top:12px;">
     <div id="dive-photos" data-dive-id="${id}" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
     <label style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:1px dashed var(--border-light);border-radius:8px;cursor:pointer;color:var(--accent);font-size:0.75rem;font-weight:700;transition:all 0.2s;">
-      📷 ${lang==='pl'?'Dodaj zdjęcia':'Add photos'}
+      ${lang==='pl'?'Dodaj zdjęcia':'Add photos'}
       <input type="file" accept="image/*" multiple style="display:none" onchange="uploadPhotos('${id}',this)">
     </label>
   </div>`;
@@ -739,12 +739,12 @@ function compareDive(id) {
     ['Visibility', current.visibility?current.visibility+'m':'—', other.visibility?other.visibility+'m':'—'],
     ['Type', current.type||'—', other.type||'—'],
     ['Buddy', current.buddy||'—', other.buddy||'—'],
-    ['Rating', current.rating?'⭐'.repeat(current.rating):'—', other.rating?'⭐'.repeat(other.rating):'—'],
+    ['Rating', current.rating?'★'.repeat(current.rating):'—', other.rating?'★'.repeat(other.rating):'—'],
   ];
 
   document.getElementById('m-stats').innerHTML = '';
   document.getElementById('m-notes-wrap').innerHTML = `
-    <div style="font-size:0.75rem;font-weight:700;margin-bottom:8px;">⚖️ ${lang==='pl'?'Porównanie':'Comparison'}</div>
+    <div style="font-size:0.75rem;font-weight:700;margin-bottom:8px;">${lang==='pl'?'Porównanie':'Comparison'}</div>
     <table style="width:100%;font-size:0.7rem;border-collapse:collapse;">
       <tr style="border-bottom:1px solid var(--border);"><th style="text-align:left;padding:4px;color:var(--text-dim);"></th><th style="padding:4px;color:var(--accent);">#${current.num||''}</th><th style="padding:4px;color:#8b5cf6;">#${other.num||''}</th></tr>
       ${fields.map(([label,a,b]) => `<tr style="border-bottom:1px solid var(--border);"><td style="padding:4px;color:var(--text-dim);">${label}</td><td style="padding:4px;font-weight:600;">${esc(a||'—')}</td><td style="padding:4px;font-weight:600;">${b||'—'}</td></tr>`).join('')}
@@ -1270,7 +1270,7 @@ function renderStats() {
             <div style="position:absolute;left:-25px;top:2px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid var(--bg-card);"></div>
             <div style="font-size:0.65rem;color:var(--text-muted);">${formatDate(d.date)}</div>
             <div style="font-weight:700;font-size:0.8rem;margin:2px 0;" onclick="openModal('${d.id}')" style="cursor:pointer;">${d.site||'Dive'}</div>
-            <div style="font-size:0.65rem;color:var(--text-dim);">${d.depth}m · ${d.duration}min${d.buddy?' · 👤 '+d.buddy:''}${d.rating?' · '+'⭐'.repeat(d.rating):''}</div>
+            <div style="font-size:0.65rem;color:var(--text-dim);">${d.depth}m · ${d.duration}min${d.buddy?' · '+esc(d.buddy):''}${d.rating?' · '+'★'.repeat(d.rating):''}</div>
           </div>`).join('')}
       </div>` : '';
   }
@@ -1530,7 +1530,7 @@ function renderDiveMap() {
         ${site.dives.map(d => `
           <div style="font-size:0.68rem;padding:3px 0;border-top:1px solid #eee;">
             ${d.date ? '📅 '+esc(d.date)+' · ' : ''}${esc(d.depth)}m · ${esc(d.duration)}min
-            ${d.rating ? ' · '+'⭐'.repeat(d.rating) : ''}
+            ${d.rating ? ' · '+'★'.repeat(d.rating) : ''}
           </div>
         `).join('')}
         <div style="font-size:0.65rem;color:#888;margin-top:4px;">${site.dives.length} dive${site.dives.length>1?'s':''}</div>
