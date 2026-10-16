@@ -299,6 +299,40 @@ label { color: var(--text-dim); letter-spacing: 1.2px; }
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
+/* The astronaut diver sinks in with the camera, settles above the wordmark and breathes bubbles */
+#intro .i-diver {
+  position: relative; width: clamp(80px, 22vw, 128px); margin-bottom: 30px;
+  opacity: 0; transform: translateY(-60vh) rotate(-14deg);
+  animation: iDiverIn 2.4s 1.3s cubic-bezier(.25,.7,.25,1) forwards;
+}
+@keyframes iDiverIn {
+  0% { opacity: 0; transform: translateY(-60vh) rotate(-14deg); }
+  12% { opacity: 1; }
+  70% { transform: translateY(6px) rotate(3deg); }
+  100% { opacity: 1; transform: none; }
+}
+#intro .i-diver img {
+  display: block; width: 100%; height: auto;
+  filter: drop-shadow(0 0 22px rgba(46,230,208,.35)) drop-shadow(0 10px 30px rgba(0,0,0,.6));
+  animation: iBob 3.4s 3.7s ease-in-out infinite;
+}
+@keyframes iBob { 50% { transform: translateY(-7px) rotate(-2deg); } }
+#intro .i-diver i {
+  position: absolute; left: 66%; top: 18%; border-radius: 50%;
+  width: 9px; height: 9px; border: 1.5px solid rgba(160,245,235,.75);
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.5), transparent 60%);
+  opacity: 0; animation: iBub 2.2s ease-in infinite;
+}
+#intro .i-diver i:nth-child(2) { animation-delay: 1.8s; --dx: 10px; }
+#intro .i-diver i:nth-child(3) { animation-delay: 2.3s; width: 6px; height: 6px; --dx: -6px; }
+#intro .i-diver i:nth-child(4) { animation-delay: 2.9s; width: 12px; height: 12px; --dx: 14px; }
+#intro .i-diver i:nth-child(5) { animation-delay: 3.4s; width: 5px; height: 5px; --dx: 4px; }
+#intro .i-diver i:nth-child(6) { animation-delay: 3.9s; width: 8px; height: 8px; --dx: -10px; }
+@keyframes iBub {
+  0% { transform: translate(0, 0) scale(.5); opacity: 0; }
+  15% { opacity: .9; }
+  100% { transform: translate(var(--dx, 0), -150px) scale(1.15); opacity: 0; }
+}
 #intro .i-word {
   font-weight: 200; font-size: clamp(2.4rem, 11vw, 6rem);
   letter-spacing: .9em; margin-right: -.9em; text-transform: uppercase; line-height: 1;

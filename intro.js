@@ -37,6 +37,7 @@
     <div class="i-water"></div>
     <div class="i-line"></div>
     <div class="i-content">
+      <div class="i-diver"><img src="diver.svg" alt="">${'<i></i>'.repeat(5)}</div>
       <div class="i-word">Mr.Binio</div>
       <div class="i-sub">${pl ? 'Dziennik nurkowy' : 'Dive logbook'}</div>
       <div class="i-specs">${specs
