@@ -171,6 +171,7 @@ const googleProvider = new firebase.auth.GoogleAuthProvider();
 let dives = [];
 let currentRating = 0;
 let unsubDives = null;
+let divesLoaded = false;
 
 document.getElementById('f-date').valueAsDate = new Date();
 
@@ -265,11 +266,22 @@ function showApp(user) {
     }).catch(e => console.warn('Migration error:', e));
   }
 
+  // Is the public dive map enabled? If so, it is kept in sync with every dives snapshot
+  publicMapRef(user.uid).get().then(snap => {
+    mapShared = snap.exists;
+    updateShareButtons();
+    if (mapShared && divesLoaded) publishPublicMap();
+  }).catch(e => console.warn('Public map check error:', e));
+
   // Subscribe to this user's dives only
   if (unsubDives) unsubDives();
   unsubDives = divesCol.orderBy('createdAt','desc').onSnapshot(snap => {
     dives = snap.docs.map(doc => ({ id:doc.id, ...doc.data() }));
+    // Newest dive date first; same-day dives keep creation order (sort is stable)
+    dives.sort((a,b) => (b.date||'').localeCompare(a.date||''));
     dives.forEach((d,i) => d.num = dives.length - i);
+    divesLoaded = true;
+    if (mapShared) publishPublicMap().catch(e => console.warn('Public map sync error:', e));
     updateStats();
     if(document.getElementById('panel-history').classList.contains('active')) renderDives();
   });
@@ -291,6 +303,7 @@ function hideApp() {
   if (unsubGear) { unsubGear(); unsubGear = null; }
   currentTripId = null;
   dives = []; certs = []; gear = [];
+  divesLoaded = false; mapShared = false; lastPublishedMap = '';
 }
 
 if (!checkSharedMap()) {
@@ -617,7 +630,7 @@ function openModal(id) {
   }
   // Photos section
   attachHTML += `<div style="margin-top:12px;">
-    <div id="dive-photos" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+    <div id="dive-photos" data-dive-id="${id}" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
     <label style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:1px dashed var(--border-light);border-radius:8px;cursor:pointer;color:var(--accent);font-size:0.75rem;font-weight:700;transition:all 0.2s;">
       📷 ${lang==='pl'?'Dodaj zdjęcia':'Add photos'}
       <input type="file" accept="image/*" multiple style="display:none" onchange="uploadPhotos('${id}',this)">
@@ -808,7 +821,11 @@ async function saveEdit(id) {
 async function deleteDive(id) {
   if(!confirm(t('confirmDelete'))) return;
   try {
-    await divesCol.doc(id).delete();
+    const photoSnap = await photosCol(id).get();
+    const batch = db.batch();
+    photoSnap.docs.forEach(doc => batch.delete(doc.ref));
+    batch.delete(divesCol.doc(id));
+    await batch.commit();
     closeModalDirect();
     showToast(t('deleted'));
   } catch(e) { showToast(t('errorDelete') + e.message); }
@@ -851,6 +868,10 @@ function compressImage(file, maxWidth, quality) {
 }
 
 // === PHOTOS ===
+// One Firestore doc per photo in users/{uid}/dives/{diveId}/photos — keeps dive docs
+// small (1 MB doc limit) and photos are only downloaded when a dive is opened.
+function photosCol(diveId) { return divesCol.doc(diveId).collection('photos'); }
+
 async function uploadPhotos(diveId, input) {
   const files = input.files;
   if (!files.length) return;
@@ -859,31 +880,67 @@ async function uploadPhotos(diveId, input) {
   try {
     for (const file of files) {
       const dataUrl = await compressImage(file, 1200, 0.6);
-      await divesCol.doc(diveId).update({
-        photos: firebase.firestore.FieldValue.arrayUnion({url: dataUrl, name: file.name})
+      await photosCol(diveId).add({
+        url: dataUrl, name: file.name,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
+      await divesCol.doc(diveId).update({ photoCount: firebase.firestore.FieldValue.increment(1) });
     }
     input.value = '';
     loadPhotos(diveId);
     showToast(lang==='pl'?'📷 Zdjęcia dodane!':'📷 Photos added!');
   } catch(e) {
     showToast('❌ ' + e.message);
-    photosDiv.innerHTML = '';
+    loadPhotos(diveId);
   }
 }
 
-function loadPhotos(diveId) {
+// Move photos stored the old way (base64 array on the dive doc) into the subcollection
+const photoMigrations = new Map();
+function migrateLegacyPhotos(diveId) {
+  // Reuse an in-flight migration so concurrent calls never copy photos twice
+  if (!photoMigrations.has(diveId)) {
+    photoMigrations.set(diveId, doMigrateLegacyPhotos(diveId).finally(() => photoMigrations.delete(diveId)));
+  }
+  return photoMigrations.get(diveId);
+}
+
+async function doMigrateLegacyPhotos(diveId) {
   const d = dives.find(x => x.id === diveId);
-  const photosDiv = document.getElementById('dive-photos');
-  if (!photosDiv) return;
-  const photos = d?.photos || [];
-  if (!photos.length) { photosDiv.innerHTML = ''; return; }
-  photosDiv.innerHTML = photos.map((p, i) => `
+  const legacy = d?.photos || [];
+  if (!legacy.length) return;
+  const batch = db.batch();
+  legacy.forEach((p, i) => batch.set(photosCol(diveId).doc(), {
+    url: p.url, name: p.name || '',
+    createdAt: firebase.firestore.Timestamp.fromMillis(Date.now() + i)
+  }));
+  batch.update(divesCol.doc(diveId), {
+    photos: firebase.firestore.FieldValue.delete(),
+    photoCount: firebase.firestore.FieldValue.increment(legacy.length)
+  });
+  await batch.commit();
+}
+
+async function loadPhotos(diveId) {
+  const isCurrent = () => {
+    const el = document.getElementById('dive-photos');
+    return el && el.dataset.diveId === diveId ? el : null;
+  };
+  try {
+    await migrateLegacyPhotos(diveId);
+    const snap = await photosCol(diveId).orderBy('createdAt').get();
+    const photosDiv = isCurrent();
+    if (!photosDiv) return;
+    photosDiv.innerHTML = snap.docs.map(doc => `
     <div style="position:relative;width:80px;height:80px;border-radius:6px;overflow:hidden;border:1px solid var(--border);">
-      <img src="${esc(p.url)}" style="width:100%;height:100%;object-fit:cover;cursor:pointer;" onclick="openPhotoFull(this.src)">
-      <button onclick="deletePhoto('${diveId}',${i})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);border:none;color:#fff;border-radius:50%;width:18px;height:18px;font-size:0.6rem;cursor:pointer;line-height:18px;">✕</button>
+      <img src="${esc(doc.data().url)}" style="width:100%;height:100%;object-fit:cover;cursor:pointer;" onclick="openPhotoFull(this.src)">
+      <button onclick="deletePhoto('${diveId}','${doc.id}')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);border:none;color:#fff;border-radius:50%;width:18px;height:18px;font-size:0.6rem;cursor:pointer;line-height:18px;">✕</button>
     </div>
   `).join('');
+  } catch(e) {
+    const photosDiv = isCurrent();
+    if (photosDiv) photosDiv.innerHTML = `<div style="padding:8px;font-size:0.7rem;color:var(--danger);">❌ ${esc(e.message)}</div>`;
+  }
 }
 
 function openPhotoFull(url) {
@@ -894,12 +951,12 @@ function openPhotoFull(url) {
   document.body.appendChild(overlay);
 }
 
-async function deletePhoto(diveId, index) {
+async function deletePhoto(diveId, photoId) {
   if (!confirm(lang==='pl'?'Usunąć zdjęcie?':'Delete photo?')) return;
-  const d = dives.find(x => x.id === diveId);
-  const photos = [...(d.photos || [])];
-  photos.splice(index, 1);
-  await divesCol.doc(diveId).update({ photos });
+  try {
+    await photosCol(diveId).doc(photoId).delete();
+    await divesCol.doc(diveId).update({ photoCount: firebase.firestore.FieldValue.increment(-1) });
+  } catch(e) { showToast('❌ ' + e.message); }
   loadPhotos(diveId);
 }
 
@@ -1367,8 +1424,17 @@ function calcPlan() {
 }
 
 
-function exportJSON() {
-  const data = { dives, certs, gear, exportDate: new Date().toISOString(), user: myEmail() };
+async function exportJSON() {
+  showToast(lang==='pl'?'⏳ Przygotowuję backup...':'⏳ Preparing backup...');
+  let backupDives;
+  try {
+    backupDives = await Promise.all(dives.map(async d => {
+      if (!d.photoCount) return d;
+      const snap = await photosCol(d.id).orderBy('createdAt').get();
+      return { ...d, photos: snap.docs.map(doc => ({ url: doc.data().url, name: doc.data().name })) };
+    }));
+  } catch(e) { showToast('❌ ' + e.message); return; }
+  const data = { dives: backupDives, certs, gear, exportDate: new Date().toISOString(), user: myEmail() };
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1476,8 +1542,52 @@ function renderDiveMap() {
   setTimeout(() => worldMap.invalidateSize(), 100);
 }
 
-function shareMap() {
+// === PUBLIC MAP ===
+// publicMaps/{uid} holds only what the shared map needs — never notes, buddies or photos.
+let mapShared = false;
+let lastPublishedMap = '';
+function publicMapRef(uid) { return db.collection('publicMaps').doc(uid); }
+
+async function publishPublicMap() {
+  if (!divesLoaded) return;
+  const points = dives.filter(d => d.gps && d.gps.lat && d.gps.lng).map(d => ({
+    site: d.site || '', location: d.location || '',
+    gps: { lat: d.gps.lat, lng: d.gps.lng },
+    date: d.date || '', depth: d.depth || 0, duration: d.duration || 0, rating: d.rating || 0
+  }));
+  const key = JSON.stringify(points);
+  if (key === lastPublishedMap) return;
+  await publicMapRef(myUid()).set({ dives: points, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+  lastPublishedMap = key;
+  updateShareButtons();
+}
+
+function updateShareButtons() {
+  const stop = document.getElementById('stop-share-btn');
+  if (stop) stop.style.display = mapShared ? '' : 'none';
+}
+
+async function stopSharingMap() {
+  if (!confirm(lang==='pl'?'Wyłączyć publiczny link do mapy?':'Disable the public map link?')) return;
+  try {
+    await publicMapRef(myUid()).delete();
+    mapShared = false; lastPublishedMap = '';
+    updateShareButtons();
+    showToast(lang==='pl'?'🔒 Mapa nie jest już publiczna':'🔒 Map is no longer public');
+  } catch(e) { showToast('❌ ' + e.message); }
+}
+
+async function shareMap() {
   const uid = myUid();
+  try {
+    mapShared = true;
+    await publishPublicMap();
+    updateShareButtons();
+  } catch(e) {
+    mapShared = false;
+    showToast('❌ ' + e.message);
+    return;
+  }
   const url = window.location.origin + window.location.pathname + '?shared_map=' + uid;
   if (navigator.share) {
     navigator.share({ title: 'My Dive Map', url: url });
@@ -1501,8 +1611,9 @@ function checkSharedMap() {
   document.getElementById('panel-map').classList.add('active');
   document.querySelector('.tabs-bar').style.display = 'none';
   // Load shared user's dives (read-only)
-  db.collection('users').doc(sharedUid).collection('dives').orderBy('createdAt','desc').get().then(snap => {
-    dives = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  publicMapRef(sharedUid).get().then(snap => {
+    if (!snap.exists) throw new Error('not shared');
+    dives = snap.data().dives || [];
     document.getElementById('map-title').textContent = '🗺 Shared Dive Map (' + dives.length + ' dives)';
     renderDiveMap();
   }).catch(() => {

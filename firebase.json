@@ -1,12 +1,30 @@
 {
   "hosting": {
     "public": ".",
-    "ignore": ["firebase.json", ".firebaserc", ".github", ".git", ".gitignore", "olld Json", "*.json", "!manifest.json"],
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      ".github",
+      ".git",
+      ".gitignore",
+      "olld Json",
+      "*.json",
+      "!manifest.json",
+      "firestore.rules"
+    ],
     "headers": [
       {
         "source": "**",
-        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
       }
     ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
   }
 }
