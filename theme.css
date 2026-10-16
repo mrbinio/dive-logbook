@@ -64,22 +64,20 @@ body::before {
     radial-gradient(120% 70% at 50% -10%, var(--ocean-top) 0%, transparent 60%),
     linear-gradient(180deg, var(--ocean-mid) 0%, var(--ocean-deep) 75%);
 }
-/* Sun rays from the surface, drifting slowly (transform-only animation) */
+/* Sun rays from the surface. Must never be wider than the viewport: iOS Safari
+   widens the whole page to fit oversized fixed elements, so only opacity animates. */
 body::after {
-  content: ''; position: fixed; top: -20vh; left: -25vw; width: 150vw; height: 90vh;
+  content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 90vh;
   z-index: -1; pointer-events: none;
   background: repeating-linear-gradient(100deg,
     transparent 0 6%, var(--ray) 8%, transparent 11%,
     transparent 17%, var(--ray) 18.5%, transparent 22%);
   -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 85%);
           mask-image: linear-gradient(180deg, #000 0%, transparent 85%);
-  animation: rays 18s ease-in-out infinite alternate;
-  transform-origin: 50% 0;
+  animation: rays 9s ease-in-out infinite alternate;
 }
-@keyframes rays {
-  from { transform: skewX(-4deg) translateX(-2%); opacity: 0.7; }
-  to   { transform: skewX(5deg) translateX(3%); opacity: 1; }
-}
+@keyframes rays { from { opacity: 0.55; } to { opacity: 1; } }
+html, body { max-width: 100%; overflow-x: hidden; }
 
 /* ---------- Header ---------- */
 .header {
@@ -335,7 +333,7 @@ label { color: var(--text-dim); letter-spacing: 1.2px; }
 }
 #intro .i-word {
   font-weight: 200; font-size: clamp(2.4rem, 11vw, 6rem);
-  letter-spacing: .9em; margin-right: -.9em; text-transform: uppercase; line-height: 1;
+  letter-spacing: .6em; margin-right: -.6em; text-transform: uppercase; line-height: 1; white-space: nowrap;
   background: linear-gradient(100deg, #cfe3ee 0%, #cfe3ee 40%, #ffffff 47%, #7ff5e6 50%, #ffffff 53%, #cfe3ee 60%, #cfe3ee 100%);
   background-size: 300% 100%; background-position: 100% 0;
   -webkit-background-clip: text; background-clip: text; color: transparent;
