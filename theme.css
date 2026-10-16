@@ -248,123 +248,163 @@ input:focus, select:focus, textarea:focus, .search-input:focus, .login-input:foc
 @keyframes panelIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
 /* =========================================================
-   Intro — cinematic descent (see intro.js). Timeline:
-   0.15s hairline draws · 0.8s it opens into the underwater
-   scene · 1.3–3.9s camera sinks · 2.6s wordmark · 3.0s specs
+   Intro — hi-tech dive computer boot HUD (see intro.js).
+   0.1 power-on line · 0.3 rings draw · 0.8 holo scan of the diver
+   0.5 telemetry · 1.7 wordmark decodes + glitch · 2.9 stats
    ========================================================= */
 #intro {
-  position: fixed; inset: 0; z-index: 20000; background: #000; color: #f5f7fa;
+  --cy: #5ff6ff; --cy-dim: rgba(95,246,255,.55); --cy-faint: rgba(95,246,255,.14);
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  position: fixed; inset: 0; z-index: 20000; background: #000; color: #fff;
   overflow: hidden; cursor: pointer; -webkit-font-smoothing: antialiased;
-  transition: opacity .8s cubic-bezier(.4,0,.2,1), transform .8s cubic-bezier(.4,0,.2,1), filter .8s;
+  transition: opacity .7s cubic-bezier(.4,0,.2,1), transform .7s cubic-bezier(.4,0,.2,1), filter .7s;
 }
-#intro.done { opacity: 0; transform: scale(1.06); filter: blur(10px); pointer-events: none; }
+#intro.done { opacity: 0; transform: scale(1.18); filter: blur(8px) brightness(1.6); pointer-events: none; }
 
-/* WebGL scene, unfolding vertically out of the hairline */
-#intro .i-gl {
-  position: absolute; inset: 0; width: 100%; height: 100%; display: block;
-  clip-path: inset(50% 0 50% 0);
-  animation: iOpen 1s .75s cubic-bezier(.7,0,.2,1) forwards;
-}
-@keyframes iOpen { to { clip-path: inset(0 0 0 0); } }
-
-/* CSS fallback when WebGL is unavailable */
-#intro .i-water {
-  position: absolute; inset: auto -20% -40% -20%; height: 90%;
+/* Faint perspective grid + vignette */
+#intro .h-grid {
+  position: absolute; inset: 0; opacity: 0;
   background:
-    radial-gradient(50% 60% at 35% 70%, rgba(46,230,208,.22), transparent 70%),
-    radial-gradient(45% 55% at 70% 75%, rgba(56,140,255,.18), transparent 70%);
-  filter: blur(30px); opacity: 0;
-  animation: iFade 1.6s .9s forwards, iDrift 7s 1s ease-in-out infinite alternate;
+    radial-gradient(ellipse at center, transparent 30%, #000 75%),
+    linear-gradient(var(--cy-faint) 1px, transparent 1px) 0 0 / 100% 44px,
+    linear-gradient(90deg, var(--cy-faint) 1px, transparent 1px) 0 0 / 44px 100%;
+  animation: hFade .8s .3s forwards, hGridPulse 2.4s 1.1s ease-in-out infinite alternate;
 }
-#intro.has-gl .i-water { display: none; }
-@keyframes iDrift { to { transform: translate3d(4%, -3%, 0) scale(1.05); } }
+@keyframes hGridPulse { from { opacity: .55; } to { opacity: 1; } }
+@keyframes hFade { to { opacity: 1; } }
 
-/* The surface: a hairline that draws out from the centre, then flares and fades */
-#intro .i-line {
-  position: absolute; top: 50%; left: 0; right: 0; margin: 0 auto; width: min(70vw, 760px); height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(160,250,240,.9) 30%, #fff 50%, rgba(160,250,240,.9) 70%, transparent);
-  box-shadow: 0 0 18px rgba(46,230,208,.8), 0 0 60px rgba(46,230,208,.4);
-  transform: scaleX(0);
-  animation: iLineDraw .7s .1s cubic-bezier(.7,0,.2,1) forwards, iLineOut .7s .8s ease-in forwards;
+/* CRT power-on: a line that flashes across, then collapses */
+#intro .h-boot {
+  position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: #fff;
+  box-shadow: 0 0 20px var(--cy), 0 0 60px var(--cy);
+  transform: scaleX(0); animation: hBoot .55s .05s cubic-bezier(.7,0,.3,1) forwards;
 }
-@keyframes iLineDraw { to { transform: scaleX(1); } }
-@keyframes iLineOut { from { transform: scaleX(1); } to { transform: scaleX(1.8); opacity: 0; } }
+@keyframes hBoot {
+  0% { transform: scaleX(0); opacity: 1; }
+  45% { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(1) scaleY(60); opacity: 0; }
+}
 
-#intro .i-content {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+/* Corner brackets framing the screen */
+#intro .h-br { position: absolute; width: 22px; height: 22px; border: 0 solid var(--cy-dim); opacity: 0; animation: hFade .3s .4s forwards; }
+#intro .h-br.tl { top: 16px; left: 16px; border-top-width: 1px; border-left-width: 1px; }
+#intro .h-br.tr { top: 16px; right: 16px; border-top-width: 1px; border-right-width: 1px; }
+#intro .h-br.bl { bottom: 16px; left: 16px; border-bottom-width: 1px; border-left-width: 1px; }
+#intro .h-br.br { bottom: 16px; right: 16px; border-bottom-width: 1px; border-right-width: 1px; }
+
+/* Telemetry in the corners */
+#intro .h-tele {
+  position: absolute; font: 400 9.5px/1.65 var(--mono); letter-spacing: .08em;
+  color: var(--cy-dim); white-space: pre; text-transform: uppercase;
 }
-/* The astronaut diver sinks in with the camera, settles above the wordmark and breathes bubbles */
-#intro .i-diver {
-  position: relative; width: clamp(80px, 22vw, 128px); margin-bottom: 30px;
-  opacity: 0; transform: translateY(-60vh) rotate(-14deg);
-  animation: iDiverIn 2.4s 1.3s cubic-bezier(.25,.7,.25,1) forwards;
+#intro .h-tele b { color: #fff; font-weight: 500; }
+#intro .h-tele div { opacity: 0; animation: hType .25s steps(3) forwards; }
+@keyframes hType { 0% { opacity: 0; transform: translateX(-4px); } 60% { opacity: .4; } 100% { opacity: 1; transform: none; } }
+#intro .h-tele.tl { top: calc(26px + env(safe-area-inset-top)); left: 28px; }
+#intro .h-tele.tr { top: calc(26px + env(safe-area-inset-top)); right: 28px; text-align: right; }
+#intro .h-tele.bl { bottom: calc(26px + env(safe-area-inset-bottom)); left: 28px; }
+#intro .h-tele.br { bottom: calc(26px + env(safe-area-inset-bottom)); right: 28px; text-align: right; }
+
+#intro .h-center {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
-@keyframes iDiverIn {
-  0% { opacity: 0; transform: translateY(-60vh) rotate(-14deg); }
-  12% { opacity: 1; }
-  70% { transform: translateY(6px) rotate(3deg); }
-  100% { opacity: 1; transform: none; }
+
+/* HUD ring stack */
+#intro .h-hud { position: relative; width: min(74vw, 44vh, 400px); aspect-ratio: 1; }
+#intro .h-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+#intro .h-svg line { stroke: var(--cy-dim); stroke-width: .8; }
+#intro .h-svg line.tk-l { stroke: #fff; stroke-width: 1.2; }
+#intro .h-ticks { transform-origin: 0 0; opacity: 0; animation: hFade .4s .3s forwards, hSpin 40s .3s linear infinite; }
+#intro .h-labels text {
+  fill: var(--cy-dim); font: 500 6.5px var(--mono); text-anchor: middle; letter-spacing: .1em;
 }
-#intro .i-diver img {
+#intro .h-labels { transform-origin: 0 0; opacity: 0; animation: hFade .5s .7s forwards, hSpinR 60s .7s linear infinite; }
+@keyframes hSpin { to { transform: rotate(360deg); } }
+@keyframes hSpinR { to { transform: rotate(-360deg); } }
+#intro .h-arc {
+  fill: none; stroke: var(--cy); stroke-width: 1.4; stroke-linecap: round;
+  stroke-dasharray: 100; stroke-dashoffset: 100; transform-origin: 0 0;
+  filter: drop-shadow(0 0 4px var(--cy));
+}
+#intro .h-arc.a1 { stroke-dasharray: 32 18; animation: hDraw 1s .35s cubic-bezier(.6,0,.2,1) forwards, hSpin 14s 1.3s linear infinite; }
+#intro .h-arc.a2 { stroke: #fff; stroke-width: .7; stroke-dasharray: 70 30; animation: hDraw 1.1s .5s cubic-bezier(.6,0,.2,1) forwards, hSpinR 20s 1.6s linear infinite; }
+#intro .h-arc.a3 { stroke-width: .6; stroke-dasharray: 12 4; opacity: .6; animation: hDraw 1.4s .45s cubic-bezier(.6,0,.2,1) forwards, hSpinR 50s 1.8s linear infinite; }
+@keyframes hDraw { to { stroke-dashoffset: 0; } }
+#intro .h-dash {
+  fill: none; stroke: var(--cy-dim); stroke-width: 3; stroke-dasharray: 1 5; opacity: 0;
+  transform-origin: 0 0; animation: hFade .4s .9s forwards, hSpin 9s .9s linear infinite;
+}
+
+/* Radar sweep across the ring */
+#intro .h-sweep {
+  position: absolute; inset: 9%; border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 80%, rgba(95,246,255,.05) 88%, rgba(95,246,255,.45) 100%);
+  -webkit-mask: radial-gradient(circle, transparent 54%, #000 55%); mask: radial-gradient(circle, transparent 54%, #000 55%);
+  opacity: 0; animation: hFade .3s .8s forwards, hSpin 2.2s .8s linear infinite;
+}
+
+/* Diver as a hologram: cyan tint, scanlines, revealed by a scan bar */
+#intro .h-diver {
+  position: absolute; left: 50%; top: 50%; width: 34%; transform: translate(-50%, -50%);
+  clip-path: inset(0 0 100% 0); animation: hReveal .9s .85s cubic-bezier(.5,0,.3,1) forwards;
+}
+#intro .h-diver img {
   display: block; width: 100%; height: auto;
-  filter: drop-shadow(0 0 22px rgba(46,230,208,.35)) drop-shadow(0 10px 30px rgba(0,0,0,.6));
-  animation: iBob 3.4s 3.7s ease-in-out infinite;
+  filter: grayscale(1) brightness(1.15) sepia(1) hue-rotate(140deg) saturate(4) drop-shadow(0 0 10px rgba(95,246,255,.7));
+  opacity: .92; animation: hFlicker 3s 1.8s steps(1) infinite, hFloat 3.4s 1.8s ease-in-out infinite;
 }
-@keyframes iBob { 50% { transform: translateY(-7px) rotate(-2deg); } }
-#intro .i-diver i {
-  position: absolute; left: 66%; top: 18%; border-radius: 50%;
-  width: 9px; height: 9px; border: 1.5px solid rgba(160,245,235,.75);
-  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.5), transparent 60%);
-  opacity: 0; animation: iBub 2.2s ease-in infinite;
+#intro .h-diver::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,.45) 0 1px, transparent 1px 3px);
 }
-#intro .i-diver i:nth-child(2) { animation-delay: 1.8s; --dx: 10px; }
-#intro .i-diver i:nth-child(3) { animation-delay: 2.3s; width: 6px; height: 6px; --dx: -6px; }
-#intro .i-diver i:nth-child(4) { animation-delay: 2.9s; width: 12px; height: 12px; --dx: 14px; }
-#intro .i-diver i:nth-child(5) { animation-delay: 3.4s; width: 5px; height: 5px; --dx: 4px; }
-#intro .i-diver i:nth-child(6) { animation-delay: 3.9s; width: 8px; height: 8px; --dx: -10px; }
-@keyframes iBub {
-  0% { transform: translate(0, 0) scale(.5); opacity: 0; }
-  15% { opacity: .9; }
-  100% { transform: translate(var(--dx, 0), -150px) scale(1.15); opacity: 0; }
+#intro .h-scanbar {
+  position: absolute; left: -10%; right: -10%; height: 3px; top: 0;
+  background: #fff; box-shadow: 0 0 14px var(--cy), 0 0 34px var(--cy);
+  animation: hScan .9s .85s cubic-bezier(.5,0,.3,1) forwards;
 }
-#intro .i-word {
-  font-weight: 200; font-size: clamp(2.4rem, 11vw, 6rem);
-  letter-spacing: .6em; margin-right: -.6em; text-transform: uppercase; line-height: 1; white-space: nowrap;
-  background: linear-gradient(100deg, #cfe3ee 0%, #cfe3ee 40%, #ffffff 47%, #7ff5e6 50%, #ffffff 53%, #cfe3ee 60%, #cfe3ee 100%);
-  background-size: 300% 100%; background-position: 100% 0;
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  opacity: 0; filter: blur(16px);
-  animation: iWordIn 1.4s 2.5s cubic-bezier(.2,.8,.2,1) forwards, iSweep 1.4s 3.4s cubic-bezier(.4,0,.2,1) forwards;
-}
-@keyframes iWordIn {
-  to { opacity: 1; filter: blur(0) drop-shadow(0 0 28px rgba(46,230,208,.35)); letter-spacing: .3em; margin-right: -.3em; }
-}
-@keyframes iSweep { to { background-position: 0 0; } }
+@keyframes hReveal { to { clip-path: inset(-40% -40% -40% -40%); } }
+@keyframes hScan { 0% { top: 0; opacity: 1; } 90% { top: 100%; opacity: 1; } 100% { top: 100%; opacity: 0; } }
+@keyframes hFlicker { 0%, 100% { opacity: .92; } 47% { opacity: .55; } 48% { opacity: .92; } 74% { opacity: .7; } 75% { opacity: .92; } }
+@keyframes hFloat { 50% { transform: translateY(-5px); } }
 
-#intro .i-sub {
-  margin-top: 20px; font-size: .64rem; font-weight: 500; letter-spacing: .6em; margin-right: -.6em;
-  color: rgba(245,247,250,.55); text-transform: uppercase;
-  opacity: 0; animation: iFade .8s 3s forwards;
+/* Wordmark decoding from random glyphs, with an RGB-split glitch */
+#intro .h-word {
+  margin-top: 30px; font: 200 clamp(2rem, 10vw, 4.4rem)/1 Inter, system-ui, sans-serif;
+  letter-spacing: .3em; margin-right: -.3em; white-space: nowrap; display: flex;
 }
-@keyframes iFade { to { opacity: 1; } }
-
-#intro .i-specs { display: flex; margin-top: 56px; opacity: 0; animation: iFade .8s 3s forwards; }
-#intro .i-spec { padding: 0 clamp(14px, 4vw, 36px); text-align: center; }
-#intro .i-spec + .i-spec { border-left: 1px solid rgba(255,255,255,.14); }
-#intro .i-spec b {
-  display: block; font-weight: 300; font-size: clamp(1.5rem, 6.5vw, 2.6rem);
+#intro .h-word span { display: inline-block; min-width: .62em; text-align: center; color: var(--cy); text-shadow: 0 0 12px var(--cy); }
+#intro .h-word span.on { color: #fff; text-shadow: 0 0 18px rgba(95,246,255,.45); }
+#intro .h-word.glitch { animation: hGlitch .24s steps(2) both; }
+#intro .h-word.glitch span { text-shadow: 3px 0 rgba(255,40,120,.85), -3px 0 rgba(95,246,255,.95); }
+@keyframes hGlitch {
+  0% { transform: translate(0); clip-path: inset(0 0 0 0); }
+  25% { transform: translate(-4px, 1px); clip-path: inset(10% 0 55% 0); }
+  50% { transform: translate(5px, -1px); clip-path: inset(50% 0 8% 0); }
+  75% { transform: translate(-2px, 0); clip-path: inset(0 0 0 0); }
+  100% { transform: translate(0); }
+}
+#intro .h-sub {
+  margin-top: 16px; font: 400 9.5px var(--mono); letter-spacing: .38em; margin-right: -.38em;
+  text-transform: uppercase; color: var(--cy-dim);
+  opacity: 0; animation: hFade .5s 2.7s forwards;
+}
+#intro .h-specs { display: flex; margin-top: 30px; opacity: 0; animation: hFade .5s 2.9s forwards; }
+#intro .h-spec { padding: 0 clamp(14px, 4.5vw, 34px); text-align: center; }
+#intro .h-spec + .h-spec { border-left: 1px solid var(--cy-faint); }
+#intro .h-spec b {
+  display: block; font: 200 clamp(1.5rem, 7vw, 2.4rem)/1 Inter, system-ui, sans-serif;
   letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: #fff;
 }
-#intro .i-spec small {
-  display: block; margin-top: 6px; font-size: .54rem; letter-spacing: .28em;
-  text-transform: uppercase; color: rgba(245,247,250,.5);
+#intro .h-spec small {
+  display: block; margin-top: 8px; font: 400 8.5px var(--mono); letter-spacing: .3em;
+  text-transform: uppercase; color: var(--cy-dim);
 }
-#intro .i-skip {
-  position: absolute; left: 0; right: 0; text-align: center; bottom: calc(26px + env(safe-area-inset-bottom));
-  font-size: .55rem; letter-spacing: .4em; text-transform: uppercase; color: rgba(255,255,255,.28);
-  opacity: 0; animation: iFade .6s 1.2s forwards;
+#intro .h-skip {
+  position: absolute; left: 0; right: 0; bottom: calc(80px + env(safe-area-inset-bottom)); text-align: center;
+  font: 400 8.5px var(--mono); letter-spacing: .4em; text-transform: uppercase; color: rgba(255,255,255,.25);
+  opacity: 0; animation: hFade .4s 1.2s forwards;
 }
+@media (max-height: 640px) { #intro .h-tele.bl, #intro .h-tele.br { display: none; } }
 
 /* Respect "reduce motion" */
 @media (prefers-reduced-motion: reduce) {
