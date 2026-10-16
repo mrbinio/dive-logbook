@@ -253,75 +253,87 @@ label { color: var(--text-dim); letter-spacing: 1.2px; }
 @keyframes panelIn { from { opacity: 0; transform: translateY(8px) scale(0.995); } to { opacity: 1; transform: none; } }
 
 /* =========================================================
-   Intro — cinematic reveal: black, a hairline of light (the
-   surface), wordmark with a specular sweep, your dive "specs".
+   Intro — cinematic descent (see intro.js). Timeline:
+   0.15s hairline draws · 0.8s it opens into the underwater
+   scene · 1.3–3.9s camera sinks · 2.6s wordmark · 3.0s specs
    ========================================================= */
 #intro {
   position: fixed; inset: 0; z-index: 20000; background: #000; color: #f5f7fa;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
   overflow: hidden; cursor: pointer; -webkit-font-smoothing: antialiased;
   transition: opacity .8s cubic-bezier(.4,0,.2,1), transform .8s cubic-bezier(.4,0,.2,1), filter .8s;
 }
 #intro.done { opacity: 0; transform: scale(1.06); filter: blur(10px); pointer-events: none; }
 
-/* Deep water glow rising from below, with slow caustic drift */
+/* WebGL scene, unfolding vertically out of the hairline */
+#intro .i-gl {
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+  clip-path: inset(50% 0 50% 0);
+  animation: iOpen 1s .75s cubic-bezier(.7,0,.2,1) forwards;
+}
+@keyframes iOpen { to { clip-path: inset(0 0 0 0); } }
+
+/* CSS fallback when WebGL is unavailable */
 #intro .i-water {
   position: absolute; inset: auto -20% -40% -20%; height: 90%;
   background:
-    radial-gradient(50% 60% at 35% 70%, rgba(46,230,208,.20), transparent 70%),
-    radial-gradient(45% 55% at 70% 75%, rgba(56,140,255,.16), transparent 70%);
+    radial-gradient(50% 60% at 35% 70%, rgba(46,230,208,.22), transparent 70%),
+    radial-gradient(45% 55% at 70% 75%, rgba(56,140,255,.18), transparent 70%);
   filter: blur(30px); opacity: 0;
-  animation: iWater 1.6s .9s cubic-bezier(.2,.8,.2,1) forwards, iDrift 7s 1s ease-in-out infinite alternate;
+  animation: iFade 1.6s .9s forwards, iDrift 7s 1s ease-in-out infinite alternate;
 }
-@keyframes iWater { to { opacity: 1; } }
+#intro.has-gl .i-water { display: none; }
 @keyframes iDrift { to { transform: translate3d(4%, -3%, 0) scale(1.05); } }
 
-/* The surface: a hairline that draws out from the centre, then lifts away */
+/* The surface: a hairline that draws out from the centre, then flares and fades */
 #intro .i-line {
-  position: absolute; top: 50%; left: 50%; width: min(70vw, 760px); height: 1px; margin-left: calc(min(70vw, 760px) / -2);
+  position: absolute; top: 50%; left: 0; right: 0; margin: 0 auto; width: min(70vw, 760px); height: 1px;
   background: linear-gradient(90deg, transparent, rgba(160,250,240,.9) 30%, #fff 50%, rgba(160,250,240,.9) 70%, transparent);
   box-shadow: 0 0 18px rgba(46,230,208,.8), 0 0 60px rgba(46,230,208,.4);
   transform: scaleX(0);
-  animation: iLineDraw .8s .15s cubic-bezier(.7,0,.2,1) forwards, iLineLift 1s 1s cubic-bezier(.6,0,.2,1) forwards;
+  animation: iLineDraw .7s .1s cubic-bezier(.7,0,.2,1) forwards, iLineOut .7s .8s ease-in forwards;
 }
 @keyframes iLineDraw { to { transform: scaleX(1); } }
-@keyframes iLineLift { from { transform: scaleX(1); } to { transform: translateY(-38vh) scaleX(1.4); opacity: 0; } }
+@keyframes iLineOut { from { transform: scaleX(1); } to { transform: scaleX(1.8); opacity: 0; } }
 
+#intro .i-content {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
 #intro .i-word {
-  position: relative; font-weight: 200; font-size: clamp(2.2rem, 10vw, 5.2rem);
+  font-weight: 200; font-size: clamp(2.4rem, 11vw, 6rem);
   letter-spacing: .9em; margin-right: -.9em; text-transform: uppercase; line-height: 1;
-  background: linear-gradient(100deg, #8d99a6 0%, #8d99a6 38%, #ffffff 50%, #8d99a6 62%, #8d99a6 100%);
+  background: linear-gradient(100deg, #cfe3ee 0%, #cfe3ee 40%, #ffffff 47%, #7ff5e6 50%, #ffffff 53%, #cfe3ee 60%, #cfe3ee 100%);
   background-size: 300% 100%; background-position: 100% 0;
   -webkit-background-clip: text; background-clip: text; color: transparent;
-  opacity: 0; filter: blur(14px);
-  animation: iWordIn 1.3s .75s cubic-bezier(.2,.8,.2,1) forwards, iSweep 1.4s 1.6s cubic-bezier(.4,0,.2,1) forwards;
+  opacity: 0; filter: blur(16px);
+  animation: iWordIn 1.4s 2.5s cubic-bezier(.2,.8,.2,1) forwards, iSweep 1.4s 3.4s cubic-bezier(.4,0,.2,1) forwards;
 }
-@keyframes iWordIn { to { opacity: 1; filter: blur(0); letter-spacing: .32em; margin-right: -.32em; } }
+@keyframes iWordIn {
+  to { opacity: 1; filter: blur(0) drop-shadow(0 0 28px rgba(46,230,208,.35)); letter-spacing: .3em; margin-right: -.3em; }
+}
 @keyframes iSweep { to { background-position: 0 0; } }
 
 #intro .i-sub {
-  margin-top: 18px; font-size: .62rem; font-weight: 500; letter-spacing: .6em; margin-right: -.6em;
-  color: rgba(245,247,250,.45); text-transform: uppercase;
-  opacity: 0; animation: iFade .8s 1.7s forwards;
+  margin-top: 20px; font-size: .64rem; font-weight: 500; letter-spacing: .6em; margin-right: -.6em;
+  color: rgba(245,247,250,.55); text-transform: uppercase;
+  opacity: 0; animation: iFade .8s 3s forwards;
 }
 @keyframes iFade { to { opacity: 1; } }
 
-#intro .i-specs {
-  display: flex; margin-top: 56px; opacity: 0; animation: iFade .8s 2s forwards;
-}
-#intro .i-spec { padding: 0 clamp(14px, 4vw, 34px); text-align: center; }
-#intro .i-spec + .i-spec { border-left: 1px solid rgba(255,255,255,.12); }
+#intro .i-specs { display: flex; margin-top: 56px; opacity: 0; animation: iFade .8s 3s forwards; }
+#intro .i-spec { padding: 0 clamp(14px, 4vw, 36px); text-align: center; }
+#intro .i-spec + .i-spec { border-left: 1px solid rgba(255,255,255,.14); }
 #intro .i-spec b {
-  display: block; font-weight: 300; font-size: clamp(1.4rem, 6vw, 2.2rem);
+  display: block; font-weight: 300; font-size: clamp(1.5rem, 6.5vw, 2.6rem);
   letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: #fff;
 }
 #intro .i-spec small {
-  display: block; margin-top: 6px; font-size: .52rem; letter-spacing: .28em;
-  text-transform: uppercase; color: rgba(245,247,250,.42);
+  display: block; margin-top: 6px; font-size: .54rem; letter-spacing: .28em;
+  text-transform: uppercase; color: rgba(245,247,250,.5);
 }
 #intro .i-skip {
-  position: absolute; bottom: calc(26px + env(safe-area-inset-bottom));
-  font-size: .55rem; letter-spacing: .4em; text-transform: uppercase; color: rgba(255,255,255,.22);
+  position: absolute; left: 0; right: 0; text-align: center; bottom: calc(26px + env(safe-area-inset-bottom));
+  font-size: .55rem; letter-spacing: .4em; text-transform: uppercase; color: rgba(255,255,255,.28);
   opacity: 0; animation: iFade .6s 1.2s forwards;
 }
 
