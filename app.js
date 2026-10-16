@@ -642,6 +642,7 @@ function openModal(id) {
   loadPhotos(id);
 
   document.getElementById('modal').classList.add('open');
+  document.body.classList.add('modal-open');
 
   // Render viz after DOM - wait for modal to be fully visible
   if(d.depthProfile && d.depthProfile.length > 2) {
@@ -652,7 +653,7 @@ function openModal(id) {
   }
   if(d.gps && d.gps.lat && d.gps.lng) {
     setTimeout(()=>{
-      const map = L.map('dive-map',{zoomControl:false,attributionControl:false}).setView([d.gps.lat, d.gps.lng], 15);
+      const map = L.map('dive-map',{zoomControl:false,attributionControl:false,dragging:!L.Browser.mobile,tap:false,scrollWheelZoom:false}).setView([d.gps.lat, d.gps.lng], 15);
       L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
       L.circleMarker([d.gps.lat, d.gps.lng],{radius:8,color:'#2dd4bf',fillColor:'#2dd4bf',fillOpacity:0.3,weight:2}).addTo(map);
       if(d.gpsTrack && d.gpsTrack.length > 1) {
@@ -832,7 +833,7 @@ async function deleteDive(id) {
 }
 
 function closeModal(e){ if(e.target===document.getElementById('modal')) closeModalDirect(); }
-function closeModalDirect(){ document.getElementById('modal').classList.remove('open'); }
+function closeModalDirect(){ document.getElementById('modal').classList.remove('open'); document.body.classList.remove('modal-open'); }
 
 function showToast(msg){
   const el=document.getElementById('toast');
