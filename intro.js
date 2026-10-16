@@ -5,7 +5,8 @@
   const sharedView = new URLSearchParams(location.search).has('shared_map');
   let seen = false, lang = 'en';
   try { seen = sessionStorage.getItem('introSeen') === '1'; lang = localStorage.getItem('aq_lang') || 'en'; } catch (e) {}
-  if (reduce || sharedView || seen) return;
+  const forced = new URLSearchParams(location.search).has('intro'); // ?intro always shows it
+  if (!forced && (reduce || sharedView || seen)) return;
   try { sessionStorage.setItem('introSeen', '1'); } catch (e) {}
 
   const pl = lang === 'pl';
