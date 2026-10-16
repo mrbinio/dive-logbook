@@ -1,60 +1,62 @@
-// Intro: a short "descent" animation shown once per browser session.
-// Tap anywhere to skip. Skipped entirely with "reduce motion" or on the shared map view.
+// Intro: cinematic reveal shown once per browser session (styles in theme.css).
+// Tap anywhere to skip. Skipped with "reduce motion" or on the shared map view;
+// ?intro in the URL always shows it.
 (function () {
+  const params = new URLSearchParams(location.search);
+  const forced = params.has('intro');
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const sharedView = new URLSearchParams(location.search).has('shared_map');
-  let seen = false, lang = 'en';
-  try { seen = sessionStorage.getItem('introSeen') === '1'; lang = localStorage.getItem('aq_lang') || 'en'; } catch (e) {}
-  const forced = new URLSearchParams(location.search).has('intro'); // ?intro always shows it
-  if (!forced && (reduce || sharedView || seen)) return;
+  let seen = false, lang = 'en', stats = null;
+  try {
+    seen = sessionStorage.getItem('introSeen') === '1';
+    lang = localStorage.getItem('aq_lang') || 'en';
+    stats = JSON.parse(localStorage.getItem('introStats') || 'null');
+  } catch (e) {}
+  if (!forced && (reduce || params.has('shared_map') || seen)) return;
   try { sessionStorage.setItem('introSeen', '1'); } catch (e) {}
 
   const pl = lang === 'pl';
+  // Your logbook as "specs"; before the first login fall back to a tagline
+  const specs = stats && stats.n
+    ? [
+        { v: stats.n, d: 0, l: pl ? 'nurkowań' : 'dives' },
+        { v: stats.max, d: stats.max % 1 ? 1 : 0, l: pl ? 'm max' : 'm max depth' },
+        { v: stats.hours, d: stats.hours < 10 ? 1 : 0, l: pl ? 'h pod wodą' : 'h underwater' }
+      ]
+    : null;
+
   const intro = document.createElement('div');
   intro.id = 'intro';
   intro.setAttribute('aria-hidden', 'true');
-
-  const title = [...'Mr.Binio'].map((ch, i) =>
-    `<span class="${i < 3 ? 'accent' : ''}" style="animation-delay:${0.35 + i * 0.05}s">${ch}</span>`).join('');
-
   intro.innerHTML = `
-    <div class="intro-rays"></div>
-    <img class="intro-logo" src="icon.svg" alt="">
-    <div class="intro-title">${title}</div>
-    <div class="intro-depth"><b id="intro-m">0.0</b><small>m · ${pl ? 'zanurzenie' : 'descending'}</small></div>
-    <div class="intro-gauge"><i></i></div>
-    <div class="intro-skip">${pl ? 'dotknij, aby pominąć' : 'tap to skip'}</div>`;
-
-  // A handful of bubbles — cheap, transform-only animations
-  for (let i = 0; i < 14; i++) {
-    const b = document.createElement('div');
-    const size = 6 + Math.random() * 18;
-    b.className = 'intro-bubble';
-    b.style.cssText = `left:${Math.random() * 100}%;width:${size}px;height:${size}px;` +
-      `--drift:${(Math.random() - 0.5) * 80}px;animation-duration:${2 + Math.random() * 2}s;` +
-      `animation-delay:${Math.random() * 1.2}s`;
-    intro.appendChild(b);
-  }
-
+    <div class="i-water"></div>
+    <div class="i-line"></div>
+    <div class="i-word">Mr.Binio</div>
+    <div class="i-sub">${pl ? 'Dziennik nurkowy' : 'Dive logbook'}</div>
+    <div class="i-specs">${specs
+      ? specs.map(s => `<div class="i-spec"><b data-v="${+s.v || 0}" data-d="${s.d}">0</b><small>${s.l}</small></div>`).join('')
+      : `<div class="i-spec"><small>${pl ? 'Głębia · Czas · Historia' : 'Depth · Time · Story'}</small></div>`}</div>
+    <div class="i-skip">${pl ? 'Dotknij, aby pominąć' : 'Tap to skip'}</div>`;
   document.body.appendChild(intro);
-
-  // Depth counter 0 → 30 m with ease-out
-  const el = intro.querySelector('#intro-m');
-  const target = 30, duration = 2200, start = performance.now() + 200;
-  function tick(now) {
-    const p = Math.min(1, Math.max(0, (now - start) / duration));
-    el.textContent = (target * (1 - Math.pow(1 - p, 3))).toFixed(1);
-    if (p < 1 && !intro.classList.contains('done')) requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
 
   let closed = false;
   function close() {
     if (closed) return;
     closed = true;
     intro.classList.add('done');
-    setTimeout(() => intro.remove(), 700);
+    setTimeout(() => intro.remove(), 850);
   }
+
+  // Count the specs up with an ease-out, starting as they fade in
+  const nums = intro.querySelectorAll('.i-spec b');
+  const start = performance.now() + 2000, duration = 1300;
+  function tick(now) {
+    const p = Math.min(1, Math.max(0, (now - start) / duration));
+    const e = 1 - Math.pow(1 - p, 4);
+    nums.forEach(n => { n.textContent = (n.dataset.v * e).toFixed(+n.dataset.d); });
+    if (p < 1 && !closed) requestAnimationFrame(tick);
+  }
+  if (nums.length) requestAnimationFrame(tick);
+
   intro.addEventListener('click', close);
-  setTimeout(close, 2800);
+  setTimeout(close, specs ? 4200 : 3600);
 })();

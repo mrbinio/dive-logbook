@@ -319,6 +319,8 @@ function updateStats() {
   document.getElementById('max-depth-stat').textContent = maxD + 'm';
   const totalMin = dives.reduce((a,d)=>a+(d.duration||0),0);
   document.getElementById('total-time-stat').textContent = totalMin>=60 ? (totalMin/60).toFixed(1)+'h' : totalMin+'m';
+  // Remembered for the intro screen, which runs before login
+  try { localStorage.setItem('introStats', JSON.stringify({ n: dives.length, max: maxD, hours: totalMin/60 })); } catch(e) {}
 }
 
 function updateDepthBar(val) {
