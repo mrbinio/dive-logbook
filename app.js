@@ -1,5 +1,6 @@
 const T = {
   en: {
+    home:'Home', lastDive:'Last dive', details:'Details', recent:'Recent dives', seeAll:'All dives', hSites:'Sites', hAvg:'Avg depth', hHours:'Hours', hDives:'Dives', hMax:'Max depth', startLog:'Start your logbook', startLogSub:'Log your first dive or import from Suunto / Shearwater.', importShort:'Import', estProfile:'Approximate profile', hTime:'Time', hWater:'Water', hVis:'Visibility', hBuddy:'Buddy', more:'More',
     logDive:'Log Dive', myDives:'My Dives', shop:'Shop', checklist:'Checklist', diveMap:'Map', stats:'Stats', certs:'Certs', gear:'Gear', plan:'Plan',
     newEntry:'New', diveEntry:'Dive Entry',
     diveSite:'Dive Site', sitePh:'e.g. Blue Hole, Dahab',
@@ -34,6 +35,7 @@ const T = {
     entry:'Entry', entryShore:'Shore', entryBoat:'Boat', entryPlatform:'Platform', entryOther:'Other',
     feeling:'Feeling'  },
   pl: {
+    home:'Start', lastDive:'Ostatnie nurkowanie', details:'Szczegóły', recent:'Ostatnie nurkowania', seeAll:'Wszystkie nurkowania', hSites:'Miejsca', hAvg:'Śr. głębokość', hHours:'Godziny', hDives:'Nurkowania', hMax:'Maks. głębokość', startLog:'Zacznij swój logbook', startLogSub:'Zapisz pierwsze nurkowanie albo zaimportuj z Suunto / Shearwater.', importShort:'Import', estProfile:'Profil orientacyjny', hTime:'Czas', hWater:'Woda', hVis:'Widoczność', hBuddy:'Buddy', more:'Więcej',
     logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep', checklist:'Checklista', diveMap:'Mapa', stats:'Statystyki', certs:'Certyfikaty', gear:'Sprzęt', plan:'Planer',
     newEntry:'Nowy', diveEntry:'Wpis nurkowy',
     diveSite:'Miejsce nurkowania', sitePh:'np. Blue Hole, Dahab',
@@ -102,7 +104,9 @@ function applyLang() {
   document.getElementById('tab-plan').textContent = t('plan');
   document.getElementById('tab-checklist').textContent = t('checklist');
   document.getElementById('tab-shop').textContent = t('shop');
-  if (mob) document.getElementById('tab-more').textContent = 'More';
+  document.getElementById('tab-home').textContent = t('home');
+  document.getElementById('tab-more').textContent = t('more');
+  if (document.getElementById('panel-home').classList.contains('active')) renderHome();
   // Form labels
   const labels = {
     'l-site':t('diveSite'),'l-loc':t('location'),'l-date':t('date'),
@@ -284,6 +288,7 @@ function showApp(user) {
     if (mapShared) publishPublicMap().catch(e => console.warn('Public map sync error:', e));
     updateStats();
     if(document.getElementById('panel-history').classList.contains('active')) renderDives();
+    if(document.getElementById('panel-home').classList.contains('active')) renderHome();
   });
   checkReminder();
   // Load or join shared trip checklist
@@ -343,12 +348,14 @@ function switchTab(tab) {
   const tabEl = document.getElementById('tab-'+tab);
   if (tabEl) tabEl.classList.add('active');
   // If it's a "more" tab on mobile, highlight the more button
-  if (window.innerWidth <= 600 && ['certs','gear','plan','checklist','shop'].includes(tab)) {
+  if (window.innerWidth <= 600 && ['stats','certs','gear','plan','checklist','shop'].includes(tab)) {
     document.getElementById('tab-more').classList.add('active');
   }
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+tab).classList.add('active');
+  if(tab==='home') renderHome();
   if(tab==='history') renderDives();
+  window.scrollTo(0, 0);
   if(tab==='stats') renderStats();
   if(tab==='map') renderDiveMap();
   if(tab==='certs') renderCerts();
@@ -528,7 +535,11 @@ function renderDives() {
     </div>`;
     return;
   }
-  grid.innerHTML = filtered.map(d=>`
+  grid.innerHTML = filtered.map(diveRowHTML).join('');
+}
+
+function diveRowHTML(d) {
+  return `
     <div class="dive-card" onclick="openModal('${d.id}')">
       <div class="dive-num">${String(d.num).padStart(2,'0')}</div>
       <div class="dive-info">
@@ -546,7 +557,87 @@ function renderDives() {
         <div class="depth-unit">m</div>
       </div>
     </div>
-  `).join('');
+  `;
+}
+
+// === HOME ===
+// Depth profile as an SVG path; when a dive has no recorded profile, draw a
+// typical square profile (descent, bottom, ascent with a 3-minute stop at 5 m).
+function profileSVG(d) {
+  const W = 600, H = 160;
+  let pts = (d.depthProfile || []).map(p => [p.time, p.depth]);
+  const estimated = pts.length < 3;
+  if (estimated) {
+    const T = d.duration || 40, D = d.depth || 18;
+    pts = [[0,0],[T*0.12,D],[T*0.62,D*0.92],[T*0.82,5],[T*0.95,5],[T,0]];
+  }
+  const maxT = pts[pts.length-1][0] || 1, maxD = Math.max(...pts.map(p => p[1])) || 1;
+  const path = pts.map((p,i) => (i?'L':'M') + (p[0]/maxT*W).toFixed(1) + ' ' + (8 + p[1]/maxD*(H-16)).toFixed(1)).join(' ');
+  return { estimated, svg: `<svg class="hero-profile" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+    <defs><linearGradient id="hpf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+    <line x1="0" y1="8" x2="${W}" y2="8" class="hp-surface"/>
+    <path d="${path} L ${W} 8 L 0 8 Z" fill="url(#hpf)" class="hp-fill"/>
+    <path d="${path}" class="hp-line" pathLength="1"/>
+  </svg>` };
+}
+
+function renderHome() {
+  const el = document.getElementById('home-content');
+  if (!el) return;
+  if (!dives.length) {
+    el.innerHTML = `<section class="home-hero home-empty">
+      <div class="eyebrow">Mr.Binio · ${t('subtitle')}</div>
+      <h1 class="hero-site">${t('startLog')}</h1>
+      <p class="hero-loc">${t('startLogSub')}</p>
+      <div class="home-actions">
+        <button class="btn-solid" onclick="switchTab('log')">${t('logDive')}</button>
+        <button class="btn-ghost" onclick="homeImport()">${t('importShort')}</button>
+      </div></section>`;
+    return;
+  }
+  const d = dives[0];
+  const prof = profileSVG(d);
+  const totalMin = dives.reduce((a,x) => a + (x.duration||0), 0);
+  const withDepth = dives.filter(x => x.depth);
+  const sites = new Set(dives.map(x => (x.site||'').trim().toLowerCase()).filter(Boolean)).size;
+  const specs = [
+    [dives.length, t('hDives')],
+    [Math.max(...dives.map(x => x.depth||0)), t('hMax'), 'm'],
+    [(totalMin/60).toFixed(totalMin < 600 ? 1 : 0), t('hHours')],
+    [sites, t('hSites')],
+    [withDepth.length ? (withDepth.reduce((a,x) => a + x.depth, 0) / withDepth.length).toFixed(1) : '—', t('hAvg'), 'm']
+  ];
+  const facts = [
+    d.duration ? [d.duration + ' min', t('hTime')] : null,
+    d.temp ? [d.temp + '°C', t('hWater')] : null,
+    d.visibility ? [d.visibility + ' m', t('hVis')] : null,
+    d.buddy ? [d.buddy, t('hBuddy')] : null
+  ].filter(Boolean);
+  el.innerHTML = `
+    <section class="home-hero" onclick="openModal('${d.id}')">
+      <div class="eyebrow">${t('lastDive')} · #${d.num}</div>
+      <h1 class="hero-site">${esc(d.site || d.location || 'Dive')}</h1>
+      <div class="hero-loc">${esc([d.site && d.location, d.date && formatDate(d.date), d.type].filter(Boolean).join(' · '))}</div>
+      <div class="hero-depth"><span class="num">${esc(d.depth || 0)}</span><span class="unit">m</span></div>
+      <div class="hero-profile-wrap">${prof.svg}${prof.estimated ? `<span class="hp-note">${t('estProfile')}</span>` : ''}</div>
+      ${facts.length ? `<div class="hero-facts">${facts.map(f => `<div><b>${esc(f[0])}</b><small>${f[1]}</small></div>`).join('')}</div>` : ''}
+      <button class="btn-ghost hero-more" onclick="event.stopPropagation();openModal('${d.id}')">${t('details')} →</button>
+    </section>
+    <section class="home-specs">${specs.map(s => `<div class="spec"><b>${esc(s[0])}${s[2] ? `<i>${s[2]}</i>` : ''}</b><small>${s[1]}</small></div>`).join('')}</section>
+    <section class="home-actions">
+      <button class="btn-solid" onclick="switchTab('log')">${t('logDive')}</button>
+      <button class="btn-ghost" onclick="homeImport()">${t('importShort')}</button>
+      <button class="btn-ghost" onclick="switchTab('map')">${t('diveMap')}</button>
+    </section>
+    <section class="home-recent">
+      <div class="section-head"><h2>${t('recent')}</h2><button class="link-btn" onclick="switchTab('history')">${t('seeAll')} →</button></div>
+      <div class="dives-list">${dives.slice(1, 5).map(diveRowHTML).join('')}</div>
+    </section>`;
+}
+
+function homeImport() {
+  const input = document.querySelector('#panel-log input[type=file][onchange^="handleImport"]');
+  if (input) input.click();
 }
 
 function formatDate(s) {

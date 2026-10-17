@@ -131,8 +131,9 @@
 
 <div class="container" id="app-container" style="display:none;">
   <div class="tabs-bar">
-    <button class="tab active" id="tab-log" onclick="switchTab('log')">Log Dive</button>
+    <button class="tab active" id="tab-home" onclick="switchTab('home')">Home</button>
     <button class="tab" id="tab-history" onclick="switchTab('history')">My Dives</button>
+    <button class="tab tab-cta" id="tab-log" onclick="switchTab('log')">Log Dive</button>
     <button class="tab" id="tab-stats" onclick="switchTab('stats')">Stats</button>
     <button class="tab" id="tab-map" onclick="switchTab('map')">Map</button>
     <button class="tab" id="tab-certs" onclick="switchTab('certs')">Certs</button>
@@ -143,6 +144,7 @@
     <button class="tab" id="tab-more" onclick="toggleMoreMenu()">More</button>
   </div>
   <div class="more-menu" id="more-menu">
+    <button class="tab" onclick="switchTab('stats');closeMore()">Stats</button>
     <button class="tab" onclick="switchTab('certs');closeMore()">Certs</button>
     <button class="tab" onclick="switchTab('gear');closeMore()">Gear</button>
     <button class="tab" onclick="switchTab('plan');closeMore()">Plan</button>
@@ -150,7 +152,9 @@
     <button class="tab" onclick="switchTab('shop');closeMore()">Shop</button>
   </div>
 
-  <div class="panel active" id="panel-log">
+  <div class="panel active" id="panel-home"><div id="home-content"></div></div>
+
+  <div class="panel" id="panel-log">
     <div class="card">
       <div class="card-title" id="card-title-text">New <span class="accent">Dive Entry</span></div>
       <div class="form-grid">
