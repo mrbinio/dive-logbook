@@ -1,5 +1,5 @@
-// Intro: hi-tech "dive computer boot" HUD, shown once per browser session
-// (styles in theme.css). Rings assemble, a holographic scan reveals the diver,
+// Intro: dive computer HUD over a live underwater scene (ocean.js), shown once
+// per browser session (styles in theme.css). The camera sinks while rings assemble, a holographic scan reveals the diver,
 // telemetry streams in the corners, the wordmark decodes with a glitch and your
 // logbook stats count up. Tap to skip. Skipped with "reduce motion" or on the
 // shared map view; ?intro always shows it, ?intro=2.5 freezes it at 2.5 s.
@@ -56,10 +56,11 @@
   intro.id = 'intro';
   intro.setAttribute('aria-hidden', 'true');
   intro.innerHTML = `
-    <div class="h-grid"></div>
+    <canvas class="h-ocean"></canvas>
+    <div class="h-shade"></div>
     <div class="h-boot"></div>
     <i class="h-br tl"></i><i class="h-br tr"></i><i class="h-br bl"></i><i class="h-br br"></i>
-    ${corner('tl', ['MRB-DIVE OS 26.1', 'BOOT ......... <b>OK</b>', 'SENSORS ...... <b>OK</b>', 'LOGBOOK SYNC . <b>OK</b>'])}
+    ${corner('tl', ['Mr.Binio Dive OS 26', 'Boot · <b>OK</b>', 'Sensors · <b>OK</b>', 'Logbook sync · <b>OK</b>'])}
     ${corner('tr', ['DEPTH <b data-k="depth">000.0</b> M', 'O₂ <b>21</b>%  N₂ <b>79</b>%', 'NDL <b data-k="ndl">99</b> MIN', 'TEMP <b>24</b>°C'])}
     ${corner('bl', ['LAT 54.4416 N', 'LON 18.5601 E', 'HDG <b data-k="hdg">000</b>°'])}
     ${corner('br', ['PPO₂ <b>0.21</b>', 'GF 30/85', 'ASC <b>9</b> M/MIN'])}
@@ -113,10 +114,17 @@
     if (closed) return;
     closed = true;
     intro.classList.add('done');
-    setTimeout(() => intro.remove(), 900);
+    setTimeout(() => { if (ocean) ocean.stop(); intro.remove(); }, 900);
   }
 
+  // Live water behind the HUD; the camera sinks as the dive "starts"
+  const oceanCanvas = intro.querySelector('.h-ocean');
+  const ocean = window.Ocean && Ocean.start(oceanCanvas, s => 0.02 + 0.42 * ease((s - 0.4) / 3.6), frozen ? freeze : undefined);
+  if (!ocean) oceanCanvas.remove();
+
   if (frozen) {
+    // Swap the WebGL canvas for a still image so headless screenshots capture it
+    if (ocean) requestAnimationFrame(() => requestAnimationFrame(() => { const img = new Image(); img.src = oceanCanvas.toDataURL(); img.className = 'h-ocean'; img.style.cssText = 'animation:none;opacity:1'; oceanCanvas.replaceWith(img); }));
     render(freeze);
     intro.offsetHeight;
     intro.getAnimations({ subtree: true }).forEach(a => { a.pause(); a.currentTime = freeze * 1000; });

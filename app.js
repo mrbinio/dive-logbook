@@ -158,6 +158,15 @@ function applyLang() {
   renderDives();
 }
 
+// Underwater still (ocean.js) as the app background — rendered once, no animation cost
+(function () {
+  const bg = document.createElement('div');
+  bg.id = 'ocean-bg';
+  document.body.prepend(bg);
+  const url = window.Ocean && Ocean.still(Math.min(innerWidth, 1600), Math.min(innerHeight, 1000), 0.32, 9.0);
+  if (url) bg.style.backgroundImage = `url(${url})`;
+})();
+
 // Firebase
 firebase.initializeApp({
   apiKey: "AIzaSyAbO13N1ypFMUTPTA4T_ccCpPe7t6SzQQg",
@@ -585,7 +594,7 @@ function renderHome() {
   const el = document.getElementById('home-content');
   if (!el) return;
   if (!dives.length) {
-    el.innerHTML = `<section class="home-hero home-empty">
+    el.innerHTML = `<section class="tile tile-hero home-empty">
       <div class="eyebrow">Mr.Binio · ${t('subtitle')}</div>
       <h1 class="hero-site">${t('startLog')}</h1>
       <p class="hero-loc">${t('startLogSub')}</p>
@@ -613,26 +622,26 @@ function renderHome() {
     d.visibility ? [d.visibility + ' m', t('hVis')] : null,
     d.buddy ? [d.buddy, t('hBuddy')] : null
   ].filter(Boolean);
-  el.innerHTML = `
-    <section class="home-hero" onclick="openModal('${d.id}')">
+  el.innerHTML = `<div class="bento">
+    <section class="tile tile-hero" onclick="openModal('${d.id}')">
       <div class="eyebrow">${t('lastDive')} · #${d.num}</div>
       <h1 class="hero-site">${esc(d.site || d.location || 'Dive')}</h1>
       <div class="hero-loc">${esc([d.site && d.location, d.date && formatDate(d.date), d.type].filter(Boolean).join(' · '))}</div>
       <div class="hero-depth"><span class="num">${esc(d.depth || 0)}</span><span class="unit">m</span></div>
       <div class="hero-profile-wrap">${prof.svg}${prof.estimated ? `<span class="hp-note">${t('estProfile')}</span>` : ''}</div>
       ${facts.length ? `<div class="hero-facts">${facts.map(f => `<div><b>${esc(f[0])}</b><small>${f[1]}</small></div>`).join('')}</div>` : ''}
-      <button class="btn-ghost hero-more" onclick="event.stopPropagation();openModal('${d.id}')">${t('details')} →</button>
     </section>
-    <section class="home-specs">${specs.map(s => `<div class="spec"><b>${esc(s[0])}${s[2] ? `<i>${s[2]}</i>` : ''}</b><small>${s[1]}</small></div>`).join('')}</section>
-    <section class="home-actions">
+    ${specs.slice(0, 4).map((s, i) => `<section class="tile tile-stat" style="--i:${i}"><small>${s[1]}</small><b>${esc(s[0])}${s[2] ? `<i>${s[2]}</i>` : ''}</b></section>`).join('')}
+    <section class="tile tile-actions">
       <button class="btn-solid" onclick="switchTab('log')">${t('logDive')}</button>
       <button class="btn-ghost" onclick="homeImport()">${t('importShort')}</button>
       <button class="btn-ghost" onclick="switchTab('map')">${t('diveMap')}</button>
     </section>
-    <section class="home-recent">
+    <section class="tile tile-recent">
       <div class="section-head"><h2>${t('recent')}</h2><button class="link-btn" onclick="switchTab('history')">${t('seeAll')} →</button></div>
       <div class="dives-list">${dives.slice(1, 5).map(diveRowHTML).join('')}</div>
-    </section>`;
+    </section>
+  </div>`;
 }
 
 function homeImport() {
