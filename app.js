@@ -103,7 +103,6 @@ function applyLang() {
   document.getElementById('tab-gear').textContent = t('gear');
   document.getElementById('tab-plan').textContent = t('plan');
   document.getElementById('tab-checklist').textContent = t('checklist');
-  document.getElementById('tab-shop').textContent = t('shop');
   document.getElementById('tab-home').textContent = t('home');
   document.getElementById('tab-more').textContent = t('more');
   if (document.getElementById('panel-home').classList.contains('active')) renderHome();
@@ -353,6 +352,8 @@ function closeMore() { document.getElementById('more-menu').classList.remove('op
 
 function switchTab(tab) {
   closeMore();
+  // A tab tap always lands on that screen, even with a dive open on top
+  if (document.getElementById('modal').classList.contains('open')) closeModalDirect();
   document.querySelectorAll('.tabs-bar .tab').forEach(t => t.classList.remove('active'));
   const tabEl = document.getElementById('tab-'+tab);
   if (tabEl) tabEl.classList.add('active');

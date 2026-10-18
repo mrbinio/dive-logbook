@@ -306,7 +306,8 @@ select option { background: #0b1e33; }
   overflow: hidden; cursor: pointer; -webkit-font-smoothing: antialiased;
   transition: opacity .7s cubic-bezier(.4,0,.2,1), transform .7s cubic-bezier(.4,0,.2,1), filter .7s;
 }
-#intro.done { opacity: 0; transform: scale(1.12); filter: blur(8px); pointer-events: none; }
+/* Exit with fade + blur only: scaling a fixed full-screen layer above 100% makes iOS Safari zoom the page out */
+#intro.done { opacity: 0; filter: blur(8px); pointer-events: none; }
 @keyframes hFade { to { opacity: 1; } }
 
 /* Live water behind the HUD, fading in after the power-on line */
