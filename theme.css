@@ -159,6 +159,11 @@ input:focus, select:focus, textarea:focus, .search-input:focus, .login-input:foc
   border-color: rgba(155,220,255,.6); box-shadow: 0 0 0 4px rgba(155,220,255,.14); background: rgba(255,255,255,.1);
 }
 select option { background: #0b1e33; }
+/* iOS Safari zooms into any field under 16px and stays zoomed (the app then
+   opens "too big"). Class rules above beat style.css's generic 16px, so force it. */
+@media (max-width: 600px), (pointer: coarse) {
+  input, select, textarea, .search-input, .filter-select, .login-input, .edit-input { font-size: 16px !important; }
+}
 .depth-fill { background: linear-gradient(90deg, var(--accent), #fff); }
 .depth-val { color: #fff; font-weight: 600; }
 .star { filter: grayscale(1) opacity(.3); }
