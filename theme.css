@@ -313,8 +313,17 @@ select option { background: #0b1e33; }
 .tile-status small, .tile-sac small { font-size: .62rem; letter-spacing: .2em; text-transform: uppercase; color: var(--text-dim); font-weight: 700; }
 .tile-status b { display: block; margin-top: 8px; font-weight: 300; font-size: clamp(1.6rem, 5vw, 2.3rem); letter-spacing: -.04em; color: #fff; line-height: 1; }
 .tile-status span { display: block; margin-top: 6px; font-size: .78rem; color: var(--text-dim); font-weight: 600; }
-.tile-status.is-wait .st-col:last-child b { color: var(--coral); }
-.tile-status.is-ok .st-col:last-child b { color: #8ff0c0; }
+/* Red frame while flying is not allowed yet, green once it is */
+.tile-status.is-wait {
+  border: 1.5px solid rgba(255,92,104,.85);
+  box-shadow: 0 0 0 1px rgba(255,92,104,.25), 0 0 28px rgba(255,92,104,.28), inset 0 1px 0 rgba(255,255,255,.18);
+}
+.tile-status.is-wait .st-col:last-child small, .tile-status.is-wait .st-col:last-child b { color: #ff7a85; }
+.tile-status.is-ok {
+  border: 1.5px solid rgba(92,226,150,.85);
+  box-shadow: 0 0 0 1px rgba(92,226,150,.25), 0 0 28px rgba(92,226,150,.25), inset 0 1px 0 rgba(255,255,255,.18);
+}
+.tile-status.is-ok .st-col:last-child small, .tile-status.is-ok .st-col:last-child b { color: #6ff0a8; }
 .st-note { grid-column: 1 / -1; margin-top: 8px; font-size: .66rem; color: var(--text-muted); font-weight: 600; line-height: 1.5; }
 .tile-sac { grid-column: span 2; cursor: pointer; display: flex; flex-direction: column; animation-delay: .08s; }
 .tile-sac b { margin-top: 8px; font-weight: 300; font-size: clamp(1.8rem, 5vw, 2.6rem); letter-spacing: -.04em; color: #fff; line-height: 1; display: flex; align-items: baseline; gap: 10px; }
