@@ -370,6 +370,36 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 .save-bar .btn-primary { width: 100%; margin: 0; padding: 17px; font-size: .95rem; box-shadow: 0 12px 34px rgba(0,10,30,.55); }
 @media (min-width: 601px) { .save-bar { bottom: 16px; } }
 
+/* ---------- Reminders ---------- */
+.tile-remind { grid-column: span 2; cursor: pointer; animation-delay: .1s; }
+.tile-remind small { font-size: .62rem; letter-spacing: .2em; text-transform: uppercase; color: var(--text-dim); font-weight: 700; }
+.tile-remind ul { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.tile-remind li, .rem-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: var(--r-sm); background: rgba(255,255,255,.06);
+  box-shadow: inset 3px 0 0 rgba(155,220,255,.6); font-size: .84rem;
+}
+.tile-remind li b, .rem-row b { color: #fff; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile-remind li span { color: var(--text-dim); font-weight: 600; white-space: nowrap; }
+.tile-remind li.soon, .rem-row.soon { box-shadow: inset 3px 0 0 #ffc46b; }
+.tile-remind li.soon span { color: #ffc46b; }
+.tile-remind li.over, .rem-row.over { box-shadow: inset 3px 0 0 #ff5c68; background: rgba(255,92,104,.1); }
+.tile-remind li.over span { color: #ff7a85; }
+.rem-row { margin-bottom: 6px; }
+.rem-row div { min-width: 0; display: flex; flex-direction: column; }
+.rem-row small { color: var(--text-dim); font-size: .72rem; font-weight: 600; margin-top: 2px; }
+.rem-del { background: none; border: 0; color: var(--text-muted); font-size: .9rem; cursor: pointer; padding: 6px; }
+.dates-card { margin-top: 14px; }
+.dates-card .muted { color: var(--text-dim); font-size: .84rem; margin-bottom: 10px; }
+.rem-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.rem-form #rem-title { grid-column: 1 / -1; order: 2; }
+.rem-form #rem-kind { order: 1; } .rem-form #rem-date { order: 1; }
+.rem-form .btn-solid { grid-column: 1 / -1; order: 3; }
+.svc-btn {
+  margin-top: 8px; background: rgba(255,255,255,.1); border: 1px solid var(--border); color: #fff;
+  border-radius: 999px; padding: 7px 14px; font: 600 .74rem var(--font); cursor: pointer;
+}
+
 /* ---------- Maps: dark OpenStreetMap ---------- */
 .map-tiles { filter: invert(1) hue-rotate(185deg) brightness(.85) contrast(.9) saturate(.6); }
 .leaflet-container { background: #0b1e33; font-family: var(--font); }

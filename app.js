@@ -1,5 +1,6 @@
 const T = {
   en: {
+    remTitle:'Reminders', remOver:'overdue {n} d', remSoon:'in {n} d', remToday:'today', datesTitle:'Important dates', kindMedical:'Medical certificate', kindInsurance:'Insurance (DAN)', kindOther:'Other', remName:'Name, e.g. tank inspection', remAdd:'Add', remService:'Service', servicedToday:'Serviced today', remNone:'No dates yet — add your medical, insurance or anything that expires.', remSaved:'Saved',
     secPlace:'Place & time', secDive:'The dive', secTank:'Tank & gear', secCond:'Conditions & people', secNotes:'Rating & notes', importHint:'Choose one or more files — duplicates are skipped', logOr:'or log by hand',
     entryTime:'Entry time', surfaceInt:'On the surface', noFly:'No-fly', flyOk:'OK to fly', flyIn:'Fly in', flyAt:'fly from', flyRule12:'single no-deco dive · 12 h', flyRule18:'repetitive diving · 18 h', flyRule24:'decompression dive · 24 h', flyEst:'no entry time — counted from end of day', flyNote:'DAN guideline, not medical advice', sacAvg:'Avg SAC', sacSub:'last {n} dives · L/min', sacTitle:'Air consumption (SAC)', sacNone:'Add tank size and start/end pressure to see your SAC.', profTitle:'Profile check', ascOk:'Max ascent rate', ascFast:'Ascent too fast', stopOk:'Safety stop', stopNo:'No safety stop', stopShort:'Safety stop too short', offline:'Offline — changes will sync when you reconnect', impSummary:'Imported {a} · merged {m} · skipped {s} duplicates', waves:'Waves', seaTemp:'Sea', 
     home:'Home', lastDive:'Last dive', details:'Details', recent:'Recent dives', seeAll:'All dives', hSites:'Sites', hAvg:'Avg depth', hHours:'Hours', hDives:'Dives', hMax:'Max depth', startLog:'Start your logbook', startLogSub:'Log your first dive or import from Suunto / Shearwater.', importShort:'Import', estProfile:'Approximate profile', hTime:'Time', hWater:'Water', hVis:'Visibility', hBuddy:'Buddy', more:'More',
@@ -37,6 +38,7 @@ const T = {
     entry:'Entry', entryShore:'Shore', entryBoat:'Boat', entryPlatform:'Platform', entryOther:'Other',
     feeling:'Feeling'  },
   pl: {
+    remTitle:'Przypomnienia', remOver:'po terminie {n} dni', remSoon:'za {n} dni', remToday:'dziś', datesTitle:'Ważne daty', kindMedical:'Badania lekarskie', kindInsurance:'Ubezpieczenie (DAN)', kindOther:'Inne', remName:'Nazwa, np. przegląd butli', remAdd:'Dodaj', remService:'Serwis', servicedToday:'Serwis zrobiony dziś', remNone:'Brak dat — dodaj badania, ubezpieczenie albo cokolwiek, co ma termin.', remSaved:'Zapisano',
     secPlace:'Miejsce i czas', secDive:'Nurkowanie', secTank:'Butla i sprzęt', secCond:'Warunki i ludzie', secNotes:'Ocena i notatki', importHint:'Wybierz jeden lub kilka plików — duplikaty są pomijane', logOr:'albo wpisz ręcznie',
     entryTime:'Godzina wejścia', surfaceInt:'Na powierzchni', noFly:'Zakaz lotu', flyOk:'Możesz lecieć', flyIn:'Lot za', flyAt:'lot możliwy od', flyRule12:'jedno nurkowanie bezdekompresyjne · 12 h', flyRule18:'nurkowania powtórzeniowe · 18 h', flyRule24:'nurkowanie dekompresyjne · 24 h', flyEst:'brak godziny wejścia — liczę od końca dnia', flyNote:'zalecenie DAN, nie porada medyczna', sacAvg:'Śr. SAC', sacSub:'ostatnie {n} nurk. · L/min', sacTitle:'Zużycie powietrza (SAC)', sacNone:'Dodaj pojemność butli oraz ciśnienie początkowe i końcowe, aby zobaczyć SAC.', profTitle:'Analiza profilu', ascOk:'Maks. prędkość wynurzania', ascFast:'Za szybkie wynurzanie', stopOk:'Przystanek bezpieczeństwa', stopNo:'Brak przystanku bezpieczeństwa', stopShort:'Za krótki przystanek bezpieczeństwa', offline:'Offline — zmiany wyślą się po połączeniu', impSummary:'Zaimportowano {a} · scalono {m} · pominięto {s} duplikatów', waves:'Fale', seaTemp:'Morze', 
     home:'Start', lastDive:'Ostatnie nurkowanie', details:'Szczegóły', recent:'Ostatnie nurkowania', seeAll:'Wszystkie nurkowania', hSites:'Miejsca', hAvg:'Śr. głębokość', hHours:'Godziny', hDives:'Nurkowania', hMax:'Maks. głębokość', startLog:'Zacznij swój logbook', startLogSub:'Zapisz pierwsze nurkowanie albo zaimportuj z Suunto / Shearwater.', importShort:'Import', estProfile:'Profil orientacyjny', hTime:'Czas', hWater:'Woda', hVis:'Widoczność', hBuddy:'Buddy', more:'Więcej',
@@ -145,8 +147,9 @@ function applyLang() {
   document.getElementById('shop-desc').textContent = t('shopDesc');
   document.getElementById('shop-btn-text').textContent = t('goShop');
   document.getElementById('import-btn-text').textContent = t('importBtn');
-  [['sec-place','secPlace'],['sec-dive','secDive'],['sec-tank','secTank'],['sec-cond','secCond'],['sec-notes','secNotes'],['import-hint','importHint'],['log-or','logOr']]
+  [['dates-title','datesTitle'],['rem-k-medical','kindMedical'],['rem-k-insurance','kindInsurance'],['rem-k-other','kindOther'],['rem-add','remAdd'],['sec-place','secPlace'],['sec-dive','secDive'],['sec-tank','secTank'],['sec-cond','secCond'],['sec-notes','secNotes'],['import-hint','importHint'],['log-or','logOr']]
     .forEach(([id, key]) => { const el = document.getElementById(id); if (el) el.textContent = t(key); });
+  const remTitleEl = document.getElementById('rem-title'); if (remTitleEl) remTitleEl.placeholder = t('remName');
   const gpsLabel = document.getElementById('l-gps');
   if(gpsLabel) gpsLabel.textContent = t('gpsLabel');
   const googleBtnText = document.getElementById('google-btn-text');
@@ -320,6 +323,7 @@ function showApp(user) {
   joinPendingTrip().then(joined => { if (!joined) loadOrCreateTrip(); });
   subscribeCerts();
   subscribeGear();
+  subscribeReminders();
 }
 
 function hideApp() {
@@ -331,6 +335,8 @@ function hideApp() {
   if (unsubTrip) { unsubTrip(); unsubTrip = null; }
   if (unsubCerts) { unsubCerts(); unsubCerts = null; }
   if (unsubGear) { unsubGear(); unsubGear = null; }
+  if (unsubReminders) { unsubReminders(); unsubReminders = null; }
+  reminders = [];
   currentTripId = null;
   dives = []; certs = []; gear = [];
   divesLoaded = false; mapShared = false; lastPublishedMap = '';
@@ -670,6 +676,7 @@ function renderHome() {
       ${facts.length ? `<div class="hero-facts">${facts.map(f => `<div><b>${esc(f[0])}</b><small>${f[1]}</small></div>`).join('')}</div>` : ''}
     </section>
     ${homeStatusTiles()}
+    ${homeRemindersTile()}
     ${specs.slice(0, 4).map((s, i) => `<section class="tile tile-stat" style="--i:${i}"><small>${s[1]}</small><b>${esc(s[0])}${s[2] ? `<i>${s[2]}</i>` : ''}</b></section>`).join('')}
     <section class="tile tile-actions">
       <button class="btn-solid" onclick="switchTab('log')">${t('logDive')}</button>
@@ -1301,10 +1308,77 @@ function subscribeGear() {
     gear = snap.docs.map(doc => ({id:doc.id, ...doc.data()}));
     gear.sort((a,b) => (a.category||'').localeCompare(b.category||''));
     if (document.getElementById('panel-gear').classList.contains('active')) renderGear();
+    if (document.getElementById('panel-home').classList.contains('active')) renderHome();
   }, err => { console.error('Gear subscribe error:', err); });
 }
 
+// === REMINDERS: medical, insurance and other dated items (gear service comes from gear) ===
+let reminders = [];
+let unsubReminders = null;
+function remindersCol() { return db.collection('users').doc(myUid()).collection('reminders'); }
+function subscribeReminders() {
+  if (!myUid()) return;
+  if (unsubReminders) unsubReminders();
+  unsubReminders = remindersCol().onSnapshot(snap => {
+    reminders = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    reminders.sort((a, b) => (a.expires || '').localeCompare(b.expires || ''));
+    if (document.getElementById('panel-gear').classList.contains('active')) renderGear();
+    if (document.getElementById('panel-home').classList.contains('active')) renderHome();
+  }, err => console.error('Reminders subscribe error:', err));
+}
+const REM_KINDS = { medical: 'kindMedical', insurance: 'kindInsurance', other: 'kindOther' };
+function remTitle(x) {
+  if (x.kind === 'service') return esc(x.title) + ' · ' + t('remService');
+  return esc(x.title || t(REM_KINDS[x.kind] || 'kindOther'));
+}
+function remWhen(left) {
+  return left < 0 ? t('remOver').replace('{n}', -left) : left === 0 ? t('remToday') : t('remSoon').replace('{n}', left);
+}
+function homeRemindersTile() {
+  const due = DiveTools.dueItems(gear, reminders);
+  if (!due.length) return '';
+  return `<section class="tile tile-remind" onclick="switchTab('gear')">
+    <small>${t('remTitle')}</small>
+    <ul>${due.slice(0, 4).map(x => `<li class="${x.left < 0 ? 'over' : x.left <= 14 ? 'soon' : ''}"><b>${remTitle(x)}</b><span>${remWhen(x.left)}</span></li>`).join('')}</ul>
+  </section>`;
+}
+function renderReminders() {
+  const el = document.getElementById('rem-list');
+  if (!el) return;
+  if (!reminders.length) { el.innerHTML = `<p class="muted">${t('remNone')}</p>`; return; }
+  const today = new Date(new Date().toDateString()).getTime();
+  el.innerHTML = reminders.map(r => {
+    const left = Math.round((Date.parse(r.expires + 'T00:00') - today) / 864e5);
+    return `<div class="rem-row ${left < 0 ? 'over' : left <= 14 ? 'soon' : ''}">
+      <div><b>${esc(r.title || t(REM_KINDS[r.kind] || 'kindOther'))}</b><small>${r.expires ? formatDate(r.expires) : ''} · ${isNaN(left) ? '' : remWhen(left)}</small></div>
+      <button class="rem-del" onclick="deleteReminder('${r.id}')" aria-label="Delete">✕</button>
+    </div>`;
+  }).join('');
+}
+function addReminder() {
+  const kind = document.getElementById('rem-kind').value;
+  const title = document.getElementById('rem-title').value.trim();
+  const expires = document.getElementById('rem-date').value;
+  if (!expires) { showToast(lang === 'pl' ? 'Wybierz datę' : 'Pick a date'); return; }
+  remindersCol().add({ kind, title: title || null, expires, createdAt: firebase.firestore.FieldValue.serverTimestamp() })
+    .catch(e => showToast('❌ ' + e.message));
+  document.getElementById('rem-title').value = '';
+  document.getElementById('rem-date').value = '';
+  showToast(t('remSaved'));
+}
+function deleteReminder(id) {
+  if (!confirm(lang === 'pl' ? 'Usunąć?' : 'Delete?')) return;
+  remindersCol().doc(id).delete().catch(e => showToast('❌ ' + e.message));
+}
+function markServiced(id) {
+  const today = new Date();
+  const iso = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+  db.collection('users').doc(myUid()).collection('gear').doc(id).update({ lastService: iso }).catch(e => showToast('❌ ' + e.message));
+  showToast(t('remSaved'));
+}
+
 function renderGear() {
+  renderReminders();
   const list = document.getElementById('gear-list');
   if (!gear.length) {
     list.innerHTML = `<div style="text-align:center;color:var(--text-dim);padding:20px;font-size:0.78rem;">${lang==='pl'?'Brak sprzętu. Dodaj swój pierwszy!':'No gear yet. Add your first!'}</div>`;
@@ -1332,6 +1406,7 @@ function renderGear() {
         </div>
       </div>
       ${serviceStatus?'<div style="font-size:0.68rem;margin-top:6px;">'+serviceStatus+'</div>':''}
+      ${g.intervalMonths?`<button class="svc-btn" onclick="markServiced('${g.id}')">${t('servicedToday')}</button>`:''}
       <button onclick="deleteGear('${g.id}')" style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.8rem;opacity:0.5;">✕</button>
     </div>`;
   }).join('');

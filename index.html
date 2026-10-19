@@ -498,6 +498,20 @@
         </div>
       </div>
     </div>
+    <div class="card dates-card">
+      <div class="card-title"><span class="accent" id="dates-title">Important dates</span></div>
+      <div id="rem-list"></div>
+      <div class="rem-form">
+        <select id="rem-kind">
+          <option value="medical" id="rem-k-medical">Medical certificate</option>
+          <option value="insurance" id="rem-k-insurance">Insurance (DAN)</option>
+          <option value="other" id="rem-k-other">Other</option>
+        </select>
+        <input type="text" id="rem-title" placeholder="Name, e.g. tank inspection">
+        <input type="date" id="rem-date">
+        <button class="btn-solid" id="rem-add" onclick="addReminder()">Add</button>
+      </div>
+    </div>
   </div>
 
   <div class="panel" id="panel-plan">

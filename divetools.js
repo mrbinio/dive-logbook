@@ -132,5 +132,25 @@ window.DiveTools = (function () {
     return out;
   }
 
-  return { startOf, endOf, surfaceStatus, sac, sacTrend, analyzeProfile, findMatch, sameComputer, deviceKey, fetchConditions };
+  // Reminders due within `days`: gear service (last service + interval) and
+  // dated items (medical, insurance, others). Overdue first, then soonest.
+  function dueItems(gear, reminders, now = Date.now(), days = 60) {
+    const DAY = 864e5, today = new Date(new Date(now).toDateString()).getTime();
+    const out = [];
+    (gear || []).forEach(g => {
+      if (!g.lastService || !g.intervalMonths) return;
+      const next = new Date(g.lastService + 'T00:00');
+      if (isNaN(next)) return;
+      next.setMonth(next.getMonth() + parseInt(g.intervalMonths, 10));
+      out.push({ kind: 'service', id: g.id, title: g.name, date: next.toISOString().slice(0, 10), left: Math.round((next.getTime() - today) / DAY) });
+    });
+    (reminders || []).forEach(r => {
+      const t = Date.parse((r.expires || '') + 'T00:00');
+      if (isNaN(t)) return;
+      out.push({ kind: r.kind || 'other', id: r.id, title: r.title, date: r.expires, left: Math.round((t - today) / DAY) });
+    });
+    return out.filter(x => x.left <= days).sort((a, b) => a.left - b.left);
+  }
+
+  return { dueItems, startOf, endOf, surfaceStatus, sac, sacTrend, analyzeProfile, findMatch, sameComputer, deviceKey, fetchConditions };
 })();
