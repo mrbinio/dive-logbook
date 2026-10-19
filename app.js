@@ -1,5 +1,6 @@
 const T = {
   en: {
+    secPlace:'Place & time', secDive:'The dive', secTank:'Tank & gear', secCond:'Conditions & people', secNotes:'Rating & notes', importHint:'Choose one or more files — duplicates are skipped', logOr:'or log by hand',
     entryTime:'Entry time', surfaceInt:'On the surface', noFly:'No-fly', flyOk:'OK to fly', flyIn:'Fly in', flyAt:'fly from', flyRule12:'single no-deco dive · 12 h', flyRule18:'repetitive diving · 18 h', flyRule24:'decompression dive · 24 h', flyEst:'no entry time — counted from end of day', flyNote:'DAN guideline, not medical advice', sacAvg:'Avg SAC', sacSub:'last {n} dives · L/min', sacTitle:'Air consumption (SAC)', sacNone:'Add tank size and start/end pressure to see your SAC.', profTitle:'Profile check', ascOk:'Max ascent rate', ascFast:'Ascent too fast', stopOk:'Safety stop', stopNo:'No safety stop', stopShort:'Safety stop too short', offline:'Offline — changes will sync when you reconnect', impSummary:'Imported {a} · merged {m} · skipped {s} duplicates', waves:'Waves', seaTemp:'Sea', 
     home:'Home', lastDive:'Last dive', details:'Details', recent:'Recent dives', seeAll:'All dives', hSites:'Sites', hAvg:'Avg depth', hHours:'Hours', hDives:'Dives', hMax:'Max depth', startLog:'Start your logbook', startLogSub:'Log your first dive or import from Suunto / Shearwater.', importShort:'Import', estProfile:'Approximate profile', hTime:'Time', hWater:'Water', hVis:'Visibility', hBuddy:'Buddy', more:'More',
     logDive:'Log Dive', myDives:'My Dives', shop:'Shop', checklist:'Checklist', diveMap:'Map', stats:'Stats', certs:'Certs', gear:'Gear', plan:'Plan',
@@ -13,7 +14,7 @@ const T = {
     cert:'Certification / Agency', certPh:'e.g. PADI OW, SSI',
     rating:'Rating', notes:'Notes & Highlights',
     notesPh:'Marine life spotted, gear used, conditions, memorable moments...',
-    logBtn:'▼ Log this dive', dives:'Dives', maxD:'Max Depth', time:'Bottom Time',
+    logBtn:'Log this dive', dives:'Dives', maxD:'Max Depth', time:'Bottom Time',
     searchPh:'🔍 Search site, location...', allTypes:'All Types',
     noResults:'No results', noDives:'No dives logged yet',
     trySearch:'Try a different search', logFirst:'Log your first dive!',
@@ -36,6 +37,7 @@ const T = {
     entry:'Entry', entryShore:'Shore', entryBoat:'Boat', entryPlatform:'Platform', entryOther:'Other',
     feeling:'Feeling'  },
   pl: {
+    secPlace:'Miejsce i czas', secDive:'Nurkowanie', secTank:'Butla i sprzęt', secCond:'Warunki i ludzie', secNotes:'Ocena i notatki', importHint:'Wybierz jeden lub kilka plików — duplikaty są pomijane', logOr:'albo wpisz ręcznie',
     entryTime:'Godzina wejścia', surfaceInt:'Na powierzchni', noFly:'Zakaz lotu', flyOk:'Możesz lecieć', flyIn:'Lot za', flyAt:'lot możliwy od', flyRule12:'jedno nurkowanie bezdekompresyjne · 12 h', flyRule18:'nurkowania powtórzeniowe · 18 h', flyRule24:'nurkowanie dekompresyjne · 24 h', flyEst:'brak godziny wejścia — liczę od końca dnia', flyNote:'zalecenie DAN, nie porada medyczna', sacAvg:'Śr. SAC', sacSub:'ostatnie {n} nurk. · L/min', sacTitle:'Zużycie powietrza (SAC)', sacNone:'Dodaj pojemność butli oraz ciśnienie początkowe i końcowe, aby zobaczyć SAC.', profTitle:'Analiza profilu', ascOk:'Maks. prędkość wynurzania', ascFast:'Za szybkie wynurzanie', stopOk:'Przystanek bezpieczeństwa', stopNo:'Brak przystanku bezpieczeństwa', stopShort:'Za krótki przystanek bezpieczeństwa', offline:'Offline — zmiany wyślą się po połączeniu', impSummary:'Zaimportowano {a} · scalono {m} · pominięto {s} duplikatów', waves:'Fale', seaTemp:'Morze', 
     home:'Start', lastDive:'Ostatnie nurkowanie', details:'Szczegóły', recent:'Ostatnie nurkowania', seeAll:'Wszystkie nurkowania', hSites:'Miejsca', hAvg:'Śr. głębokość', hHours:'Godziny', hDives:'Nurkowania', hMax:'Maks. głębokość', startLog:'Zacznij swój logbook', startLogSub:'Zapisz pierwsze nurkowanie albo zaimportuj z Suunto / Shearwater.', importShort:'Import', estProfile:'Profil orientacyjny', hTime:'Czas', hWater:'Woda', hVis:'Widoczność', hBuddy:'Buddy', more:'Więcej',
     logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep', checklist:'Checklista', diveMap:'Mapa', stats:'Statystyki', certs:'Certyfikaty', gear:'Sprzęt', plan:'Planer',
@@ -49,7 +51,7 @@ const T = {
     cert:'Certyfikat / Agencja', certPh:'np. PADI OW, SSI',
     rating:'Ocena', notes:'Notatki i wrażenia',
     notesPh:'Widziane życie morskie, sprzęt, warunki, niezapomniane momenty...',
-    logBtn:'▼ Zapisz nurkowanie', dives:'Nurkowań', maxD:'Maks. głęb.', time:'Czas dna',
+    logBtn:'Zapisz nurkowanie', dives:'Nurkowań', maxD:'Maks. głęb.', time:'Czas dna',
     searchPh:'🔍 Szukaj miejsca, lokalizacji...', allTypes:'Wszystkie typy',
     noResults:'Brak wyników', noDives:'Brak zapisanych nurkowań',
     trySearch:'Spróbuj innego wyszukiwania', logFirst:'Zaloguj swoje pierwsze nurkowanie!',
@@ -143,6 +145,8 @@ function applyLang() {
   document.getElementById('shop-desc').textContent = t('shopDesc');
   document.getElementById('shop-btn-text').textContent = t('goShop');
   document.getElementById('import-btn-text').textContent = t('importBtn');
+  [['sec-place','secPlace'],['sec-dive','secDive'],['sec-tank','secTank'],['sec-cond','secCond'],['sec-notes','secNotes'],['import-hint','importHint'],['log-or','logOr']]
+    .forEach(([id, key]) => { const el = document.getElementById(id); if (el) el.textContent = t(key); });
   const gpsLabel = document.getElementById('l-gps');
   if(gpsLabel) gpsLabel.textContent = t('gpsLabel');
   const googleBtnText = document.getElementById('google-btn-text');
@@ -350,9 +354,21 @@ function updateStats() {
 }
 
 function updateDepthBar(val) {
+  updateSacPreview();
   const pct = Math.min((val/60)*100,100);
   document.getElementById('depth-fill').style.width = pct+'%';
   document.getElementById('depth-val').textContent = (val||0)+' m';
+}
+
+// SAC while typing, shown next to the "Tank & gear" heading
+function updateSacPreview() {
+  const v = id => parseFloat(document.getElementById(id).value) || null;
+  const sac = DiveTools.sac({
+    depth: v('f-depth'), avgDepth: v('f-avg-depth'), duration: v('f-duration'),
+    tank: { size: v('f-tank-size'), start: v('f-tank-start'), end: v('f-tank-end') }
+  });
+  const el = document.getElementById('sac-preview');
+  if (el) el.textContent = sac ? 'SAC ' + sac.toFixed(1) + ' L/min' : '';
 }
 
 function setRating(n) {
@@ -530,6 +546,7 @@ function resetForm() {
   document.getElementById('f-time').value = '';
   document.getElementById('f-type').value='Recreational';
   updateDepthBar(0); setRating(0); currentRating=0;
+  document.querySelectorAll('#panel-log details').forEach(x => x.open = false);
   formGps = null;
   document.getElementById('f-gps').value = '';
   document.getElementById('f-gps-map').style.display = 'none';
