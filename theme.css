@@ -272,7 +272,8 @@ select option { background: #0b1e33; }
 .modal-notes { border-left: 2px solid var(--accent); background: rgba(255,255,255,.05); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
 .modal-close { background: rgba(255,255,255,.12); border-radius: 50%; color: #fff; }
 @media (max-width: 600px) {
-  .modal { border-radius: var(--r-lg) var(--r-lg) 0 0; border-bottom: 0; padding-top: 50px; }
+  /* the floating tab bar sits over the sheet: leave room so the last buttons (Add photos) clear it */
+  .modal { border-radius: var(--r-lg) var(--r-lg) 0 0; border-bottom: 0; padding-top: 50px; padding-bottom: calc(120px + env(safe-area-inset-bottom)) !important; }
   .modal::after { content: ''; position: absolute; top: 12px; left: 50%; width: 38px; height: 5px; margin-left: -19px; border-radius: 5px; background: rgba(255,255,255,.3); }
   .modal-stats { grid-template-columns: repeat(2, 1fr); }
 }
