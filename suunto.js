@@ -68,6 +68,7 @@ function parseSuuntoJSON(json) {
     site: '',
     location: '',
     date,
+    startTime: dateTime || null,
     type: 'Recreational',
     depth: Math.round(maxDepth * 100) / 100,
     avgDepth: Math.round(avgDepth * 100) / 100,
@@ -96,22 +97,37 @@ function parseSuuntoJSON(json) {
   };
 }
 
-function handleSuuntoImport(fileInput) {
-  const file = fileInput.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async function(e) {
+async function handleSuuntoImport(fileInput) {
+  const files = [...fileInput.files];
+  if (!files.length) return;
+  const single = files.length === 1;
+  const res = { added: 0, merged: 0, skipped: 0 };
+  let lastId = null;
+  for (const file of files) {
     try {
-      const json = JSON.parse(e.target.result);
+      const json = JSON.parse(await file.text());
       if (!json.DeviceLog) {
-        showToast('❌ ' + (lang==='pl' ? 'To nie jest plik Suunto' : 'Not a Suunto file'));
-        return;
+        showToast('❌ ' + (lang==='pl' ? 'To nie jest plik Suunto: ' : 'Not a Suunto file: ') + file.name);
+        continue;
       }
       const dive = parseSuuntoJSON(json);
-      dive.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      const docRef = await divesCol.add(dive);
-      showToast(t('importSuccess'));
+      const out = await saveImportedDive(dive);
+      res[out.action]++;
+      if (out.action === 'added') { lastId = out.id; await enrichImportedSuuntoDive(out.id, dive, single); }
+    } catch(err) {
+      showToast('❌ ' + (lang==='pl' ? 'Błąd importu: ' : 'Import error: ') + file.name + ' — ' + err.message);
+    }
+  }
+  fileInput.value = '';
+  showImportSummary(res);
+  if (single && lastId) setTimeout(() => openModal(lastId), 500);
+}
 
+// Weather, site name from GPS and (for a single file) prompts for type/notes
+async function enrichImportedSuuntoDive(diveId, dive, interactive) {
+  const docRef = { id: diveId };
+  {
+    {
       // Auto-fill weather from Open-Meteo
       if (dive.gps && dive.date) {
         try {
@@ -158,7 +174,7 @@ function handleSuuntoImport(fileInput) {
       // If still no site name, prompt and geocode
       const updatedDoc = await divesCol.doc(docRef.id).get();
       const updatedData = updatedDoc.data();
-      if (!updatedData.site) {
+      if (!updatedData.site && interactive) {
         const siteName = prompt(lang==='pl' ? 'Podaj nazwę miejsca nurkowania:' : 'Enter dive site name:', '');
         if (siteName) {
           const locName = prompt(lang==='pl' ? 'Kraj / lokalizacja:' : 'Country / location:', '');
@@ -187,22 +203,16 @@ function handleSuuntoImport(fileInput) {
         } catch(e) {}
       }
 
-      // Ask for notes and dive type after import
+      // Ask for notes and dive type after import (single-file imports only)
+      if (!interactive) return;
       const diveType = prompt(lang==='pl' ? 'Typ nurkowania (Recreational, Technical, Sidemount, Training, Night, Cave, Wreck, Deep):' : 'Dive type (Recreational, Technical, Sidemount, Training, Night, Cave, Wreck, Deep):', 'Recreational');
       const notes = prompt(lang==='pl' ? 'Notatki (sprzęt, warunki, co zabrać następnym razem):' : 'Notes (gear, conditions, what to bring next time):', '');
       const postUpdate = {};
       if (diveType) postUpdate.type = diveType.trim();
       if (notes) postUpdate.notes = notes.trim();
       if (Object.keys(postUpdate).length) await divesCol.doc(docRef.id).update(postUpdate);
-
-      switchTab('history');
-      setTimeout(() => openModal(docRef.id), 500);
-    } catch(err) {
-      showToast('❌ ' + (lang==='pl' ? 'Błąd importu: ' : 'Import error: ') + err.message);
     }
-    fileInput.value = '';
-  };
-  reader.readAsText(file);
+  }
 }
 
 // Interactive depth profile visualization

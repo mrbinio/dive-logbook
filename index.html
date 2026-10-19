@@ -170,6 +170,10 @@
           <input type="date" id="f-date">
         </div>
         <div class="form-group">
+          <label id="l-time">Entry time</label>
+          <input type="time" id="f-time">
+        </div>
+        <div class="form-group">
           <label id="l-type">Dive Type</label>
           <select id="f-type">
             <option value="Recreational">Recreational</option>
@@ -322,7 +326,7 @@
       <div style="display:flex;gap:8px;margin-top:8px;">
         <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:11px;border:1px dashed var(--border-light);border-radius:10px;cursor:pointer;color:var(--accent);font-size:0.78rem;font-weight:700;transition:all 0.2s;letter-spacing:0.5px;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border-light)'">
           <span id="import-btn-text">📥 Import Suunto</span>
-          <input type="file" accept=".json,.db" style="display:none" onchange="handleImport(this)">
+          <input type="file" accept=".json,.db" multiple style="display:none" onchange="handleImport(this)">
         </label>
       </div>
     </div>
@@ -627,6 +631,7 @@
 <script src="shearwater.js"></script>
 <script src="suunto.js"></script>
 <script src="dive3d.js"></script>
+<script src="divetools.js"></script>
 <script src="app.js"></script>
 <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');</script>
 </body>

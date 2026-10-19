@@ -1,5 +1,6 @@
 const T = {
   en: {
+    entryTime:'Entry time', surfaceInt:'Surface interval', noFly:'No-fly', flyOk:'OK to fly', flyIn:'Fly in', flyAt:'from', flyRule12:'single no-deco dive · 12 h', flyRule18:'repetitive diving · 18 h', flyRule24:'decompression dive · 24 h', flyEst:'no entry time — counted from end of day', flyNote:'DAN guideline, not medical advice', sacAvg:'Avg SAC', sacSub:'last {n} dives · L/min', sacTitle:'Air consumption (SAC)', sacNone:'Add tank size and start/end pressure to see your SAC.', profTitle:'Profile check', ascOk:'Max ascent rate', ascFast:'Ascent too fast', stopOk:'Safety stop', stopNo:'No safety stop', stopShort:'Safety stop too short', offline:'Offline — changes will sync when you reconnect', impSummary:'Imported {a} · merged {m} · skipped {s} duplicates', waves:'Waves', seaTemp:'Sea', 
     home:'Home', lastDive:'Last dive', details:'Details', recent:'Recent dives', seeAll:'All dives', hSites:'Sites', hAvg:'Avg depth', hHours:'Hours', hDives:'Dives', hMax:'Max depth', startLog:'Start your logbook', startLogSub:'Log your first dive or import from Suunto / Shearwater.', importShort:'Import', estProfile:'Approximate profile', hTime:'Time', hWater:'Water', hVis:'Visibility', hBuddy:'Buddy', more:'More',
     logDive:'Log Dive', myDives:'My Dives', shop:'Shop', checklist:'Checklist', diveMap:'Map', stats:'Stats', certs:'Certs', gear:'Gear', plan:'Plan',
     newEntry:'New', diveEntry:'Dive Entry',
@@ -35,6 +36,7 @@ const T = {
     entry:'Entry', entryShore:'Shore', entryBoat:'Boat', entryPlatform:'Platform', entryOther:'Other',
     feeling:'Feeling'  },
   pl: {
+    entryTime:'Godzina wejścia', surfaceInt:'Przerwa powierzchniowa', noFly:'Zakaz lotu', flyOk:'Możesz lecieć', flyIn:'Lot za', flyAt:'od', flyRule12:'jedno nurkowanie bezdekompresyjne · 12 h', flyRule18:'nurkowania powtórzeniowe · 18 h', flyRule24:'nurkowanie dekompresyjne · 24 h', flyEst:'brak godziny wejścia — liczę od końca dnia', flyNote:'zalecenie DAN, nie porada medyczna', sacAvg:'Śr. SAC', sacSub:'ostatnie {n} nurk. · L/min', sacTitle:'Zużycie powietrza (SAC)', sacNone:'Dodaj pojemność butli oraz ciśnienie początkowe i końcowe, aby zobaczyć SAC.', profTitle:'Analiza profilu', ascOk:'Maks. prędkość wynurzania', ascFast:'Za szybkie wynurzanie', stopOk:'Przystanek bezpieczeństwa', stopNo:'Brak przystanku bezpieczeństwa', stopShort:'Za krótki przystanek bezpieczeństwa', offline:'Offline — zmiany wyślą się po połączeniu', impSummary:'Zaimportowano {a} · scalono {m} · pominięto {s} duplikatów', waves:'Fale', seaTemp:'Morze', 
     home:'Start', lastDive:'Ostatnie nurkowanie', details:'Szczegóły', recent:'Ostatnie nurkowania', seeAll:'Wszystkie nurkowania', hSites:'Miejsca', hAvg:'Śr. głębokość', hHours:'Godziny', hDives:'Nurkowania', hMax:'Maks. głębokość', startLog:'Zacznij swój logbook', startLogSub:'Zapisz pierwsze nurkowanie albo zaimportuj z Suunto / Shearwater.', importShort:'Import', estProfile:'Profil orientacyjny', hTime:'Czas', hWater:'Woda', hVis:'Widoczność', hBuddy:'Buddy', more:'Więcej',
     logDive:'Loguj', myDives:'Moje nurki', shop:'Sklep', checklist:'Checklista', diveMap:'Mapa', stats:'Statystyki', certs:'Certyfikaty', gear:'Sprzęt', plan:'Planer',
     newEntry:'Nowy', diveEntry:'Wpis nurkowy',
@@ -109,7 +111,7 @@ function applyLang() {
   // Form labels
   const labels = {
     'l-site':t('diveSite'),'l-loc':t('location'),'l-date':t('date'),
-    'l-type':t('diveType'),'l-depth':t('maxDepth'),'l-avg-depth':t('avgDepth'),'l-dur':t('bottomTime'),
+    'l-type':t('diveType'),'l-time':t('entryTime'),'l-depth':t('maxDepth'),'l-avg-depth':t('avgDepth'),'l-dur':t('bottomTime'),
     'l-temp':t('waterTemp'),'l-vis':t('visibility'),
     'l-buddy':t('buddy'),'l-cert':t('cert'),'l-rating':t('rating'),'l-notes':t('notes'),
     'l-weights':t('weights'),'l-suit':t('suit'),'l-tank-size':t('tankSize'),
@@ -176,6 +178,17 @@ firebase.initializeApp({
   appId: "1:416389167201:web:2f2ad02160f2606d315220"
 });
 const db = firebase.firestore();
+// Offline: keep a local copy of the data and queue writes until back online
+db.enablePersistence({ synchronizeTabs: true }).catch(e => console.warn('Offline cache unavailable:', e.code));
+function updateOnlineBadge() {
+  let el = document.getElementById('offline-badge');
+  if (navigator.onLine) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'offline-badge'; document.body.appendChild(el); }
+  el.textContent = t('offline');
+}
+addEventListener('online', updateOnlineBadge);
+addEventListener('offline', updateOnlineBadge);
+updateOnlineBadge();
 let divesCol;
 const auth = firebase.auth();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
@@ -473,6 +486,7 @@ async function saveDive() {
     site,
     location: document.getElementById('f-location').value.trim(),
     date: document.getElementById('f-date').value,
+    time: document.getElementById('f-time').value || null,
     type: document.getElementById('f-type').value,
     depth: parseFloat(document.getElementById('f-depth').value)||0,
     avgDepth: parseFloat(document.getElementById('f-avg-depth').value)||null,
@@ -498,11 +512,11 @@ async function saveDive() {
     gps: formGps || null,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
-  try {
-    await divesCol.add(dive);
-    resetForm();
-    showToast(t('saved'));
-  } catch(e) { showToast(t('errorSave') + e.message); }
+  // Written to the local cache at once; the server ack can wait (offline)
+  divesCol.add(dive).catch(e => showToast(t('errorSave') + e.message));
+  resetForm();
+  showToast(t('saved'));
+  switchTab('home');
 }
 
 function resetForm() {
@@ -513,6 +527,7 @@ function resetForm() {
     document.getElementById(id).value='';
   });
   document.getElementById('f-date').valueAsDate = new Date();
+  document.getElementById('f-time').value = '';
   document.getElementById('f-type').value='Recreational';
   updateDepthBar(0); setRating(0); currentRating=0;
   formGps = null;
@@ -583,11 +598,16 @@ function profileSVG(d) {
   }
   const maxT = pts[pts.length-1][0] || 1, maxD = Math.max(...pts.map(p => p[1])) || 1;
   const path = pts.map((p,i) => (i?'L':'M') + (p[0]/maxT*W).toFixed(1) + ' ' + (8 + p[1]/maxD*(H-16)).toFixed(1)).join(' ');
+  const an = estimated ? null : DiveTools.analyzeProfile(d.depthProfile);
+  const fast = an ? an.fastSegments.map(([a, b]) => {
+    const seg = pts.filter(p => p[0] >= a && p[0] <= b);
+    return seg.length > 1 ? `<path class="hp-fast" pathLength="1" d="${seg.map((p,i) => (i?'L':'M') + (p[0]/maxT*W).toFixed(1) + ' ' + (8 + p[1]/maxD*(H-16)).toFixed(1)).join(' ')}"/>` : '';
+  }).join('') : '';
   return { estimated, svg: `<svg class="hero-profile" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
     <defs><linearGradient id="hpf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
     <line x1="0" y1="8" x2="${W}" y2="8" class="hp-surface"/>
     <path d="${path} L ${W} 8 L 0 8 Z" fill="url(#hpf)" class="hp-fill"/>
-    <path d="${path}" class="hp-line" pathLength="1"/>
+    <path d="${path}" class="hp-line" pathLength="1"/>${fast}
   </svg>` };
 }
 
@@ -632,6 +652,7 @@ function renderHome() {
       <div class="hero-profile-wrap">${prof.svg}${prof.estimated ? `<span class="hp-note">${t('estProfile')}</span>` : ''}</div>
       ${facts.length ? `<div class="hero-facts">${facts.map(f => `<div><b>${esc(f[0])}</b><small>${f[1]}</small></div>`).join('')}</div>` : ''}
     </section>
+    ${homeStatusTiles()}
     ${specs.slice(0, 4).map((s, i) => `<section class="tile tile-stat" style="--i:${i}"><small>${s[1]}</small><b>${esc(s[0])}${s[2] ? `<i>${s[2]}</i>` : ''}</b></section>`).join('')}
     <section class="tile tile-actions">
       <button class="btn-solid" onclick="switchTab('log')">${t('logDive')}</button>
@@ -643,6 +664,74 @@ function renderHome() {
       <div class="dives-list">${dives.slice(1, 5).map(diveRowHTML).join('')}</div>
     </section>
   </div>`;
+}
+
+// Surface interval / no-fly countdown and SAC trend tiles for Home
+function fmtDur(ms) {
+  const m = Math.round(ms / 60e3), h = Math.floor(m / 60);
+  return h ? `${h} h ${String(m % 60).padStart(2, '0')} min` : `${m} min`;
+}
+function homeStatusTiles() {
+  let html = '';
+  const st = DiveTools.surfaceStatus(dives);
+  if (st) {
+    const at = new Date(st.flyAt).toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+    const rule = t('flyRule' + st.ruleHours);
+    html += `<section class="tile tile-status ${st.flyInMs ? 'is-wait' : 'is-ok'}">
+      <div class="st-col"><small>${t('surfaceInt')}</small><b>${fmtDur(st.surfaceMs)}</b></div>
+      <div class="st-col"><small>${st.flyInMs ? t('noFly') : t('flyOk')}</small>
+        <b>${st.flyInMs ? fmtDur(st.flyInMs) : '✓'}</b>
+        <span>${st.flyInMs ? `${t('flyAt')} ${at}` : ''}</span></div>
+      <p class="st-note">${rule}${st.estimated ? ' · ' + t('flyEst') : ''} · ${t('flyNote')}</p>
+    </section>`;
+  }
+  const sac = DiveTools.sacTrend(dives);
+  if (sac) {
+    const pts = sac.series, max = Math.max(...pts), min = Math.min(...pts);
+    const line = pts.length > 1 ? pts.map((v, i) => `${(i / (pts.length - 1) * 100).toFixed(1)},${(28 - (max === min ? 14 : (v - min) / (max - min) * 24) - 2).toFixed(1)}`).join(' ') : '';
+    const diff = sac.prev ? sac.avg - sac.prev : 0;
+    html += `<section class="tile tile-sac" onclick="switchTab('stats')">
+      <small>${t('sacAvg')}</small>
+      <b>${sac.avg.toFixed(1)}${sac.prev ? `<i class="${diff <= 0 ? 'good' : 'bad'}">${diff <= 0 ? '↓' : '↑'} ${Math.abs(diff).toFixed(1)}</i>` : ''}</b>
+      ${line ? `<svg viewBox="0 0 100 30" preserveAspectRatio="none" class="sac-spark"><polyline points="${line}"/></svg>` : ''}
+      <span>${t('sacSub').replace('{n}', sac.count)}</span>
+    </section>`;
+  }
+  return html;
+}
+// Keep the countdown fresh while Home is open
+setInterval(() => {
+  if (document.visibilityState === 'visible' && document.getElementById('panel-home')?.classList.contains('active') && DiveTools.surfaceStatus(dives)) renderHome();
+}, 60e3);
+
+// Ascent-rate and safety-stop check shown in the dive sheet
+function profileCheckHTML(d) {
+  const a = DiveTools.analyzeProfile(d.depthProfile);
+  if (!a) return '';
+  const items = [];
+  items.push(a.maxAscent > a.limit
+    ? `<li class="warn"><b>${t('ascFast')}</b><span>${a.maxAscent.toFixed(0)} m/min · ${a.maxAscentDepth.toFixed(0)} m</span></li>`
+    : `<li class="ok"><b>${t('ascOk')}</b><span>${a.maxAscent.toFixed(0)} m/min</span></li>`);
+  if (a.safetyStopNeeded || a.safetyStopSec) {
+    const mm = Math.floor(a.safetyStopSec / 60) + ':' + String(Math.round(a.safetyStopSec % 60)).padStart(2, '0');
+    items.push(a.safetyStopSec >= 180
+      ? `<li class="ok"><b>${t('stopOk')}</b><span>${mm} · ~${a.safetyStopDepth.toFixed(0)} m</span></li>`
+      : a.safetyStopSec >= 60
+        ? `<li class="warn"><b>${t('stopShort')}</b><span>${mm}</span></li>`
+        : `<li class="warn"><b>${t('stopNo')}</b><span>&gt; 10 m</span></li>`);
+  }
+  return `<div class="modal-section-title">${t('profTitle')}</div><ul class="prof-check">${items.join('')}</ul>`;
+}
+
+// Fetch weather/sea conditions once for a dive that has GPS + date, then store them
+const conditionsTried = new Set();
+async function loadConditions(d) {
+  if (conditionsTried.has(d.id) || !navigator.onLine) return;
+  conditionsTried.add(d.id);
+  try {
+    const c = await DiveTools.fetchConditions(d.gps.lat, d.gps.lng, d.date);
+    if (Object.keys(c).length) divesCol.doc(d.id).update(c).catch(() => {});
+  } catch (e) { /* conditions are optional */ }
 }
 
 function homeImport() {
@@ -695,8 +784,12 @@ function openModal(id) {
     <div class="m-stat"><div class="m-stat-val">${s.val}</div><div class="m-stat-label">${s.label}</div></div>
   `).join('');
 
+  if (d.waveMax != null) stats.push({val:d.waveMax+' m',label:t('waves')});
+  if (d.seaTemp != null) stats.push({val:d.seaTemp+'°C',label:t('seaTemp')});
+  if (!d.weather && d.gps && d.gps.lat && d.date) loadConditions(d);
+
   // Depth profile + map
-  let extraHTML = '';
+  let extraHTML = profileCheckHTML(d);
   if(d.depthProfile && d.depthProfile.length > 2) {
     extraHTML += `<div class="modal-section-title">3D Dive View</div><div id="dive-3d" style="position:relative;"></div>`;
     extraHTML += `<div class="modal-section-title">Depth Profile</div><div id="dive-viz"></div>`;
@@ -787,6 +880,7 @@ function openEditMode(id) {
         <div id="e-gps-map" style="display:none;height:200px;border-radius:8px;overflow:hidden;margin-top:4px;border:1px solid var(--border);"></div>
       </label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('date')}<input id="e-date" type="date" value="${esc(d.date)}" class="edit-input"></label>
+      <label style="display:flex;flex-direction:column;gap:2px;">${t('entryTime')}<input id="e-time" type="time" value="${esc(d.time || (d.startTime ? String(d.startTime).substring(11,16) : ''))}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('maxDepth')}<input id="e-depth" type="number" value="${d.depth||''}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('avgDepth')}<input id="e-avg-depth" type="number" step="0.1" value="${d.avgDepth||''}" class="edit-input"></label>
       <label style="display:flex;flex-direction:column;gap:2px;">${t('bottomTime')}<input id="e-duration" type="number" value="${d.duration||''}" class="edit-input"></label>
@@ -885,6 +979,7 @@ async function saveEdit(id) {
     site: document.getElementById('e-site').value.trim(),
     location: document.getElementById('e-location').value.trim(),
     date: document.getElementById('e-date').value,
+    time: document.getElementById('e-time').value || null,
     depth: parseFloat(document.getElementById('e-depth').value)||0,
     avgDepth: parseFloat(document.getElementById('e-avg-depth').value)||null,
     duration: parseInt(document.getElementById('e-duration').value)||0,
@@ -915,11 +1010,9 @@ async function saveEdit(id) {
     update.gps = null;
   }
   if (editMap) { editMap.remove(); editMap = null; }
-  try {
-    await divesCol.doc(id).update(update);
-    showToast(lang==='pl'?'✅ Zapisano!':'✅ Saved!');
-    setTimeout(()=>openModal(id), 200);
-  } catch(e) { showToast('❌ ' + e.message); }
+  divesCol.doc(id).update(update).catch(e => showToast('❌ ' + e.message));
+  showToast(lang==='pl'?'Zapisano':'Saved');
+  setTimeout(()=>openModal(id), 200);
 }
 
 async function deleteDive(id) {
@@ -929,7 +1022,7 @@ async function deleteDive(id) {
     const batch = db.batch();
     photoSnap.docs.forEach(doc => batch.delete(doc.ref));
     batch.delete(divesCol.doc(id));
-    await batch.commit();
+    batch.commit().catch(e => showToast(t('errorDelete') + e.message));
     closeModalDirect();
     showToast(t('deleted'));
   } catch(e) { showToast(t('errorDelete') + e.message); }
@@ -1243,6 +1336,23 @@ async function deleteGear(id) {
 }
 
 // === STATS ===
+function renderSacStats() {
+  let el = document.getElementById('stats-sac');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'stats-sac';
+    document.getElementById('stats-charts').before(el);
+  }
+  const rows = dives.map(d => ({ d, v: DiveTools.sac(d) })).filter(x => x.v != null).slice(0, 20);
+  if (!rows.length) { el.innerHTML = `<div class="sac-block"><h3>${t('sacTitle')}</h3><p class="muted">${t('sacNone')}</p></div>`; return; }
+  const max = Math.max(...rows.map(r => r.v));
+  el.innerHTML = `<div class="sac-block"><h3>${t('sacTitle')}</h3>${rows.map(r => `
+    <div class="sac-row" onclick="openModal('${r.d.id}')">
+      <span class="sac-site">${esc(r.d.site || r.d.location || 'Dive')}<small>${r.d.date ? formatDate(r.d.date) : ''}</small></span>
+      <span class="sac-bar"><i style="width:${(r.v / max * 100).toFixed(1)}%"></i></span>
+      <b>${r.v.toFixed(1)}</b>
+    </div>`).join('')}</div>`;
+}
+
 function renderStats() {
   if (!dives.length) {
     document.getElementById('stats-summary').innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:20px;">No dives yet</div>';
@@ -1250,6 +1360,7 @@ function renderStats() {
     return;
   }
 
+  renderSacStats();
   const totalDives = dives.length;
   const totalTime = dives.reduce((s,d) => s + (d.duration||0), 0);
   const maxDepth = Math.max(...dives.map(d => d.depth||0));
@@ -2088,6 +2199,44 @@ function checkReminder() {
 
 applyLang();
 
+// Save an imported dive unless the logbook already has it. The same dive from
+// another computer (e.g. your second Suunto) is merged into the existing entry.
+// Dives saved during this session's imports, so a batch can match files against
+// each other before the Firestore snapshot catches up.
+const importedThisSession = [];
+async function saveImportedDive(dive) {
+  const known = dives.concat(importedThisSession.filter(p => !dives.some(d => d.id === p.id)));
+  const match = DiveTools.findMatch(known, dive);
+  if (!match) {
+    dive.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    const ref = divesCol.doc();
+    ref.set(dive).catch(e => showToast('❌ ' + e.message));
+    importedThisSession.push(Object.assign({}, dive, { id: ref.id }));
+    return { action: 'added', id: ref.id };
+  }
+  if (DiveTools.sameComputer(match, dive)) return { action: 'skipped', id: match.id };
+  match.computers = (match.computers || []).concat({ device: dive.device || '' });
+  const upd = {
+    computers: firebase.firestore.FieldValue.arrayUnion({
+      device: dive.device || '', depth: dive.depth || null, avgDepth: dive.avgDepth || null,
+      duration: dive.duration || null, temp: dive.temp ?? null
+    })
+  };
+  if (!(match.depthProfile && match.depthProfile.length > 2) && dive.depthProfile && dive.depthProfile.length > 2) {
+    upd.depthProfile = dive.depthProfile; upd.tempProfile = dive.tempProfile || [];
+  }
+  if (!match.gps && dive.gps) upd.gps = dive.gps;
+  if (!match.startTime && dive.startTime) upd.startTime = dive.startTime;
+  if (!match.device && dive.device) upd.device = dive.device;
+  if (match.minNDL == null && dive.minNDL != null) upd.minNDL = dive.minNDL;
+  divesCol.doc(match.id).update(upd).catch(e => showToast('❌ ' + e.message));
+  return { action: 'merged', id: match.id };
+}
+function showImportSummary(r) {
+  showToast(t('impSummary').replace('{a}', r.added).replace('{m}', r.merged).replace('{s}', r.skipped));
+  if (r.added || r.merged) switchTab('history');
+}
+
 function handleImport(fileInput) {
   const file = fileInput.files[0];
   if (!file) return;
@@ -2100,13 +2249,9 @@ function handleImport(fileInput) {
       try {
         const divesList = await parseShearwaterDB(e.target.result);
         if (!divesList.length) { showToast('❌ No dives found in file'); return; }
-        let count = 0;
-        for (const dive of divesList) {
-          dive.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-          await divesCol.add(dive);
-          count++;
-        }
-        showToast(t('importSuccess') + ' (' + count + ')');
+        const res = { added: 0, merged: 0, skipped: 0 };
+        for (const dive of divesList) res[(await saveImportedDive(dive)).action]++;
+        showImportSummary(res);
         switchTab('history');
       } catch(err) {
         showToast('❌ ' + err.message);

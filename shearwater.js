@@ -65,6 +65,7 @@ async function parseShearwaterDB(arrayBuffer) {
       site: r.Site || '',
       location: r.Location || '',
       date,
+      startTime: r.DiveDate ? String(r.DiveDate).replace(' ', 'T') : null,
       type: 'Recreational',
       depth: Math.round(depthVal * 100) / 100,
       avgDepth,
