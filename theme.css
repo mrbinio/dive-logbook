@@ -400,6 +400,8 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
   border-radius: 999px; padding: 7px 14px; font: 600 .74rem var(--font); cursor: pointer;
 }
 
+.btn-edit.btn-share { background: #fff; color: #081320; border-color: #fff; font-weight: 700; }
+
 /* ---------- Maps: dark OpenStreetMap ---------- */
 .map-tiles { filter: invert(1) hue-rotate(185deg) brightness(.85) contrast(.9) saturate(.6); }
 .leaflet-container { background: #0b1e33; font-family: var(--font); }

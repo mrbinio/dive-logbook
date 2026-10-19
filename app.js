@@ -844,6 +844,8 @@ function openModal(id) {
   // Edit button
   document.getElementById('m-edit').textContent = lang==='pl'?'Edytuj':'Edit';
   document.getElementById('m-edit').onclick = ()=>openEditMode(id);
+  document.getElementById('m-share').textContent = lang==='pl'?'Udostępnij kartę':'Share card';
+  document.getElementById('m-share').onclick = ()=>shareDiveCard(id);
   document.getElementById('m-compare').textContent = lang==='pl'?'Porównaj':'Compare';
   document.getElementById('m-compare').onclick = ()=>compareDive(id);
   document.getElementById('m-compare').style.display = dives.length > 1 ? '' : 'none';
