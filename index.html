@@ -395,13 +395,18 @@
   </div>
 
   <div class="panel" id="panel-stats">
-    <div class="card">
-      <div class="card-title"><span class="accent" id="stats-title">Dive Statistics</span></div>
-      <div id="stats-summary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;"></div>
-      <div id="stats-charts"></div>
-      <div id="stats-timeline" style="margin-top:20px;"></div>
-      <button onclick="exportPDF()" style="margin-top:16px;width:100%;background:transparent;border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--accent);font-size:0.72rem;cursor:pointer;font-family:inherit;">📄 Export PDF Logbook</button>
-      <button onclick="exportJSON()" style="margin-top:8px;width:100%;background:transparent;border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-dim);font-size:0.72rem;cursor:pointer;font-family:inherit;">💾 Backup all data (JSON)</button>
+    <div class="page-head">
+      <h1 class="page-title" id="stats-title">Dive Statistics</h1>
+      <div class="seg" id="stats-period">
+        <button data-p="all" class="on" onclick="setStatsPeriod('all')" id="per-all">All</button>
+        <button data-p="year" onclick="setStatsPeriod('year')" id="per-year">This year</button>
+        <button data-p="12m" onclick="setStatsPeriod('12m')" id="per-12m">12 months</button>
+      </div>
+    </div>
+    <div id="stats-content"></div>
+    <div class="export-row">
+      <button class="btn-ghost" onclick="exportPDF()" id="exp-pdf">Export PDF</button>
+      <button class="btn-ghost" onclick="exportJSON()" id="exp-json">Backup JSON</button>
     </div>
   </div>
 

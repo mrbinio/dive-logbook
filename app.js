@@ -1,5 +1,6 @@
 const T = {
   en: {
+    statsTitle:'Statistics', perAll:'All', perYear:'This year', per12m:'12 months', expPdf:'Export PDF', expJson:'Backup JSON',
     remTitle:'Reminders', remOver:'overdue {n} d', remSoon:'in {n} d', remToday:'today', datesTitle:'Important dates', kindMedical:'Medical certificate', kindInsurance:'Insurance (DAN)', kindOther:'Other', remName:'Name, e.g. tank inspection', remAdd:'Add', remService:'Service', servicedToday:'Serviced today', remNone:'No dates yet — add your medical, insurance or anything that expires.', remSaved:'Saved',
     secPlace:'Place & time', secDive:'The dive', secTank:'Tank & gear', secCond:'Conditions & people', secNotes:'Rating & notes', importHint:'Choose one or more files — duplicates are skipped', logOr:'or log by hand',
     entryTime:'Entry time', surfaceInt:'On the surface', noFly:'No-fly', flyOk:'OK to fly', flyIn:'Fly in', flyAt:'fly from', flyRule12:'single no-deco dive · 12 h', flyRule18:'repetitive diving · 18 h', flyRule24:'decompression dive · 24 h', flyEst:'no entry time — counted from end of day', flyNote:'DAN guideline, not medical advice', sacAvg:'Avg SAC', sacSub:'last {n} dives · L/min', sacTitle:'Air consumption (SAC)', sacNone:'Add tank size and start/end pressure to see your SAC.', profTitle:'Profile check', ascOk:'Max ascent rate', ascFast:'Ascent too fast', stopOk:'Safety stop', stopNo:'No safety stop', stopShort:'Safety stop too short', offline:'Offline — changes will sync when you reconnect', impSummary:'Imported {a} · merged {m} · skipped {s} duplicates', waves:'Waves', seaTemp:'Sea', 
@@ -38,6 +39,7 @@ const T = {
     entry:'Entry', entryShore:'Shore', entryBoat:'Boat', entryPlatform:'Platform', entryOther:'Other',
     feeling:'Feeling'  },
   pl: {
+    statsTitle:'Statystyki', perAll:'Wszystko', perYear:'Ten rok', per12m:'12 mies.', expPdf:'Eksport PDF', expJson:'Kopia zapasowa JSON',
     remTitle:'Przypomnienia', remOver:'po terminie {n} dni', remSoon:'za {n} dni', remToday:'dziś', datesTitle:'Ważne daty', kindMedical:'Badania lekarskie', kindInsurance:'Ubezpieczenie (DAN)', kindOther:'Inne', remName:'Nazwa, np. przegląd butli', remAdd:'Dodaj', remService:'Serwis', servicedToday:'Serwis zrobiony dziś', remNone:'Brak dat — dodaj badania, ubezpieczenie albo cokolwiek, co ma termin.', remSaved:'Zapisano',
     secPlace:'Miejsce i czas', secDive:'Nurkowanie', secTank:'Butla i sprzęt', secCond:'Warunki i ludzie', secNotes:'Ocena i notatki', importHint:'Wybierz jeden lub kilka plików — duplikaty są pomijane', logOr:'albo wpisz ręcznie',
     entryTime:'Godzina wejścia', surfaceInt:'Na powierzchni', noFly:'Zakaz lotu', flyOk:'Możesz lecieć', flyIn:'Lot za', flyAt:'lot możliwy od', flyRule12:'jedno nurkowanie bezdekompresyjne · 12 h', flyRule18:'nurkowania powtórzeniowe · 18 h', flyRule24:'nurkowanie dekompresyjne · 24 h', flyEst:'brak godziny wejścia — liczę od końca dnia', flyNote:'zalecenie DAN, nie porada medyczna', sacAvg:'Śr. SAC', sacSub:'ostatnie {n} nurk. · L/min', sacTitle:'Zużycie powietrza (SAC)', sacNone:'Dodaj pojemność butli oraz ciśnienie początkowe i końcowe, aby zobaczyć SAC.', profTitle:'Analiza profilu', ascOk:'Maks. prędkość wynurzania', ascFast:'Za szybkie wynurzanie', stopOk:'Przystanek bezpieczeństwa', stopNo:'Brak przystanku bezpieczeństwa', stopShort:'Za krótki przystanek bezpieczeństwa', offline:'Offline — zmiany wyślą się po połączeniu', impSummary:'Zaimportowano {a} · scalono {m} · pominięto {s} duplikatów', waves:'Fale', seaTemp:'Morze', 
@@ -147,7 +149,7 @@ function applyLang() {
   document.getElementById('shop-desc').textContent = t('shopDesc');
   document.getElementById('shop-btn-text').textContent = t('goShop');
   document.getElementById('import-btn-text').textContent = t('importBtn');
-  [['dates-title','datesTitle'],['rem-k-medical','kindMedical'],['rem-k-insurance','kindInsurance'],['rem-k-other','kindOther'],['rem-add','remAdd'],['sec-place','secPlace'],['sec-dive','secDive'],['sec-tank','secTank'],['sec-cond','secCond'],['sec-notes','secNotes'],['import-hint','importHint'],['log-or','logOr']]
+  [['stats-title','statsTitle'],['per-all','perAll'],['per-year','perYear'],['per-12m','per12m'],['exp-pdf','expPdf'],['exp-json','expJson'],['dates-title','datesTitle'],['rem-k-medical','kindMedical'],['rem-k-insurance','kindInsurance'],['rem-k-other','kindOther'],['rem-add','remAdd'],['sec-place','secPlace'],['sec-dive','secDive'],['sec-tank','secTank'],['sec-cond','secCond'],['sec-notes','secNotes'],['import-hint','importHint'],['log-or','logOr']]
     .forEach(([id, key]) => { const el = document.getElementById(id); if (el) el.textContent = t(key); });
   const remTitleEl = document.getElementById('rem-title'); if (remTitleEl) remTitleEl.placeholder = t('remName');
   const gpsLabel = document.getElementById('l-gps');
@@ -1439,156 +1441,141 @@ async function deleteGear(id) {
 }
 
 // === STATS ===
-function renderSacStats() {
-  let el = document.getElementById('stats-sac');
-  if (!el) {
-    el = document.createElement('div'); el.id = 'stats-sac';
-    document.getElementById('stats-charts').before(el);
+// === STATS (bento) ===
+let statsPeriod = 'all';
+function setStatsPeriod(p) {
+  statsPeriod = p;
+  document.querySelectorAll('#stats-period button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
+  renderStats();
+}
+function statsDives() {
+  if (statsPeriod === 'all') return dives;
+  const now = new Date();
+  const from = statsPeriod === 'year' ? now.getFullYear() + '-01-01'
+    : new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString().slice(0, 10);
+  return dives.filter(d => d.date && d.date >= from);
+}
+const STAT_COLORS = ['#9bdcff', '#ffb38a', '#b8a8ff', '#8ff0c0', '#ffd37a', '#ff8fab', '#7fb2ff', '#d6ecff'];
+
+function statsMonthsSVG(list) {
+  const now = new Date(), months = [];
+  for (let i = 11; i >= 0; i--) {
+    const m = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(m.getFullYear() + '-' + String(m.getMonth() + 1).padStart(2, '0'));
   }
-  const rows = dives.map(d => ({ d, v: DiveTools.sac(d) })).filter(x => x.v != null).slice(0, 20);
-  if (!rows.length) { el.innerHTML = `<div class="sac-block"><h3>${t('sacTitle')}</h3><p class="muted">${t('sacNone')}</p></div>`; return; }
-  const max = Math.max(...rows.map(r => r.v));
-  el.innerHTML = `<div class="sac-block"><h3>${t('sacTitle')}</h3>${rows.map(r => `
-    <div class="sac-row" onclick="openModal('${r.d.id}')">
-      <span class="sac-site">${esc(r.d.site || r.d.location || 'Dive')}<small>${r.d.date ? formatDate(r.d.date) : ''}</small></span>
-      <span class="sac-bar"><i style="width:${(r.v / max * 100).toFixed(1)}%"></i></span>
-      <b>${r.v.toFixed(1)}</b>
-    </div>`).join('')}</div>`;
+  const count = Object.fromEntries(months.map(m => [m, 0]));
+  list.forEach(d => { const m = (d.date || '').slice(0, 7); if (m in count) count[m]++; });
+  const max = Math.max(1, ...Object.values(count));
+  const loc = lang === 'pl' ? 'pl-PL' : 'en-GB';
+  return `<div class="bars">${months.map(m => `
+    <div class="bar"><span class="bar-n">${count[m] || ''}</span>
+      <i style="height:${Math.max(count[m] ? 6 : 2, count[m] / max * 100)}%" class="${count[m] ? '' : 'zero'}"></i>
+      <small>${new Date(m + '-01T00:00').toLocaleDateString(loc, { month: 'short' }).replace('.', '')}</small></div>`).join('')}</div>`;
+}
+
+function statsDepthSVG(list) {
+  const pts = list.filter(d => d.date && d.depth).sort((a, b) => a.date.localeCompare(b.date)).slice(-40);
+  if (pts.length < 2) return '';
+  const W = 600, H = 170, max = Math.max(...pts.map(d => d.depth)) * 1.1;
+  const xy = pts.map((d, i) => [i / (pts.length - 1) * W, 10 + d.depth / max * (H - 20)]);
+  const line = xy.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  return `<svg class="depth-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <defs><linearGradient id="dcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9bdcff" stop-opacity=".0"/><stop offset="1" stop-color="#9bdcff" stop-opacity=".25"/></linearGradient></defs>
+    <line x1="0" y1="10" x2="${W}" y2="10" class="dc-surface"/>
+    <path d="${line} L ${W} 10 L 0 10 Z" fill="url(#dcg)"/>
+    <path d="${line}" class="dc-line"/>
+    ${xy.map((p, i) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.5" class="dc-dot" onclick="openModal('${pts[i].id}')"><title>${esc(pts[i].site || '')} · ${pts[i].depth} m</title></circle>`).join('')}
+  </svg>
+  <div class="chart-axis"><span>${formatDate(pts[0].date)}</span><span>${formatDate(pts[pts.length - 1].date)}</span></div>`;
 }
 
 function renderStats() {
-  if (!dives.length) {
-    document.getElementById('stats-summary').innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:20px;">No dives yet</div>';
-    document.getElementById('stats-charts').innerHTML = '';
+  const el = document.getElementById('stats-content');
+  if (!el) return;
+  const L = (pl, en) => lang === 'pl' ? pl : en;
+  const list = statsDives();
+  if (!list.length) {
+    el.innerHTML = `<section class="tile"><p class="muted">${L('Brak nurkowań w tym okresie.', 'No dives in this period.')}</p></section>`;
     return;
   }
-
-  renderSacStats();
-  const totalDives = dives.length;
-  const totalTime = dives.reduce((s,d) => s + (d.duration||0), 0);
-  const maxDepth = Math.max(...dives.map(d => d.depth||0));
-  const avgDepth = Math.round(dives.reduce((s,d) => s + (d.depth||0), 0) / totalDives * 10) / 10;
-  const totalHours = Math.round(totalTime / 60 * 10) / 10;
-  const uniqueSites = [...new Set(dives.map(d => d.site).filter(Boolean))].length;
-  const avgTemp = dives.filter(d=>d.temp).length ? Math.round(dives.filter(d=>d.temp).reduce((s,d)=>s+parseFloat(d.temp),0)/dives.filter(d=>d.temp).length*10)/10 : null;
-
-  // SAC rates
-  const sacDives = dives.filter(d => d.tank&&d.tank.start&&d.tank.end&&d.tank.size&&d.duration&&(d.avgDepth||d.depth));
-  const avgSac = sacDives.length ? Math.round(sacDives.reduce((s,d) => {
-    const avg = d.avgDepth || d.depth*0.6;
-    return s + ((d.tank.start-d.tank.end)*d.tank.size)/((avg/10)+1)/d.duration;
-  }, 0) / sacDives.length * 10) / 10 : null;
-
-  const summaryHTML = [
-    {val: totalDives, label: lang==='pl'?'Nurkowań':'Dives'},
-    {val: totalHours+'h', label: lang==='pl'?'Czas pod wodą':'Time underwater'},
-    {val: maxDepth+'m', label: lang==='pl'?'Maks. głębokość':'Max depth'},
-    {val: avgDepth+'m', label: lang==='pl'?'Śr. głębokość':'Avg depth'},
-    {val: uniqueSites, label: lang==='pl'?'Miejsc':'Sites'},
-    {val: avgTemp?avgTemp+'°C':'—', label: lang==='pl'?'Śr. temp.':'Avg temp'},
+  const num = (v, d = 1) => Math.round(v * 10 ** d) / 10 ** d;
+  const minutes = list.reduce((a, d) => a + (d.duration || 0), 0);
+  const withDepth = list.filter(d => d.depth);
+  const temps = list.filter(d => d.temp !== null && d.temp !== '' && !isNaN(parseFloat(d.temp)));
+  const sites = new Set(list.map(d => (d.site || '').trim().toLowerCase()).filter(Boolean));
+  const countries = new Set(list.map(d => (d.location || '').split(',').pop().trim().toLowerCase()).filter(Boolean));
+  const specs = [
+    [list.length, L('Nurkowania', 'Dives')],
+    [num(minutes / 60), L('Godziny', 'Hours')],
+    [Math.max(0, ...list.map(d => d.depth || 0)), L('Maks. głębokość', 'Max depth'), 'm'],
+    [withDepth.length ? num(withDepth.reduce((a, d) => a + d.depth, 0) / withDepth.length) : '—', L('Śr. głębokość', 'Avg depth'), 'm'],
+    [sites.size, L('Miejsca', 'Sites')],
+    [countries.size, L('Regiony', 'Regions')],
   ];
-  if (avgSac) summaryHTML.push({val: avgSac+' L/min', label: 'Avg SAC'});
 
-  document.getElementById('stats-summary').innerHTML = summaryHTML.map(s =>
-    `<div style="text-align:center;padding:10px;background:var(--surface);border-radius:8px;border:1px solid var(--border);">
-      <div style="font-size:1.2rem;font-weight:800;color:var(--accent);">${s.val}</div>
-      <div style="font-size:0.6rem;color:var(--text-dim);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;">${s.label}</div>
-    </div>`).join('');
+  // Records — each opens its dive
+  const best = (arr, f, cmp) => arr.reduce((b, d) => (b == null || cmp(f(d), f(b)) ? d : b), null);
+  const sacList = list.filter(d => DiveTools.sac(d) != null);
+  const records = [
+    [L('Najgłębsze', 'Deepest'), best(withDepth, d => d.depth, (a, b) => a > b), d => d.depth + ' m'],
+    [L('Najdłuższe', 'Longest'), best(list.filter(d => d.duration), d => d.duration, (a, b) => a > b), d => d.duration + ' min'],
+    [L('Najzimniejsze', 'Coldest'), best(temps, d => parseFloat(d.temp), (a, b) => a < b), d => d.temp + '°C'],
+    [L('Najcieplejsze', 'Warmest'), best(temps, d => parseFloat(d.temp), (a, b) => a > b), d => d.temp + '°C'],
+    [L('Najlepszy SAC', 'Best SAC'), best(sacList, d => DiveTools.sac(d), (a, b) => a < b), d => DiveTools.sac(d).toFixed(1) + ' L/min'],
+  ].filter(r => r[1]);
 
-  // Charts
-  let chartsHTML = '';
+  const tally = (f) => { const m = {}; list.forEach(d => f(d).forEach(k => { if (k) m[k] = (m[k] || 0) + 1; })); return Object.entries(m).sort((a, b) => b[1] - a[1]); };
+  const topSites = tally(d => [d.site]).slice(0, 5);
+  const types = tally(d => [d.type || 'Other']);
+  const buddies = tally(d => (d.buddy || '').split(',').map(b => b.trim()).filter(b => b && !/^(none|null|-|—)$/i.test(b))).slice(0, 10);
+  const computers = tally(d => [...new Set([d.device, ...(d.computers || []).map(c => c.device)].map(x => DiveTools.deviceKey(x)).filter(Boolean))])
+    .map(([k, n]) => [k.replace(/\b\w/g, c => c.toUpperCase()), n]);
+  const sacRows = sacList.map(d => ({ d, v: DiveTools.sac(d) })).slice(0, 12);
+  const sacMax = Math.max(1, ...sacRows.map(r => r.v));
+  const sacT = DiveTools.sacTrend(list);
 
-  // Dives per month (last 12 months)
-  const months = {};
-  dives.forEach(d => { if(d.date) { const m = d.date.substring(0,7); months[m] = (months[m]||0)+1; } });
-  const sortedMonths = Object.keys(months).sort().slice(-12);
-  if (sortedMonths.length > 1) {
-    const maxCount = Math.max(...sortedMonths.map(m => months[m]));
-    chartsHTML += `<div style="margin-top:16px;"><div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;">${lang==='pl'?'Nurkowań / miesiąc':'Dives / month'}</div>
-      <div style="display:flex;align-items:flex-end;gap:3px;height:80px;">
-        ${sortedMonths.map(m => {
-          const h = Math.max(4, (months[m]/maxCount)*100);
-          return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
-            <div style="font-size:0.55rem;color:var(--text-dim);">${months[m]}</div>
-            <div style="width:100%;height:${h}%;background:var(--accent);border-radius:3px;min-height:4px;"></div>
-            <div style="font-size:0.5rem;color:var(--text-muted);transform:rotate(-45deg);white-space:nowrap;">${m.substring(5)}</div>
-          </div>`;
-        }).join('')}
-      </div></div>`;
-  }
+  el.innerHTML = `<div class="bento">
+    ${specs.map((s, i) => `<section class="tile tile-stat" style="--i:${i}"><small>${s[1]}</small><b>${esc(s[0])}${s[2] ? `<i>${s[2]}</i>` : ''}</b></section>`).join('')}
 
-  // Depth trend
-  const divesByDate = [...dives].filter(d=>d.date&&d.depth).sort((a,b)=>a.date.localeCompare(b.date));
-  if (divesByDate.length > 2) {
-    const maxD = Math.max(...divesByDate.map(d=>d.depth));
-    chartsHTML += `<div style="margin-top:16px;"><div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;">${lang==='pl'?'Trend głębokości':'Depth trend'}</div>
-      <div style="display:flex;align-items:flex-end;gap:2px;height:60px;">
-        ${divesByDate.slice(-30).map(d => {
-          const h = Math.max(4, (d.depth/maxD)*100);
-          return `<div style="flex:1;background:linear-gradient(to top,#8b5cf6,#2dd4bf);border-radius:2px;height:${h}%;" title="${d.date}: ${d.depth}m"></div>`;
-        }).join('')}
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:0.5rem;color:var(--text-muted);margin-top:2px;">
-        <span>${divesByDate[Math.max(0,divesByDate.length-30)].date}</span><span>${divesByDate[divesByDate.length-1].date}</span>
-      </div></div>`;
-  }
+    <section class="tile tile-wide">
+      <h3 class="sec-title">${L('Nurkowania w ostatnich 12 miesiącach', 'Dives in the last 12 months')}</h3>
+      ${statsMonthsSVG(dives)}
+    </section>
 
-  // Top sites
-  const siteCounts = {};
-  dives.forEach(d => { if(d.site) siteCounts[d.site] = (siteCounts[d.site]||0)+1; });
-  const topSites = Object.entries(siteCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  if (topSites.length) {
-    const topMax = topSites[0][1];
-    chartsHTML += `<div style="margin-top:16px;"><div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;">${lang==='pl'?'Ulubione miejsca':'Top sites'}</div>
-      ${topSites.map(([site,count]) => `
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:0.72rem;">
-          <div style="flex:1;background:var(--border);border-radius:3px;height:8px;overflow:hidden;"><div style="height:100%;width:${count/topMax*100}%;background:var(--accent);border-radius:3px;"></div></div>
-          <span style="white-space:nowrap;color:var(--text-dim);min-width:20px;text-align:right;">${count}</span>
-          <span style="white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;">${esc(site)}</span>
-        </div>`).join('')}
-      </div>`;
-  }
+    ${statsDepthSVG(list) ? `<section class="tile tile-wide"><h3 class="sec-title">${L('Głębokość nurkowań', 'Dive depth')}</h3>${statsDepthSVG(list)}</section>` : ''}
 
-  // Dive types pie-like
-  const typeCounts = {};
-  dives.forEach(d => { typeCounts[d.type||'Other'] = (typeCounts[d.type||'Other']||0)+1; });
-  const typeColors = {Recreational:'#2dd4bf',Technical:'#8b5cf6',Sidemount:'#06b6d4',Cave:'#f59e0b',Night:'#6366f1',Wreck:'#ef4444',Drift:'#06b6d4',Deep:'#ec4899',Training:'#22c55e',Checkout:'#84cc16',Shore:'#14b8a6',Boat:'#0ea5e9'};
-  chartsHTML += `<div style="margin-top:16px;"><div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;">${lang==='pl'?'Typy nurkowań':'Dive types'}</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;">
-      ${Object.entries(typeCounts).map(([type,count]) => `
-        <div style="padding:4px 10px;border-radius:12px;font-size:0.68rem;font-weight:600;background:${typeColors[type]||'#64748b'}22;color:${typeColors[type]||'#64748b'};border:1px solid ${typeColors[type]||'#64748b'}44;">${esc(type)} (${count})</div>
-      `).join('')}
-    </div></div>`;
+    ${records.length ? `<section class="tile tile-wide"><h3 class="sec-title">${L('Rekordy', 'Records')}</h3>
+      <div class="records">${records.map(([label, d, fmt]) => `
+        <button class="record" onclick="openModal('${d.id}')"><small>${label}</small><b>${esc(fmt(d))}</b><span>${esc(d.site || d.location || '')}${d.date ? ' · ' + formatDate(d.date) : ''}</span></button>`).join('')}
+      </div></section>` : ''}
 
-  // Buddy stats
-  const buddyCounts = {};
-  dives.forEach(d => { if(d.buddy) d.buddy.split(',').forEach(b => { const name=b.trim(); if(name) buddyCounts[name]=(buddyCounts[name]||0)+1; }); });
-  const topBuddies = Object.entries(buddyCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  if (topBuddies.length) {
-    chartsHTML += `<div style="margin-top:16px;"><div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;">${lang==='pl'?'Buddies':'Dive buddies'}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;">
-        ${topBuddies.map(([name,count]) => `<div style="padding:6px 12px;border-radius:10px;font-size:0.7rem;background:var(--accent-dim);border:1px solid rgba(45,212,191,0.2);color:var(--accent);font-weight:600;">👤 ${esc(name)} <span style="opacity:0.6;">(${count})</span></div>`).join('')}
-      </div></div>`;
-  }
+    <section class="tile tile-wide" id="stats-sac">
+      <h3 class="sec-title">${t('sacTitle')}${sacT ? `<em>${L('średnio', 'avg')} ${sacT.avg.toFixed(1)} L/min</em>` : ''}</h3>
+      ${sacRows.length ? sacRows.map(r => `
+        <div class="sac-row" onclick="openModal('${r.d.id}')">
+          <span class="sac-site">${esc(r.d.site || r.d.location || 'Dive')}<small>${r.d.date ? formatDate(r.d.date) : ''}</small></span>
+          <span class="sac-bar"><i style="width:${(r.v / sacMax * 100).toFixed(1)}%"></i></span>
+          <b>${r.v.toFixed(1)}</b>
+        </div>`).join('') : `<p class="muted">${t('sacNone')}</p>`}
+    </section>
 
-  document.getElementById('stats-charts').innerHTML = chartsHTML;
+    ${topSites.length ? `<section class="tile tile-half"><h3 class="sec-title">${L('Ulubione miejsca', 'Top sites')}</h3>
+      ${topSites.map(([site, n]) => `<div class="rank-row"><span>${esc(site)}</span><span class="rank-bar"><i style="width:${n / topSites[0][1] * 100}%"></i></span><b>${n}</b></div>`).join('')}
+    </section>` : ''}
 
-  // Timeline
-  const timelineEl = document.getElementById('stats-timeline');
-  if (timelineEl) {
-    const sorted = [...dives].filter(d=>d.date).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,20);
-    timelineEl.innerHTML = sorted.length ? `
-      <div style="font-size:0.75rem;font-weight:700;color:var(--text-dim);margin-bottom:10px;">${lang==='pl'?'Ostatnie nurki':'Recent dives'}</div>
-      <div style="position:relative;padding-left:20px;border-left:2px solid var(--border);">
-        ${sorted.map(d => `
-          <div style="position:relative;margin-bottom:14px;">
-            <div style="position:absolute;left:-25px;top:2px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid var(--bg-card);"></div>
-            <div style="font-size:0.65rem;color:var(--text-muted);">${formatDate(d.date)}</div>
-            <div style="font-weight:700;font-size:0.8rem;margin:2px 0;" onclick="openModal('${d.id}')" style="cursor:pointer;">${d.site||'Dive'}</div>
-            <div style="font-size:0.65rem;color:var(--text-dim);">${d.depth}m · ${d.duration}min${d.buddy?' · '+esc(d.buddy):''}${d.rating?' · '+'★'.repeat(d.rating):''}</div>
-          </div>`).join('')}
-      </div>` : '';
-  }
+    <section class="tile tile-half"><h3 class="sec-title">${L('Typy nurkowań', 'Dive types')}</h3>
+      <div class="stack">${types.map(([k, n], i) => `<i style="flex:${n};background:${STAT_COLORS[i % STAT_COLORS.length]}"></i>`).join('')}</div>
+      <div class="legend">${types.map(([k, n], i) => `<span><i style="background:${STAT_COLORS[i % STAT_COLORS.length]}"></i>${esc(k)} <b>${n}</b></span>`).join('')}</div>
+    </section>
+
+    ${buddies.length ? `<section class="tile tile-half"><h3 class="sec-title">Buddy</h3>
+      <div class="chips">${buddies.map(([b, n]) => `<span class="chip-pill">${esc(b)} <b>${n}</b></span>`).join('')}</div>
+    </section>` : ''}
+
+    ${computers.length ? `<section class="tile tile-half"><h3 class="sec-title">${L('Komputery', 'Computers')}</h3>
+      <div class="chips">${computers.map(([c, n]) => `<span class="chip-pill">${esc(c)} <b>${n}</b></span>`).join('')}</div>
+    </section>` : ''}
+  </div>`;
 }
 
 
