@@ -299,6 +299,15 @@ select option { background: #0b1e33; }
   .tile-recent { padding: 4px 16px 8px; }
 }
 
+/* ---------- Maps: dark OpenStreetMap ---------- */
+.map-tiles { filter: invert(1) hue-rotate(185deg) brightness(.85) contrast(.9) saturate(.6); }
+.leaflet-container { background: #0b1e33; font-family: var(--font); }
+.leaflet-control-attribution { background: rgba(2,10,22,.6) !important; color: var(--text-muted) !important; font-size: 9px; }
+.leaflet-control-attribution a { color: var(--text-dim) !important; }
+.leaflet-control-attribution .leaflet-attribution-flag { display: none !important; }
+.leaflet-container .leaflet-bar a, .leaflet-container .leaflet-bar a:hover { background: rgba(16,30,48,.9); color: #fff; border-color: var(--border); }
+.leaflet-container .leaflet-bar { border: 1px solid var(--glass-edge); border-radius: 12px; overflow: hidden; }
+
 /* ---------- Features: surface/no-fly, SAC, profile check, offline ---------- */
 .tile-status { grid-column: span 2; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; animation-delay: .05s; }
 .tile-status small, .tile-sac small { font-size: .62rem; letter-spacing: .2em; text-transform: uppercase; color: var(--text-dim); font-weight: 700; }

@@ -437,8 +437,8 @@ function getGPS() {
   document.getElementById('f-gps').value = t('gpsGetting');
 
   function initMap(lat, lng, zoom) {
-    formMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([lat, lng], zoom);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(formMap);
+    formMap = L.map(mapEl, { zoomControl: true, attributionControl: true }).setView([lat, lng], zoom);
+    baseTiles().addTo(formMap);
     var marker = null;
     if (formGps) {
       marker = L.marker([formGps.lat, formGps.lng], {draggable: true}).addTo(formMap);
@@ -734,6 +734,15 @@ async function loadConditions(d) {
   } catch (e) { /* conditions are optional */ }
 }
 
+// Map tiles: OpenStreetMap (no API key; CARTO basemaps started requiring one).
+// Darkened with a CSS filter in theme.css to match the app.
+function baseTiles() {
+  return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, className: 'map-tiles',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  });
+}
+
 function homeImport() {
   const input = document.querySelector('#panel-log input[type=file][onchange^="handleImport"]');
   if (input) input.click();
@@ -849,8 +858,8 @@ function openModal(id) {
   }
   if(d.gps && d.gps.lat && d.gps.lng) {
     setTimeout(()=>{
-      const map = L.map('dive-map',{zoomControl:false,attributionControl:false,dragging:!L.Browser.mobile,tap:false,scrollWheelZoom:false}).setView([d.gps.lat, d.gps.lng], 15);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+      const map = L.map('dive-map',{zoomControl:false,attributionControl:true,dragging:!L.Browser.mobile,tap:false,scrollWheelZoom:false}).setView([d.gps.lat, d.gps.lng], 15);
+      baseTiles().addTo(map);
       L.circleMarker([d.gps.lat, d.gps.lng],{radius:8,color:'#2dd4bf',fillColor:'#2dd4bf',fillOpacity:0.3,weight:2}).addTo(map);
       if(d.gpsTrack && d.gpsTrack.length > 1) {
         const coords = d.gpsTrack.map(p=>[p.lat,p.lng]);
@@ -962,8 +971,8 @@ function openEditMap() {
     const parts = gpsVal.split(',');
     lat = parseFloat(parts[0]); lng = parseFloat(parts[1]); zoom = 14;
   }
-  editMap = L.map(mapEl, { zoomControl: true, attributionControl: false }).setView([lat, lng], zoom);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(editMap);
+  editMap = L.map(mapEl, { zoomControl: true, attributionControl: true }).setView([lat, lng], zoom);
+  baseTiles().addTo(editMap);
   var marker = zoom > 3 ? L.marker([lat, lng], {draggable:true}).addTo(editMap) : null;
   if (marker) marker.on('dragend', function(){ var p=marker.getLatLng(); document.getElementById('e-gps').value=Math.round(p.lat*10000)/10000+', '+Math.round(p.lng*10000)/10000; });
   editMap.on('click', function(e) {
@@ -1702,8 +1711,8 @@ function renderDiveMap() {
   const sitesWithGps = dives.filter(d => d.gps && d.gps.lat && d.gps.lng);
 
   if (!worldMap) {
-    worldMap = L.map(el, { zoomControl: true, attributionControl: false }).setView([20, 0], 2);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(worldMap);
+    worldMap = L.map(el, { zoomControl: true, attributionControl: true }).setView([20, 0], 2);
+    baseTiles().addTo(worldMap);
   }
 
   // Clear old markers
