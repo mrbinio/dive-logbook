@@ -454,6 +454,49 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 @media (max-width: 860px) { .tile-wide, .tile-half { grid-column: span 2; } }
 @media (max-width: 600px) { .bars { gap: 3px; height: 130px; } .bar small { font-size: .52rem; } .record b { font-size: 1.3rem; } }
 
+/* ---------- Certs, Gear, Planner, Checklist: restyle the inline-styled markup ---------- */
+#panel-certs .card, #panel-gear .card, #panel-plan .card, #panel-checklist .card { margin-bottom: 14px; }
+#panel-certs .card-title, #panel-gear .card-title, #panel-plan .card-title, #panel-checklist .card-title { font-size: 1.7rem; }
+#panel-certs .card-title .accent, #panel-gear .card-title .accent, #panel-plan .card-title .accent, #panel-checklist .card-title .accent { color: #fff; }
+#panel-certs div[style*="grid-template-columns:1fr 1fr"], #panel-gear div[style*="grid-template-columns:1fr 1fr"], #panel-plan div[style*="grid-template-columns:1fr 1fr"], #panel-checklist div[style*="grid-template-columns:1fr 1fr"] { gap: 10px !important; }
+#panel-certs label[style*="font-size:0.7rem"], #panel-gear label[style*="font-size:0.7rem"], #panel-plan label[style*="font-size:0.7rem"], #panel-checklist label[style*="font-size:0.7rem"] { font-size: .62rem !important; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; gap: 6px !important; }
+#panel-certs div[style*="font-size:0.75rem;font-weight:700"], #panel-gear div[style*="font-size:0.75rem;font-weight:700"], #panel-plan div[style*="font-size:0.75rem;font-weight:700"], #panel-checklist div[style*="font-size:0.75rem;font-weight:700"] {
+  font-size: .68rem !important; letter-spacing: .2em; text-transform: uppercase; font-weight: 800 !important;
+  color: var(--text-dim) !important; margin: 18px 0 10px !important;
+}
+#panel-certs div[style*="border-top:1px solid var(--border)"], #panel-gear div[style*="border-top:1px solid var(--border)"], #panel-plan div[style*="border-top:1px solid var(--border)"], #panel-checklist div[style*="border-top:1px solid var(--border)"] { border-top-color: var(--border) !important; padding-top: 16px !important; margin-top: 16px !important; }
+/* primary actions: white pill */
+#panel-certs button[style*="background:var(--accent)"], #panel-gear button[style*="background:var(--accent)"], #panel-plan button[style*="background:var(--accent)"], #panel-checklist button[style*="background:var(--accent)"], #panel-certs button[style*="background:#8b5cf6"], #panel-gear button[style*="background:#8b5cf6"], #panel-plan button[style*="background:#8b5cf6"], #panel-checklist button[style*="background:#8b5cf6"] {
+  background: #fff !important; color: #081320 !important; border: 0 !important; border-radius: 999px !important;
+  padding: 12px 18px !important; font: 700 .82rem var(--font) !important; box-shadow: 0 6px 18px rgba(0,10,30,.35);
+}
+/* secondary actions: glass pill */
+#panel-certs button[style*="background:transparent"], #panel-gear button[style*="background:transparent"], #panel-plan button[style*="background:transparent"], #panel-checklist button[style*="background:transparent"], #panel-certs button[style*="background:var(--accent-dim)"], #panel-gear button[style*="background:var(--accent-dim)"], #panel-plan button[style*="background:var(--accent-dim)"], #panel-checklist button[style*="background:var(--accent-dim)"], #panel-certs #cl-cal-btn, #panel-gear #cl-cal-btn, #panel-plan #cl-cal-btn, #panel-checklist #cl-cal-btn {
+  background: rgba(255,255,255,.1) !important; color: #fff !important; border: 1px solid var(--glass-edge) !important;
+  border-radius: 999px !important; padding: 12px 16px !important; font: 600 .8rem var(--font) !important;
+}
+#panel-certs label[style*="border:1px dashed"], #panel-gear label[style*="border:1px dashed"], #panel-plan label[style*="border:1px dashed"], #panel-checklist label[style*="border:1px dashed"] { border-radius: var(--r-sm) !important; border-color: var(--glass-edge) !important; color: #fff !important; font-weight: 600; }
+/* list rows (gear, checklist) */
+#gear-list > div { border: 0 !important; border-radius: var(--r-md) !important; background: rgba(255,255,255,.07); padding: 14px !important; margin-bottom: 10px !important; }
+#cl-shared-items > div, #cl-personal-items > div, #wishlist-items > div, #cl-buddy-sections div[style*="display:flex"] {
+  padding: 10px 4px !important; font-size: .9rem !important; border-bottom-color: var(--border) !important; gap: 12px !important;
+}
+#panel-checklist input[type="checkbox"] {
+  -webkit-appearance: none; appearance: none; flex: 0 0 24px; width: 24px !important; height: 24px !important; margin: 0;
+  border-radius: 8px; border: 1.5px solid rgba(255,255,255,.35); background: rgba(255,255,255,.05); cursor: pointer;
+  transition: background .2s, border-color .2s;
+}
+#panel-checklist input[type="checkbox"]:checked { background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23081320' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 16px no-repeat; border-color: #fff; }
+#panel-checklist button[onclick^="remove"], #panel-checklist button[onclick^="promote"] { color: var(--text-muted) !important; font-size: .9rem !important; }
+#cl-progress > div:first-child { height: 8px !important; border-radius: 8px !important; background: rgba(255,255,255,.08) !important; }
+#cl-progress > div:first-child > div { background: linear-gradient(90deg, var(--accent), #fff) !important; border-radius: 8px; }
+/* planner results */
+#plan-results div[style*="grid-template-columns:1fr 1fr 1fr"] { gap: 8px !important; }
+#plan-results div[style*="padding:10px;border-radius:8px"] { border: 0 !important; border-radius: var(--r-md) !important; background: rgba(255,255,255,.07); padding: 14px 8px !important; }
+#plan-results div[style*="font-size:1.1rem;font-weight:800"] { font-size: 1.5rem !important; font-weight: 300 !important; letter-spacing: -.04em; }
+#plan-results div[style*="color:var(--accent)"] { color: #fff !important; }
+#plan-results div[style*="text-transform:uppercase"] { letter-spacing: .14em; font-weight: 700; margin-top: 4px; }
+
 /* ---------- Maps: dark OpenStreetMap ---------- */
 .map-tiles { filter: invert(1) hue-rotate(185deg) brightness(.85) contrast(.9) saturate(.6); }
 .leaflet-container { background: #0b1e33; font-family: var(--font); }

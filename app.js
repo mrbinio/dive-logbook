@@ -1,6 +1,6 @@
 const T = {
   en: {
-    statsTitle:'Statistics', perAll:'All', perYear:'This year', per12m:'12 months', expPdf:'Export PDF', expJson:'Backup JSON',
+    certsTitle:'Certifications', gearTitle:'My gear', planTitle:'Dive planner', checklistTitle:'Dive checklist', statsTitle:'Statistics', perAll:'All', perYear:'This year', per12m:'12 months', expPdf:'Export PDF', expJson:'Backup JSON',
     remTitle:'Reminders', remOver:'overdue {n} d', remSoon:'in {n} d', remToday:'today', datesTitle:'Important dates', kindMedical:'Medical certificate', kindInsurance:'Insurance (DAN)', kindOther:'Other', remName:'Name, e.g. tank inspection', remAdd:'Add', remService:'Service', servicedToday:'Serviced today', remNone:'No dates yet — add your medical, insurance or anything that expires.', remSaved:'Saved',
     secPlace:'Place & time', secDive:'The dive', secTank:'Tank & gear', secCond:'Conditions & people', secNotes:'Rating & notes', importHint:'Choose one or more files — duplicates are skipped', logOr:'or log by hand',
     entryTime:'Entry time', surfaceInt:'On the surface', noFly:'No-fly', flyOk:'OK to fly', flyIn:'Fly in', flyAt:'fly from', flyRule12:'single no-deco dive · 12 h', flyRule18:'repetitive diving · 18 h', flyRule24:'decompression dive · 24 h', flyEst:'no entry time — counted from end of day', flyNote:'DAN guideline, not medical advice', sacAvg:'Avg SAC', sacSub:'last {n} dives · L/min', sacTitle:'Air consumption (SAC)', sacNone:'Add tank size and start/end pressure to see your SAC.', profTitle:'Profile check', ascOk:'Max ascent rate', ascFast:'Ascent too fast', stopOk:'Safety stop', stopNo:'No safety stop', stopShort:'Safety stop too short', offline:'Offline — changes will sync when you reconnect', impSummary:'Imported {a} · merged {m} · skipped {s} duplicates', waves:'Waves', seaTemp:'Sea', 
@@ -39,7 +39,7 @@ const T = {
     entry:'Entry', entryShore:'Shore', entryBoat:'Boat', entryPlatform:'Platform', entryOther:'Other',
     feeling:'Feeling'  },
   pl: {
-    statsTitle:'Statystyki', perAll:'Wszystko', perYear:'Ten rok', per12m:'12 mies.', expPdf:'Eksport PDF', expJson:'Kopia zapasowa JSON',
+    certsTitle:'Certyfikaty', gearTitle:'Mój sprzęt', planTitle:'Planer nurkowania', checklistTitle:'Checklista', statsTitle:'Statystyki', perAll:'Wszystko', perYear:'Ten rok', per12m:'12 mies.', expPdf:'Eksport PDF', expJson:'Kopia zapasowa JSON',
     remTitle:'Przypomnienia', remOver:'po terminie {n} dni', remSoon:'za {n} dni', remToday:'dziś', datesTitle:'Ważne daty', kindMedical:'Badania lekarskie', kindInsurance:'Ubezpieczenie (DAN)', kindOther:'Inne', remName:'Nazwa, np. przegląd butli', remAdd:'Dodaj', remService:'Serwis', servicedToday:'Serwis zrobiony dziś', remNone:'Brak dat — dodaj badania, ubezpieczenie albo cokolwiek, co ma termin.', remSaved:'Zapisano',
     secPlace:'Miejsce i czas', secDive:'Nurkowanie', secTank:'Butla i sprzęt', secCond:'Warunki i ludzie', secNotes:'Ocena i notatki', importHint:'Wybierz jeden lub kilka plików — duplikaty są pomijane', logOr:'albo wpisz ręcznie',
     entryTime:'Godzina wejścia', surfaceInt:'Na powierzchni', noFly:'Zakaz lotu', flyOk:'Możesz lecieć', flyIn:'Lot za', flyAt:'lot możliwy od', flyRule12:'jedno nurkowanie bezdekompresyjne · 12 h', flyRule18:'nurkowania powtórzeniowe · 18 h', flyRule24:'nurkowanie dekompresyjne · 24 h', flyEst:'brak godziny wejścia — liczę od końca dnia', flyNote:'zalecenie DAN, nie porada medyczna', sacAvg:'Śr. SAC', sacSub:'ostatnie {n} nurk. · L/min', sacTitle:'Zużycie powietrza (SAC)', sacNone:'Dodaj pojemność butli oraz ciśnienie początkowe i końcowe, aby zobaczyć SAC.', profTitle:'Analiza profilu', ascOk:'Maks. prędkość wynurzania', ascFast:'Za szybkie wynurzanie', stopOk:'Przystanek bezpieczeństwa', stopNo:'Brak przystanku bezpieczeństwa', stopShort:'Za krótki przystanek bezpieczeństwa', offline:'Offline — zmiany wyślą się po połączeniu', impSummary:'Zaimportowano {a} · scalono {m} · pominięto {s} duplikatów', waves:'Fale', seaTemp:'Morze', 
@@ -149,7 +149,7 @@ function applyLang() {
   document.getElementById('shop-desc').textContent = t('shopDesc');
   document.getElementById('shop-btn-text').textContent = t('goShop');
   document.getElementById('import-btn-text').textContent = t('importBtn');
-  [['stats-title','statsTitle'],['per-all','perAll'],['per-year','perYear'],['per-12m','per12m'],['exp-pdf','expPdf'],['exp-json','expJson'],['dates-title','datesTitle'],['rem-k-medical','kindMedical'],['rem-k-insurance','kindInsurance'],['rem-k-other','kindOther'],['rem-add','remAdd'],['sec-place','secPlace'],['sec-dive','secDive'],['sec-tank','secTank'],['sec-cond','secCond'],['sec-notes','secNotes'],['import-hint','importHint'],['log-or','logOr']]
+  [['certs-title','certsTitle'],['gear-title','gearTitle'],['plan-title','planTitle'],['checklist-title','checklistTitle'],['stats-title','statsTitle'],['per-all','perAll'],['per-year','perYear'],['per-12m','per12m'],['exp-pdf','expPdf'],['exp-json','expJson'],['dates-title','datesTitle'],['rem-k-medical','kindMedical'],['rem-k-insurance','kindInsurance'],['rem-k-other','kindOther'],['rem-add','remAdd'],['sec-place','secPlace'],['sec-dive','secDive'],['sec-tank','secTank'],['sec-cond','secCond'],['sec-notes','secNotes'],['import-hint','importHint'],['log-or','logOr']]
     .forEach(([id, key]) => { const el = document.getElementById(id); if (el) el.textContent = t(key); });
   const remTitleEl = document.getElementById('rem-title'); if (remTitleEl) remTitleEl.placeholder = t('remName');
   const gpsLabel = document.getElementById('l-gps');
@@ -1722,7 +1722,7 @@ function calcPlan() {
       </div>
     </div>
     ${!depthOk?'<div style="margin-top:8px;padding:8px;border-radius:6px;background:rgba(244,63,94,0.1);color:var(--danger);font-size:0.72rem;font-weight:600;">⚠️ Depth exceeds MOD for EAN${o2}!</div>':''}
-    ${!ndlOk?'<div style="margin-top:6px;padding:8px;border-radius:6px;background:rgba(244,63,94,0.1);color:var(--danger);font-size:0.72rem;font-weight:600;">⚠️ ${time} min exceeds NDL of ${ndl} min at ${depth}m! Deco required.</div>':''}
+    ${!ndlOk?'<div style="margin-top:6px;padding:8px;border-radius:6px;background:rgba(244,63,94,0.1);color:var(--danger);font-size:0.72rem;font-weight:600;">⚠️ '+(lang==='pl'?`${time} min przekracza NDL ${ndl} min na ${depth} m! Wymagana dekompresja.`:`${time} min exceeds NDL of ${ndl} min at ${depth} m! Deco required.`)+'</div>':''}
     ${!gasOk?'<div style="margin-top:6px;padding:8px;border-radius:6px;background:rgba(244,63,94,0.1);color:var(--danger);font-size:0.72rem;font-weight:600;">⚠️ Not enough gas! Need ${barUsed} bar, available ${availableBar} bar (${startBar}-${reserve} reserve).</div>':''}
     <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);text-align:center;">⚠️ For planning only. Always follow your training and computer.</div>
   `;
