@@ -603,7 +603,7 @@ function diveRowHTML(d) {
           ${d.duration?`<div class="chip"><span>${d.duration} min</span></div>`:''}
           ${d.buddy?`<div class="chip"><span>${esc(d.buddy)}</span></div>`:''}
         </div>
-        ${d.rating?`<div style="margin-top:4px;font-size:0.75rem">${'★'.repeat(d.rating)}</div>`:''}
+        ${d.rating||d.signature?`<div style="margin-top:4px;font-size:0.75rem">${'★'.repeat(d.rating||0)}${d.signature?`<span class="signed-mark" title="Signed">✍︎ ${esc(d.signature.name||'')}</span>`:''}</div>`:''}
       </div>
       <div class="dive-depth-col">
         <div class="depth-big">${esc(d.depth)}</div>
@@ -865,6 +865,7 @@ function openModal(id) {
       <input type="file" accept=".json" style="display:none" onchange="attachSuuntoToDiv('${id}',this)">
     </label>`;
   }
+  attachHTML += signatureHTML(d);
   // Photos section
   attachHTML += `<div style="margin-top:12px;">
     <div id="dive-photos" data-dive-id="${id}" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
