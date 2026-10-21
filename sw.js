@@ -2,8 +2,8 @@
 // Own files: network first (always the newest deploy), cache as fallback.
 // Libraries and fonts from CDNs: cache first (versioned URLs never change).
 // Firestore/Auth traffic is never touched — Firestore keeps its own offline cache.
-const CACHE = 'mrbinio-v5';
-const SHELL = ['./', 'index.html', 'style.css', 'theme.css', 'app.js', 'divetools.js', 'ocean.js', 'intro.js', 'sharecard.js', 'badges.js', 'wrapped.js', 'signature.js',
+const CACHE = 'mrbinio-v6';
+const SHELL = ['./', 'index.html', 'style.css', 'theme.css', 'app.js', 'divetools.js', 'ocean.js', 'intro.js', 'sharecard.js', 'badges.js', 'wrapped.js', 'signature.js', 'push.js',
   'suunto.js', 'shearwater.js', 'dive3d.js', 'diver.svg', 'icon.svg', 'manifest.json'];
 const CDN = ['www.gstatic.com', 'unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com', 'sql.js.org'];
 
@@ -39,4 +39,21 @@ self.addEventListener('fetch', e => {
       return res;
     })));
   }
+});
+
+// Push notifications sent by functions/main.py
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: e.data && e.data.text() }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Mr.Binio', {
+    body: d.body || '', tag: d.tag || undefined, icon: 'icon.svg', badge: 'icon.svg', data: { url: d.url || './' }
+  }));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || './';
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    for (const c of list) { if ('focus' in c) return c.focus(); }
+    return self.clients.openWindow(url);
+  }));
 });

@@ -10,7 +10,9 @@
       "olld Json",
       "*.json",
       "!manifest.json",
-      "firestore.rules"
+      "firestore.rules",
+      "functions/**",
+      "functions"
     ],
     "headers": [
       {
@@ -26,5 +28,18 @@
   },
   "firestore": {
     "rules": "firestore.rules"
-  }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "runtime": "python313",
+      "ignore": [
+        "venv",
+        ".git",
+        "__pycache__",
+        "*.local"
+      ]
+    }
+  ]
 }
