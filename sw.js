@@ -2,7 +2,7 @@
 // Own files: network first (always the newest deploy), cache as fallback.
 // Libraries and fonts from CDNs: cache first (versioned URLs never change).
 // Firestore/Auth traffic is never touched — Firestore keeps its own offline cache.
-const CACHE = 'mrbinio-v4';
+const CACHE = 'mrbinio-v5';
 const SHELL = ['./', 'index.html', 'style.css', 'theme.css', 'app.js', 'divetools.js', 'ocean.js', 'intro.js', 'sharecard.js', 'badges.js', 'wrapped.js', 'signature.js',
   'suunto.js', 'shearwater.js', 'dive3d.js', 'diver.svg', 'icon.svg', 'manifest.json'];
 const CDN = ['www.gstatic.com', 'unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com', 'sql.js.org'];

@@ -15,7 +15,7 @@
     lang = localStorage.getItem('aq_lang') || 'en';
     stats = JSON.parse(localStorage.getItem('introStats') || 'null');
   } catch (e) {}
-  if (!forced && (reduce || params.has('shared_map') || seen)) return;
+  if (!forced && (reduce || params.has('shared_map') || params.has('sign') || seen)) return;
   try { sessionStorage.setItem('introSeen', '1'); } catch (e) {}
 
   const pl = lang === 'pl';

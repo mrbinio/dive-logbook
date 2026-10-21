@@ -328,6 +328,7 @@ function showApp(user) {
   subscribeCerts();
   subscribeGear();
   subscribeReminders();
+  collectSignedRequests();
 }
 
 function hideApp() {
@@ -346,7 +347,7 @@ function hideApp() {
   divesLoaded = false; mapShared = false; lastPublishedMap = '';
 }
 
-if (!checkSharedMap()) {
+if (!checkSharedMap() && !checkSignPage()) {
   auth.onAuthStateChanged(user => {
     if (user) showApp(user);
     else hideApp();

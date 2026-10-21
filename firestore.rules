@@ -13,6 +13,27 @@ service cloud.firestore {
       allow write: if request.auth != null && request.auth.uid == uid;
     }
 
+    // Remote logbook signatures (QR). The random document id is the secret in
+    // the QR link: anyone holding it may read that one request and sign it once,
+    // within 24 h, writing only the signature. Only the owner can list or delete.
+    match /signRequests/{token} {
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'open'
+        && request.resource.data.expires is timestamp;
+      allow get: if true;
+      allow list, delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow update: if resource.data.status == 'open'
+        && request.time < resource.data.expires
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'signature'])
+        && request.resource.data.status == 'signed'
+        && request.resource.data.signature.keys().hasOnly(['name', 'role', 'certNo', 'image', 'signedAt'])
+        && request.resource.data.signature.name is string
+        && request.resource.data.signature.name.size() <= 80
+        && request.resource.data.signature.image is string
+        && request.resource.data.signature.image.size() < 80000;
+    }
+
     // Shared trip checklists: members, and people invited by email
     match /trips/{tripId} {
       allow create: if request.auth != null
