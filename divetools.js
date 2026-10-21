@@ -152,5 +152,70 @@ window.DiveTools = (function () {
     return out.filter(x => x.left <= days).sort((a, b) => a.left - b.left);
   }
 
-  return { dueItems, startOf, endOf, surfaceStatus, sac, sacTrend, analyzeProfile, findMatch, sameComputer, deviceKey, fetchConditions };
+  // Badges: walk the dives in date order and record the dive that earned each
+  // one. Returns [{id, icon, group, goal, value, earned, earnedOn, diveId}].
+  const BADGES = [
+    { id: 'n1', icon: '🤿', group: 'count', goal: 1 }, { id: 'n10', icon: '🔟', group: 'count', goal: 10 },
+    { id: 'n25', icon: '🐠', group: 'count', goal: 25 }, { id: 'n50', icon: '🐢', group: 'count', goal: 50 },
+    { id: 'n100', icon: '🦈', group: 'count', goal: 100 }, { id: 'n250', icon: '🐋', group: 'count', goal: 250 },
+    { id: 'd18', icon: '⬇️', group: 'depth', goal: 18 }, { id: 'd30', icon: '🌊', group: 'depth', goal: 30 },
+    { id: 'd40', icon: '🕳️', group: 'depth', goal: 40 },
+    { id: 'long60', icon: '⏱️', group: 'long', goal: 60 },
+    { id: 'h10', icon: '⌛', group: 'hours', goal: 10 }, { id: 'h50', icon: '🧭', group: 'hours', goal: 50 },
+    { id: 'h100', icon: '🏆', group: 'hours', goal: 100 },
+    { id: 's5', icon: '📍', group: 'sites', goal: 5 }, { id: 's15', icon: '🗺️', group: 'sites', goal: 15 },
+    { id: 'c3', icon: '✈️', group: 'regions', goal: 3 },
+    { id: 'b5', icon: '🤝', group: 'buddies', goal: 5 },
+    { id: 'cold10', icon: '🧊', group: 'cold', goal: 10 }, { id: 'warm28', icon: '🌴', group: 'warm', goal: 28 },
+    { id: 'night', icon: '🌙', group: 'type', goal: 1, type: 'Night' }, { id: 'wreck', icon: '⚓', group: 'type', goal: 1, type: 'Wreck' },
+    { id: 'cave', icon: '🔦', group: 'type', goal: 1, type: 'Cave' }, { id: 'drift', icon: '💨', group: 'type', goal: 1, type: 'Drift' },
+    { id: 'tech', icon: '⚙️', group: 'type', goal: 1, type: 'Technical' }, { id: 'sidemount', icon: '🎒', group: 'type', goal: 1, type: 'Sidemount' },
+    { id: 'sac15', icon: '🫁', group: 'sac', goal: 15 }, { id: 'early', icon: '🌅', group: 'early', goal: 1 },
+    { id: 'year30', icon: '📅', group: 'year', goal: 30 },
+  ];
+  function badges(dives) {
+    const list = dives.filter(d => d.date).slice().sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+    const st = { count: 0, depth: 0, long: 0, minutes: 0, sites: new Set(), regions: new Set(), buddies: new Set(),
+      cold: Infinity, warm: -Infinity, types: {}, sac: Infinity, early: 0, perYear: {}, yearMax: 0 };
+    const out = BADGES.map(b => Object.assign({}, b, { earned: false, earnedOn: null, diveId: null, value: 0 }));
+    const valueOf = b => ({
+      count: st.count, depth: st.depth, long: st.long, hours: st.minutes / 60, sites: st.sites.size,
+      regions: st.regions.size, buddies: st.buddies.size, early: st.early, year: st.yearMax,
+      type: st.types[b.type] || 0,
+      cold: st.cold === Infinity ? 0 : st.cold, warm: st.warm === -Infinity ? 0 : st.warm,
+      sac: st.sac === Infinity ? 0 : st.sac,
+    })[b.group];
+    const reached = b => {
+      const v = valueOf(b);
+      if (b.group === 'cold') return st.cold !== Infinity && v <= b.goal;
+      if (b.group === 'sac') return st.sac !== Infinity && v <= b.goal;
+      return v >= b.goal;
+    };
+    list.forEach(d => {
+      st.count++;
+      st.depth = Math.max(st.depth, +d.depth || 0);
+      st.long = Math.max(st.long, +d.duration || 0);
+      st.minutes += +d.duration || 0;
+      if (d.site) st.sites.add(String(d.site).trim().toLowerCase());
+      const region = String(d.location || '').split(',').pop().trim().toLowerCase();
+      if (region) st.regions.add(region);
+      String(d.buddy || '').split(',').map(x => x.trim().toLowerCase()).filter(x => x && !/^(none|null|-|—)$/.test(x)).forEach(x => st.buddies.add(x));
+      const tmp = parseFloat(d.temp);
+      if (!isNaN(tmp)) { st.cold = Math.min(st.cold, tmp); st.warm = Math.max(st.warm, tmp); }
+      if (d.type) st.types[d.type] = (st.types[d.type] || 0) + 1;
+      const s = sac(d); if (s != null) st.sac = Math.min(st.sac, s);
+      const hm = d.time || (d.startTime ? String(d.startTime).slice(11, 16) : '');
+      if (hm && hm < '07:00') st.early++;
+      const y = d.date.slice(0, 4); st.perYear[y] = (st.perYear[y] || 0) + 1; st.yearMax = Math.max(st.yearMax, st.perYear[y]);
+      out.forEach(b => { if (!b.earned && reached(b)) { b.earned = true; b.earnedOn = d.date; b.diveId = d.id; } });
+    });
+    out.forEach(b => {
+      const v = valueOf(b);
+      b.value = v;
+      b.progress = b.earned ? 1 : b.group === 'cold' || b.group === 'sac' ? 0 : Math.max(0, Math.min(1, v / b.goal));
+    });
+    return out;
+  }
+
+  return { badges, dueItems, startOf, endOf, surfaceStatus, sac, sacTrend, analyzeProfile, findMatch, sameComputer, deviceKey, fetchConditions };
 })();

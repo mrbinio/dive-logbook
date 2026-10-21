@@ -140,12 +140,15 @@
     <button class="tab" id="tab-map" onclick="switchTab('map')">Map</button>
     <button class="tab" id="tab-certs" onclick="switchTab('certs')">Certs</button>
     <button class="tab" id="tab-gear" onclick="switchTab('gear')">Gear</button>
+    <button class="tab" id="tab-badges" onclick="switchTab('badges')">Badges</button>
     <button class="tab" id="tab-plan" onclick="switchTab('plan')">Plan</button>
     <button class="tab" id="tab-checklist" onclick="switchTab('checklist')">Checklist</button>
     <button class="tab" id="tab-more" onclick="toggleMoreMenu()">More</button>
   </div>
   <div class="more-menu" id="more-menu">
-    <button class="tab" onclick="switchTab('stats');closeMore()">Stats</button>
+    <button class="tab" onclick="switchTab('stats');closeMore()" id="more-stats">Stats</button>
+    <button class="tab" onclick="openWrapped();closeMore()" id="more-wrapped">Wrapped</button>
+    <button class="tab" onclick="switchTab('badges');closeMore()" id="more-badges">Badges</button>
     <button class="tab" onclick="switchTab('certs');closeMore()">Certs</button>
     <button class="tab" onclick="switchTab('gear');closeMore()">Gear</button>
     <button class="tab" onclick="switchTab('plan');closeMore()">Plan</button>
@@ -397,6 +400,7 @@
   <div class="panel" id="panel-stats">
     <div class="page-head">
       <h1 class="page-title" id="stats-title">Dive Statistics</h1>
+      <button class="btn-solid wrapped-btn" onclick="openWrapped()" id="wrapped-btn">Your year</button>
       <div class="seg" id="stats-period">
         <button data-p="all" class="on" onclick="setStatsPeriod('all')" id="per-all">All</button>
         <button data-p="year" onclick="setStatsPeriod('year')" id="per-year">This year</button>
@@ -408,6 +412,11 @@
       <button class="btn-ghost" onclick="exportPDF()" id="exp-pdf">Export PDF</button>
       <button class="btn-ghost" onclick="exportJSON()" id="exp-json">Backup JSON</button>
     </div>
+  </div>
+
+  <div class="panel" id="panel-badges">
+    <div class="page-head"><h1 class="page-title" id="badges-title">Badges</h1></div>
+    <div id="badges-content"></div>
   </div>
 
   <div class="panel" id="panel-map">
@@ -687,6 +696,8 @@
 <script src="divetools.js"></script>
 <script src="app.js"></script>
 <script src="sharecard.js"></script>
+<script src="badges.js"></script>
+<script src="wrapped.js"></script>
 <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');</script>
 </body>
 </html>
