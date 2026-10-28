@@ -256,3 +256,118 @@ function checkDiveVsFlight(dive) {
     setTimeout(() => showToast(TL('⚠️ To nurkowanie kończy się mniej niż 18 h przed lotem do domu', '⚠️ This dive ends less than 18 h before your flight home')), 1800);
   }
 }
+
+// --- my saved packing lists (users/{uid}/packLists) ---
+let savedLists = [];
+function packListsCol() { return db.collection('users').doc(myUid()).collection('packLists'); }
+function loadSavedLists() {
+  if (!myUid()) return;
+  packListsCol().orderBy('name').get().then(snap => {
+    savedLists = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderSavedLists();
+  }).catch(e => console.warn('pack lists:', e));
+}
+function renderSavedLists() {
+  const el = document.getElementById('saved-lists');
+  if (!el) return;
+  el.innerHTML = savedLists.map(l => `<span class="chip-btn saved-chip">
+      <button onclick="applySavedList('${l.id}')">${esc(l.name)} <small>${(l.items || []).length}</small></button>
+      <button class="x" onclick="deleteSavedList('${l.id}')" aria-label="Delete">✕</button></span>`).join('');
+}
+async function saveListAs() {
+  if (!currentTripId) return;
+  const d = (await tripRef().get()).data();
+  const pers = (d.personal && d.personal[myUid()]) || [];
+  const shared = d.shared || [];
+  if (!pers.length && !shared.length) { showToast(TL('Lista jest pusta', 'The list is empty')); return; }
+  const name = (prompt(TL('Nazwa listy (np. Moje Coron, Weekend Hańcza):', 'List name (e.g. My tropics, Lake weekend):'), d.site || '') || '').trim();
+  if (!name) return;
+  const items = pers.map(p => ({ name: p.name, sec: p.sec || '' })).concat(shared.map(s => ({ name: s.name, sec: '', shared: true })));
+  const existing = savedLists.find(l => norm(l.name) === norm(name));
+  if (existing && !confirm(TL(`Nadpisać listę „${name}”?`, `Overwrite "${name}"?`))) return;
+  await (existing ? packListsCol().doc(existing.id) : packListsCol().doc())
+    .set({ name, items, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+  showToast(TL(`Zapisano „${name}” (${items.length} pozycji)`, `Saved "${name}" (${items.length} items)`));
+  loadSavedLists();
+}
+async function applyItemsToTrip(items) {
+  const uid = myUid();
+  const d = (await tripRef().get()).data();
+  const pers = (d.personal && d.personal[uid]) || [], shared = d.shared || [];
+  const havePers = new Set(pers.map(p => norm(p.name))), haveShared = new Set(shared.map(s => norm(s.name)));
+  let added = 0;
+  items.forEach(it => {
+    const k = norm(it.name);
+    if (!k) return;
+    if (it.shared) { if (!haveShared.has(k)) { shared.push({ name: it.name, checked: false }); haveShared.add(k); added++; } }
+    else if (!havePers.has(k)) { pers.push({ name: it.name, checked: false, sec: it.sec || '' }); havePers.add(k); added++; }
+  });
+  await tripRef().update({ ['personal.' + uid]: pers, shared });
+  return added;
+}
+async function applySavedList(id) {
+  const l = savedLists.find(x => x.id === id);
+  if (!l || !currentTripId) return;
+  const added = await applyItemsToTrip(l.items || []);
+  showToast(TL(`Dodano ${added} pozycji z „${l.name}”`, `Added ${added} items from "${l.name}"`));
+}
+async function deleteSavedList(id) {
+  const l = savedLists.find(x => x.id === id);
+  if (!l || !confirm(TL(`Usunąć zapisaną listę „${l.name}”?`, `Delete saved list "${l.name}"?`))) return;
+  await packListsCol().doc(id).delete();
+  loadSavedLists();
+}
+
+// --- archive of finished trips ---
+let pastTrips = [];
+async function loadTripArchive() {
+  const el = document.getElementById('trip-archive');
+  if (!el) return;
+  el.innerHTML = `<p class="muted">…</p>`;
+  try {
+    const snap = await tripsCol().where('members', 'array-contains', myUid()).where('active', '==', false).get();
+    pastTrips = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    renderTripArchive();
+  } catch (e) { el.innerHTML = `<p class="muted">❌ ${esc(e.message)}</p>`; }
+}
+function renderTripArchive() {
+  const el = document.getElementById('trip-archive');
+  if (!el) return;
+  if (!pastTrips.length) { el.innerHTML = `<p class="muted">${TL('Brak zakończonych wyjazdów. Trafiają tu po kliknięciu „Nowy wyjazd”.', 'No finished trips yet. They land here when you start a new trip.')}</p>`; return; }
+  const uid = myUid();
+  el.innerHTML = pastTrips.map((t, i) => {
+    const pers = (t.personal && t.personal[uid]) || [];
+    const st = t.date ? tripStats(t) : null;
+    const when = [t.date && formatDate(t.date), t.end && formatDate(t.end)].filter(Boolean).join(' – ');
+    return `<details class="arch-trip">
+      <summary><b>${esc(t.site || TL('Wyjazd', 'Trip'))}</b><span>${when || TL('bez dat', 'no dates')}</span></summary>
+      ${st && st.list.length ? `<div class="trip-sum">
+        <div><b>${st.list.length}</b><small>${TL('nurkowań', 'dives')}</small></div>
+        <div><b>${st.deepest ? st.deepest.depth : '—'}</b><small>${TL('m maks.', 'm max')}</small></div>
+        ${st.planTotal ? `<div><b>${st.planDone}/${st.planTotal}</b><small>${TL('z planu', 'of plan')}</small></div>` : ''}</div>` : ''}
+      <p class="muted">${pers.length} ${TL('rzeczy na liście', 'items on the list')}${(t.shared || []).length ? ` · ${(t.shared || []).length} ${TL('wspólnych', 'shared')}` : ''}${(t.plan || []).length ? ` · ${(t.plan || []).length} ${TL('miejsc w planie', 'planned sites')}` : ''}</p>
+      <div class="arch-actions">
+        <button class="chip-btn" onclick="copyArchivedList(${i})">${TL('Kopiuj listę do obecnego wyjazdu', 'Copy list to current trip')}</button>
+        ${(t.plan || []).length ? `<button class="chip-btn" onclick="copyArchivedPlan(${i})">${TL('Kopiuj plan', 'Copy plan')}</button>` : ''}
+      </div>
+    </details>`;
+  }).join('');
+}
+async function copyArchivedList(i) {
+  const t = pastTrips[i];
+  if (!t || !currentTripId) return;
+  const items = ((t.personal && t.personal[myUid()]) || []).map(p => ({ name: p.name, sec: p.sec || '' }))
+    .concat((t.shared || []).map(s => ({ name: s.name, shared: true })));
+  const added = await applyItemsToTrip(items);
+  showToast(TL(`Dodano ${added} pozycji`, `Added ${added} items`));
+}
+async function copyArchivedPlan(i) {
+  const t = pastTrips[i];
+  if (!t || !currentTripId) return;
+  const plan = (await tripRef().get()).data().plan || [];
+  const have = new Set(plan.map(p => norm(p.name)));
+  (t.plan || []).forEach(p => { if (!have.has(norm(p.name))) plan.push({ name: p.name, depth: p.depth || null, done: false }); });
+  await tripRef().update({ plan });
+  showToast(TL('Plan skopiowany', 'Plan copied'));
+}

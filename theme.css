@@ -677,6 +677,20 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 .trip-warn { color: var(--coral) !important; }
 @media (max-width: 860px) { .tile-trip { grid-column: span 2; } }
 
+.saved-chip { display: inline-flex; align-items: center; gap: 2px; padding: 0 6px 0 0; }
+.saved-chip button { background: none; border: 0; color: #fff; font: 600 .78rem var(--font); padding: 8px 6px 8px 14px; cursor: pointer; }
+.saved-chip button small { color: var(--text-dim); margin-left: 4px; }
+.saved-chip button.x { padding: 6px; color: var(--text-muted); font-size: .75rem; }
+.chip-save { background: rgba(155,220,255,.16) !important; border-color: rgba(155,220,255,.4) !important; }
+#saved-lists { display: contents; }
+.archive-box { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 14px; }
+.arch-head { display: flex; justify-content: space-between; align-items: center; font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; font-weight: 800; color: var(--text-dim); margin-bottom: 8px; }
+.arch-trip { border-radius: var(--r-md); background: rgba(255,255,255,.06); margin-bottom: 8px; padding: 12px 14px; }
+.arch-trip summary { list-style: none; display: flex; justify-content: space-between; gap: 10px; cursor: pointer; }
+.arch-trip summary::-webkit-details-marker { display: none; }
+.arch-trip summary b { color: #fff; } .arch-trip summary span { color: var(--text-dim); font-size: .8rem; font-weight: 600; }
+.arch-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+
 /* ---------- Maps: dark OpenStreetMap ---------- */
 .map-tiles { filter: invert(1) hue-rotate(185deg) brightness(.85) contrast(.9) saturate(.6); }
 .leaflet-container { background: #0b1e33; font-family: var(--font); }

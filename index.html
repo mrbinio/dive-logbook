@@ -611,7 +611,9 @@
       <div style="font-size:0.75rem;font-weight:700;color:#8b5cf6;margin-bottom:6px;" id="cl-pers-h">My gear (personal)</div>
       <div class="tpl-row"><span id="tpl-l">Ready-made lists:</span>
         <button class="chip-btn" onclick="applyTripTemplate('tropic')" id="tpl-tropic">Tropics · wrecks · boat</button>
-        <button class="chip-btn" onclick="applyTripTemplate('cold')" id="tpl-cold">Cold water · drysuit</button></div>
+        <button class="chip-btn" onclick="applyTripTemplate('cold')" id="tpl-cold">Cold water · drysuit</button>
+        <span id="saved-lists"></span>
+        <button class="chip-btn chip-save" onclick="saveListAs()" id="tpl-save">Save as my list</button></div>
       <div id="cl-personal-items"></div>
       <div style="display:flex;gap:6px;margin-top:6px;">
         <select id="cl-new-sec" class="edit-input sec-select">
@@ -624,7 +626,7 @@
       <div id="cl-buddy-sections"></div>
 
       <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">
-        <div style="font-size:0.75rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;" id="plan-title">Dive plan</div>
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;" id="trip-plan-title">Dive plan</div>
         <div id="trip-plan"></div>
         <div class="plan-add">
           <input type="text" id="plan-name" class="edit-input" placeholder="Site / wreck" onkeydown="if(event.key==='Enter')addPlanItem()">
@@ -645,6 +647,11 @@
       <div style="display:flex;gap:8px;margin-top:16px;">
         <button onclick="resetChecklist()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-dim);font-size:0.72rem;cursor:pointer;font-family:inherit;" id="cl-reset-btn" data-i18n="clReset">Reset</button>
         <button onclick="newTrip()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-dim);font-size:0.72rem;cursor:pointer;font-family:inherit;" data-i18n="clNew">New trip</button>
+      </div>
+      <div class="archive-box">
+        <div class="arch-head"><span id="arch-title">Trip archive</span>
+          <button class="chip-btn" onclick="loadTripArchive()" id="arch-load">Show</button></div>
+        <div id="trip-archive"></div>
       </div>
     </div>
   </div>
