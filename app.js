@@ -1,5 +1,6 @@
 const T = {
   en: {
+    clCal:'Add to calendar', clInvite:'Invite', clReset:'Uncheck all', clNew:'New trip', clShared:'Shared (trip gear)', clPers:'My gear (personal)', clWish:'Next time / wishlist', trDest:'Destination', trFrom:'From', trTo:'To', trFlight:'Flight home', tplL:'Ready-made lists:', tplTropic:'Tropics · wrecks · boat', tplCold:'Cold water · drysuit', planT:'Dive plan', planCoron:'+ Coron wrecks', planHint:'Depths are approximate — confirm with your dive centre.',
     pushTitle:'Notifications', badgesTitle:'Badges', wrappedTab:'Your year', certsTitle:'Certifications', gearTitle:'My gear', planTitle:'Dive planner', checklistTitle:'Dive checklist', statsTitle:'Statistics', perAll:'All', perYear:'This year', per12m:'12 months', expPdf:'Export PDF', expJson:'Backup JSON',
     remTitle:'Reminders', remOver:'overdue {n} d', remSoon:'in {n} d', remToday:'today', datesTitle:'Important dates', kindMedical:'Medical certificate', kindInsurance:'Insurance (DAN)', kindOther:'Other', remName:'Name, e.g. tank inspection', remAdd:'Add', remService:'Service', servicedToday:'Serviced today', remNone:'No dates yet — add your medical, insurance or anything that expires.', remSaved:'Saved',
     secPlace:'Place & time', secDive:'The dive', secTank:'Tank & gear', secCond:'Conditions & people', secNotes:'Rating & notes', importHint:'Choose one or more files — duplicates are skipped', logOr:'or log by hand',
@@ -39,6 +40,7 @@ const T = {
     entry:'Entry', entryShore:'Shore', entryBoat:'Boat', entryPlatform:'Platform', entryOther:'Other',
     feeling:'Feeling'  },
   pl: {
+    clCal:'Dodaj do kalendarza', clInvite:'Zaproś', clReset:'Odznacz wszystko', clNew:'Nowy wyjazd', clShared:'Wspólne (sprzęt na wyjazd)', clPers:'Moje rzeczy', clWish:'Następnym razem / lista życzeń', trDest:'Cel wyjazdu', trFrom:'Od', trTo:'Do', trFlight:'Lot powrotny', tplL:'Gotowe listy:', tplTropic:'Tropiki · wraki · łódź', tplCold:'Zimna woda · suchar', planT:'Plan nurkowań', planCoron:'+ Wraki Coron', planHint:'Głębokości orientacyjne — potwierdź w centrum nurkowym.',
     pushTitle:'Powiadomienia', badgesTitle:'Odznaki', wrappedTab:'Twój rok', certsTitle:'Certyfikaty', gearTitle:'Mój sprzęt', planTitle:'Planer nurkowania', checklistTitle:'Checklista', statsTitle:'Statystyki', perAll:'Wszystko', perYear:'Ten rok', per12m:'12 mies.', expPdf:'Eksport PDF', expJson:'Kopia zapasowa JSON',
     remTitle:'Przypomnienia', remOver:'po terminie {n} dni', remSoon:'za {n} dni', remToday:'dziś', datesTitle:'Ważne daty', kindMedical:'Badania lekarskie', kindInsurance:'Ubezpieczenie (DAN)', kindOther:'Inne', remName:'Nazwa, np. przegląd butli', remAdd:'Dodaj', remService:'Serwis', servicedToday:'Serwis zrobiony dziś', remNone:'Brak dat — dodaj badania, ubezpieczenie albo cokolwiek, co ma termin.', remSaved:'Zapisano',
     secPlace:'Miejsce i czas', secDive:'Nurkowanie', secTank:'Butla i sprzęt', secCond:'Warunki i ludzie', secNotes:'Ocena i notatki', importHint:'Wybierz jeden lub kilka plików — duplikaty są pomijane', logOr:'albo wpisz ręcznie',
@@ -149,9 +151,14 @@ function applyLang() {
   document.getElementById('shop-desc').textContent = t('shopDesc');
   document.getElementById('shop-btn-text').textContent = t('goShop');
   document.getElementById('import-btn-text').textContent = t('importBtn');
-  [['push-title','pushTitle'],['wrapped-btn','wrappedTab'],['badges-title','badgesTitle'],['tab-badges','badgesTitle'],['more-badges','badgesTitle'],['more-stats','stats'],['more-wrapped','wrappedTab'],['certs-title','certsTitle'],['gear-title','gearTitle'],['plan-title','planTitle'],['checklist-title','checklistTitle'],['stats-title','statsTitle'],['per-all','perAll'],['per-year','perYear'],['per-12m','per12m'],['exp-pdf','expPdf'],['exp-json','expJson'],['dates-title','datesTitle'],['rem-k-medical','kindMedical'],['rem-k-insurance','kindInsurance'],['rem-k-other','kindOther'],['rem-add','remAdd'],['sec-place','secPlace'],['sec-dive','secDive'],['sec-tank','secTank'],['sec-cond','secCond'],['sec-notes','secNotes'],['import-hint','importHint'],['log-or','logOr']]
+  [['cl-shared-h','clShared'],['cl-pers-h','clPers'],['cl-wishlist-title','clWish'],['tr-dest-l','trDest'],['tr-from-l','trFrom'],['tr-to-l','trTo'],['tr-flight-l','trFlight'],['tpl-l','tplL'],['tpl-tropic','tplTropic'],['tpl-cold','tplCold'],['plan-title','planT'],['plan-coron','planCoron'],['plan-hint','planHint'],['push-title','pushTitle'],['wrapped-btn','wrappedTab'],['badges-title','badgesTitle'],['tab-badges','badgesTitle'],['more-badges','badgesTitle'],['more-stats','stats'],['more-wrapped','wrappedTab'],['certs-title','certsTitle'],['gear-title','gearTitle'],['plan-title','planTitle'],['checklist-title','checklistTitle'],['stats-title','statsTitle'],['per-all','perAll'],['per-year','perYear'],['per-12m','per12m'],['exp-pdf','expPdf'],['exp-json','expJson'],['dates-title','datesTitle'],['rem-k-medical','kindMedical'],['rem-k-insurance','kindInsurance'],['rem-k-other','kindOther'],['rem-add','remAdd'],['sec-place','secPlace'],['sec-dive','secDive'],['sec-tank','secTank'],['sec-cond','secCond'],['sec-notes','secNotes'],['import-hint','importHint'],['log-or','logOr']]
     .forEach(([id, key]) => { const el = document.getElementById(id); if (el) el.textContent = t(key); });
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
   const remTitleEl = document.getElementById('rem-title'); if (remTitleEl) remTitleEl.placeholder = t('remName');
+  [['cl-site', 'Coron, Dahab…', 'Coron, Dahab…'], ['cl-new-shared', 'Dodaj wspólną rzecz…', 'Add shared item…'], ['cl-new-personal', 'Dodaj swoją rzecz…', 'Add personal item…'],
+   ['cl-buddy-email', 'E-mail buddy\'ego (wspólna lista)…', 'Buddy email (to share list)…'], ['cl-new-wish', 'Zapomniałeś czegoś? Dopisz na następny raz…', 'Forgot something? Add for next time…'],
+   ['plan-name', 'Miejsce / wrak', 'Site / wreck']]
+    .forEach(([id, pl, en]) => { const el = document.getElementById(id); if (el) el.placeholder = lang === 'pl' ? pl : en; });
   const gpsLabel = document.getElementById('l-gps');
   if(gpsLabel) gpsLabel.textContent = t('gpsLabel');
   const googleBtnText = document.getElementById('google-btn-text');
@@ -542,6 +549,7 @@ async function saveDive() {
   };
   // Written to the local cache at once; the server ack can wait (offline)
   divesCol.add(dive).catch(e => showToast(t('errorSave') + e.message));
+  checkDiveVsFlight(dive);
   resetForm();
   showToast(t('saved'));
   switchTab('home');
@@ -644,14 +652,14 @@ function renderHome() {
   const el = document.getElementById('home-content');
   if (!el) return;
   if (!dives.length) {
-    el.innerHTML = `<section class="tile tile-hero home-empty">
+    el.innerHTML = `<div class="bento">${homeTripTile()}<section class="tile tile-hero home-empty">
       <div class="eyebrow">Mr.Binio · ${t('subtitle')}</div>
       <h1 class="hero-site">${t('startLog')}</h1>
       <p class="hero-loc">${t('startLogSub')}</p>
       <div class="home-actions">
         <button class="btn-solid" onclick="switchTab('log')">${t('logDive')}</button>
         <button class="btn-ghost" onclick="homeImport()">${t('importShort')}</button>
-      </div></section>`;
+      </div></section></div>`;
     return;
   }
   const d = dives[0];
@@ -681,6 +689,7 @@ function renderHome() {
       <div class="hero-profile-wrap">${prof.svg}${prof.estimated ? `<span class="hp-note">${t('estProfile')}</span>` : ''}</div>
       ${facts.length ? `<div class="hero-facts">${facts.map(f => `<div><b>${esc(f[0])}</b><small>${f[1]}</small></div>`).join('')}</div>` : ''}
     </section>
+    ${homeTripTile()}
     ${homeStatusTiles()}
     ${homeRemindersTile()}
     ${homeBadgesTile()}
@@ -1984,15 +1993,17 @@ function subscribeTrip() {
   if (unsubTrip) unsubTrip();
   if (!currentTripId) return;
   unsubTrip = tripsCol().doc(currentTripId).onSnapshot(snap => {
-    if (snap.exists) renderChecklist(snap.data());
+    if (!snap.exists) return;
+    currentTrip = snap.data();
+    renderChecklist(currentTrip);
+    renderTripCard();
+    if (document.getElementById('panel-home').classList.contains('active')) renderHome();
   });
 }
 
 function renderChecklist(trip) {
   if (!trip) return;
   const uid = myUid();
-  document.getElementById('cl-next-date').value = trip.date || '';
-  document.getElementById('cl-site').value = trip.site || '';
   const calBtn = document.getElementById('cl-cal-btn');
   if (calBtn) calBtn.style.display = trip.date ? '' : 'none';
 
@@ -2016,12 +2027,7 @@ function renderChecklist(trip) {
   // Personal items
   const persDiv = document.getElementById('cl-personal-items');
   const pers = (trip.personal && trip.personal[uid]) || [];
-  persDiv.innerHTML = pers.map((item, i) => `
-    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:0.78rem;">
-      <input type="checkbox" ${item.checked?'checked':''} onchange="togglePersonal(${i})" style="accent-color:#8b5cf6;width:18px;height:18px;cursor:pointer;">
-      <span style="${item.checked?'text-decoration:line-through;opacity:0.5;':''}flex:1;">${esc(item.name)}</span>
-      <button onclick="removePersonal(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.85rem;">✕</button>
-    </div>`).join('');
+  persDiv.innerHTML = personalItemsHTML(pers);
 
   // Buddy personal sections (read-only)
   const buddySections = document.getElementById('cl-buddy-sections');
@@ -2059,17 +2065,6 @@ function renderChecklist(trip) {
 }
 
 function tripRef() { return tripsCol().doc(currentTripId); }
-
-async function saveTripMeta() {
-  if (!currentTripId) return;
-  const date = document.getElementById('cl-next-date').value || '';
-  const site = document.getElementById('cl-site').value || '';
-  await tripRef().update({ date, site });
-  scheduleNotification(date);
-  // Show/hide calendar button
-  const calBtn = document.getElementById('cl-cal-btn');
-  if (calBtn) calBtn.style.display = date ? '' : 'none';
-}
 
 function addToCalendar() {
   const date = document.getElementById('cl-next-date').value;
@@ -2146,7 +2141,7 @@ async function addPersonalItem() {
   const uid = myUid();
   const snap = await tripRef().get(); const d = snap.data();
   if (!d.personal[uid]) d.personal[uid] = [];
-  d.personal[uid].push({name:val, checked:false});
+  d.personal[uid].push({name:val, checked:false, sec:(document.getElementById('cl-new-sec')||{}).value||''});
   await tripRef().update({ ['personal.'+uid]: d.personal[uid] });
   input.value = '';
 }
@@ -2253,7 +2248,7 @@ async function resetChecklist() {
     shared: d.shared,
     ['personal.'+uid]: pers,
     ['wishlist.'+uid]: [],
-    date: '', site: ''
+    date: '', site: '', end: '', flight: ''
   });
   showToast(lang==='pl'?'✅ Checklista zresetowana!':'✅ Checklist reset!');
 }

@@ -642,6 +642,41 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 #sign-page .sig-actions { grid-template-columns: 1fr; }
 .sig-dive { color: var(--text-dim); font-size: .84rem; font-weight: 600; margin: -6px 0 14px; }
 
+/* ---------- Trip planning (checklist) ---------- */
+.trip-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.trip-fields label { display: flex; flex-direction: column; gap: 6px; font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: var(--text-dim); min-width: 0; }
+.trip-fields label.full { grid-column: 1 / -1; }
+.trip-info p { margin: 6px 0; font-size: .86rem; color: var(--text-dim); line-height: 1.45; }
+.trip-info b { color: #fff; }
+.trip-info:empty { display: none; }
+.trip-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 8px; margin: 10px 0 4px; }
+.trip-sum > div { padding: 12px 8px; text-align: center; border-radius: var(--r-sm); background: rgba(255,255,255,.07); }
+.trip-sum b { display: block; color: #fff; font-size: 1.4rem; font-weight: 300; letter-spacing: -.03em; }
+.trip-sum small { font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); font-weight: 700; }
+.tpl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0 12px; font-size: .74rem; color: var(--text-dim); font-weight: 600; }
+.chip-btn { border: 1px solid var(--glass-edge); background: rgba(255,255,255,.1); color: #fff; border-radius: 999px; padding: 8px 14px; font: 600 .78rem var(--font); cursor: pointer; }
+.chip-btn:active { transform: scale(.97); }
+.cl-group { margin-bottom: 10px; }
+.cl-group-h { display: flex; justify-content: space-between; font-size: .64rem; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; color: var(--accent); margin: 12px 4px 2px; }
+.cl-group-h span { color: var(--text-dim); letter-spacing: .04em; }
+.cl-row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--border); font-size: .9rem; }
+.cl-row span { flex: 1; min-width: 0; color: #fff; }
+.cl-row span.done { text-decoration: line-through; opacity: .5; }
+.cl-row small { color: var(--text-dim); font-weight: 600; margin-left: 6px; }
+.cl-row small.auto { color: #8ff0c0; }
+.cl-row button { background: none; border: 0; color: var(--text-muted); cursor: pointer; font-size: .9rem; }
+.cl-row input[disabled] { opacity: 1; cursor: default; }
+.plan-add { display: grid; grid-template-columns: 1fr 70px auto; gap: 8px; margin-top: 8px; }
+.sec-select { flex: 0 0 96px !important; max-width: 96px; }
+.tile-trip { grid-column: span 4; cursor: pointer; display: flex; flex-direction: column; gap: 6px; animation-delay: .02s;
+  background: linear-gradient(135deg, rgba(255,179,138,.22), rgba(255,255,255,.06)); }
+.tile-trip small { font-size: .66rem; letter-spacing: .2em; text-transform: uppercase; color: #ffd3bd; font-weight: 800; }
+.tile-trip b { font-size: clamp(1.8rem, 6vw, 2.6rem); font-weight: 300; color: #fff; letter-spacing: -.04em; line-height: 1.05; }
+.tile-trip span { font-size: .8rem; color: var(--text-dim); font-weight: 600; }
+.tile-trip .rank-bar { height: 6px; margin-top: 4px; }
+.trip-warn { color: var(--coral) !important; }
+@media (max-width: 860px) { .tile-trip { grid-column: span 2; } }
+
 /* ---------- Maps: dark OpenStreetMap ---------- */
 .map-tiles { filter: invert(1) hue-rotate(185deg) brightness(.85) contrast(.9) saturate(.6); }
 .leaflet-container { background: #0b1e33; font-family: var(--font); }
