@@ -12,7 +12,11 @@
       "!manifest.json",
       "firestore.rules",
       "functions/**",
-      "functions"
+      "functions",
+      "**/.*",
+      "**/.*/**",
+      ".git/**",
+      "**/__pycache__/**"
     ],
     "headers": [
       {
