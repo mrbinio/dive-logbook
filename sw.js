@@ -2,7 +2,7 @@
 // Own files: network first (always the newest deploy), cache as fallback.
 // Libraries and fonts from CDNs: cache first (versioned URLs never change).
 // Firestore/Auth traffic is never touched — Firestore keeps its own offline cache.
-const CACHE = 'mrbinio-v17';
+const CACHE = 'mrbinio-v18';
 const SHELL = ['./', 'index.html', 'style.css', 'theme.css', 'app.js', 'divetools.js', 'ocean.js', 'intro.js', 'sharecard.js', 'badges.js', 'wrapped.js', 'signature.js', 'push.js', 'trip.js', 'planner.js',
   'suunto.js', 'shearwater.js', 'dive3d.js', 'diver.svg', 'icon.svg', 'icon-192.png', 'manifest.json'];
 const CDN = ['www.gstatic.com', 'unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com', 'sql.js.org'];
@@ -23,7 +23,8 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
 
   if (url.origin === location.origin) {
-    e.respondWith(fetch(req).then(res => {
+    // no-cache: revalidate with the server; GitHub Pages sends max-age=600, which would keep an old version for 10 min
+    e.respondWith(fetch(req, { cache: 'no-cache' }).then(res => {
       if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
       return res;
     }).catch(() => caches.match(req, { ignoreSearch: true })
@@ -47,7 +48,9 @@ self.addEventListener('push', e => {
   try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: e.data && e.data.text() }; }
   const shown = self.registration.showNotification(d.title || 'Mr.Binio', {
     body: d.body || '', tag: d.tag || undefined, renotify: !!d.tag, icon: 'icon-192.png', badge: 'icon-192.png',
-    vibrate: [60, 40, 60], timestamp: Date.now(), data: { url: d.url || './' }
+    vibrate: [60, 40, 60], timestamp: Date.now(),
+    // keep only ?tab=… so the click opens this copy of the app (GitHub Pages or Firebase), not the server's URL
+    data: { url: new URL(new URL(d.url || './', self.registration.scope).search, self.registration.scope).href }
   });
   // Number of overdue reminders on the Home Screen icon
   const badge = typeof d.badge !== 'number' || !navigator.setAppBadge ? null
