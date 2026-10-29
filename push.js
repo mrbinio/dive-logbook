@@ -26,7 +26,13 @@ function setPushOn(on) {
 }
 function homePushTile() {
   if (!pushSupported() || (isIOS() && !isStandalone()) || Notification.permission === 'denied') return '';
-  if (pushOn === null) { currentSubscription().catch(() => null).then(s => { pushOn = false; setPushOn(!!s); }); return ''; }
+  if (pushOn === null) {
+    currentSubscription().catch(() => null).then(s => {
+      pushOn = !!s;
+      if (!s && document.getElementById('panel-home')?.classList.contains('active')) renderHome();
+    });
+    return '';
+  }
   if (pushOn) return '';
   return `<section class="tile tile-remind tile-push" onclick="enablePush()">
     <small>${PL('Powiadomienia', 'Notifications')}</small>
