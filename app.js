@@ -693,6 +693,7 @@ function renderHome() {
     ${homeTripTile()}
     ${homeStatusTiles()}
     ${homeRemindersTile()}
+    ${homePushTile()}
     ${homeBadgesTile()}
     ${specs.slice(0, 4).map((s, i) => `<section class="tile tile-stat" style="--i:${i}"><small>${s[1]}</small><b>${esc(s[0])}${s[2] ? `<i>${s[2]}</i>` : ''}</b></section>`).join('')}
     <section class="tile tile-actions">

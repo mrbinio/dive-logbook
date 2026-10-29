@@ -375,6 +375,8 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 .tile-remind { grid-column: span 2; cursor: pointer; animation-delay: .1s; }
 .tile-remind small { font-size: .62rem; letter-spacing: .2em; text-transform: uppercase; color: var(--text-dim); font-weight: 700; }
 .tile-remind ul { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.tile-push p { margin: 8px 0 12px; color: var(--text-dim); font-size: .85rem; line-height: 1.45; }
+.tile-push .btn-solid { width: 100%; }
 .tile-remind li, .rem-row {
   display: flex; justify-content: space-between; align-items: center; gap: 12px;
   padding: 10px 12px; border-radius: var(--r-sm); background: rgba(255,255,255,.06);

@@ -17,6 +17,24 @@ async function subDocId(sub) {
   const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(sub.endpoint));
   return Array.from(new Uint8Array(h).slice(0, 12), b => b.toString(16).padStart(2, '0')).join('');
 }
+// null until checked; the Home tile asks to turn notifications on while false
+let pushOn = null;
+function setPushOn(on) {
+  const was = pushOn;
+  pushOn = on;
+  if (was !== null && was !== on && document.getElementById('panel-home')?.classList.contains('active')) renderHome();
+}
+function homePushTile() {
+  if (!pushSupported() || (isIOS() && !isStandalone()) || Notification.permission === 'denied') return '';
+  if (pushOn === null) { currentSubscription().catch(() => null).then(s => { pushOn = false; setPushOn(!!s); }); return ''; }
+  if (pushOn) return '';
+  return `<section class="tile tile-remind tile-push" onclick="enablePush()">
+    <small>${PL('Powiadomienia', 'Notifications')}</small>
+    <p>${PL('Włącz, a telefon da znać, kiedy możesz lecieć, i przypomni o serwisie, badaniach i ubezpieczeniu.',
+      'Turn on and your phone will tell you when it is OK to fly, and remind you about service, medical and insurance.')}</p>
+    <button class="btn-solid">${PL('Włącz powiadomienia', 'Turn on notifications')}</button>
+  </section>`;
+}
 function pushCol() { return db.collection('users').doc(myUid()).collection('push'); }
 
 async function currentSubscription() {
@@ -38,6 +56,7 @@ async function enablePush() {
       device: navigator.userAgent.slice(0, 120), createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     showToast(PL('Powiadomienia włączone', 'Notifications on'));
+    setPushOn(true);
   } catch (e) {
     showToast('❌ ' + e.message);
   }
@@ -73,6 +92,7 @@ async function renderPushCard() {
     return;
   }
   const sub = await currentSubscription().catch(() => null);
+  setPushOn(!!sub);
   const blocked = Notification.permission === 'denied';
   el.innerHTML = `
     <p class="muted">${PL('Telefon przypomni Ci, kiedy kończy się zakaz lotu, oraz o serwisie sprzętu, badaniach i ubezpieczeniu (14 dni, 3 dni i w dniu terminu).',
