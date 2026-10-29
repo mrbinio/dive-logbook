@@ -1,6 +1,6 @@
 const T = {
   en: {
-    tplSave:'💾 Save as my list', archTitle:'Trip archive', archLoad:'Show', clCal:'Add to calendar', clInvite:'Invite', clReset:'Uncheck all', clNew:'New trip', clShared:'Shared (trip gear)', clPers:'My gear (personal)', clWish:'Next time / wishlist', trDest:'Destination', trFrom:'From', trTo:'To', trFlight:'Route', legAdd:'+ Add flight / drive / ferry', tplL:'Ready-made lists:', tplTropic:'Tropics · wrecks · boat', tplCold:'Cold water · drysuit', tplWash:'Toiletries · clothes', planT:'Dive plan', planCoron:'+ Coron wrecks', planHint:'Depths are approximate — confirm with your dive centre.',
+    tplSave:'💾 Save as my list', archTitle:'Trip archive', archLoad:'Show', clCal:'Add to calendar', clInvite:'Invite', clReset:'Uncheck all', clNew:'New trip', clShared:'Shared (trip gear)', clPers:'My gear (personal)', clWish:'Next time / wishlist', trDest:'Destination', trFrom:'From', trTo:'To', trFlight:'Route', legAdd:'+ Add flight / drive / ferry', tplL:'Ready-made lists:', tplTropic:'Tropics · wrecks · boat', tplCold:'Cold water · drysuit', tplWash:'Toiletries · clothes', wxTitle:'Weather at the dive site', wxCheck:'Check', planT:'Dive plan', planCoron:'+ Coron wrecks', planHint:'Depths are approximate — confirm with your dive centre.',
     pushTitle:'Notifications', badgesTitle:'Badges', wrappedTab:'Your year', certsTitle:'Certifications', gearTitle:'My gear', planTitle:'Dive planner', checklistTitle:'Dive checklist', statsTitle:'Statistics', perAll:'All', perYear:'This year', per12m:'12 months', expPdf:'Export PDF', expJson:'Backup JSON',
     remTitle:'Reminders', remOver:'overdue {n} d', remSoon:'in {n} d', remToday:'today', datesTitle:'Important dates', kindMedical:'Medical certificate', kindInsurance:'Insurance (DAN)', kindOther:'Other', remName:'Name, e.g. tank inspection', remAdd:'Add', remService:'Service', servicedToday:'Serviced today', remNone:'No dates yet — add your medical, insurance or anything that expires.', remSaved:'Saved',
     secPlace:'Place & time', secDive:'The dive', secTank:'Tank & gear', secCond:'Conditions & people', secNotes:'Rating & notes', importHint:'Choose one or more files — duplicates are skipped', logOr:'or log by hand',
@@ -40,7 +40,7 @@ const T = {
     entry:'Entry', entryShore:'Shore', entryBoat:'Boat', entryPlatform:'Platform', entryOther:'Other',
     feeling:'Feeling'  },
   pl: {
-    tplSave:'💾 Zapisz jako moją listę', archTitle:'Archiwum wyjazdów', archLoad:'Pokaż', clCal:'Dodaj do kalendarza', clInvite:'Zaproś', clReset:'Odznacz wszystko', clNew:'Nowy wyjazd', clShared:'Wspólne (sprzęt na wyjazd)', clPers:'Moje rzeczy', clWish:'Następnym razem / lista życzeń', trDest:'Cel wyjazdu', trFrom:'Od', trTo:'Do', trFlight:'Trasa', legAdd:'+ Dodaj lot / przejazd / prom', tplL:'Gotowe listy:', tplTropic:'Tropiki · wraki · łódź', tplCold:'Zimna woda · suchar', tplWash:'Kosmetyczka · ubrania', planT:'Plan nurkowań', planCoron:'+ Wraki Coron', planHint:'Głębokości orientacyjne — potwierdź w centrum nurkowym.',
+    tplSave:'💾 Zapisz jako moją listę', archTitle:'Archiwum wyjazdów', archLoad:'Pokaż', clCal:'Dodaj do kalendarza', clInvite:'Zaproś', clReset:'Odznacz wszystko', clNew:'Nowy wyjazd', clShared:'Wspólne (sprzęt na wyjazd)', clPers:'Moje rzeczy', clWish:'Następnym razem / lista życzeń', trDest:'Cel wyjazdu', trFrom:'Od', trTo:'Do', trFlight:'Trasa', legAdd:'+ Dodaj lot / przejazd / prom', tplL:'Gotowe listy:', tplTropic:'Tropiki · wraki · łódź', tplCold:'Zimna woda · suchar', tplWash:'Kosmetyczka · ubrania', wxTitle:'Pogoda na miejscu nurkowania', wxCheck:'Sprawdź', planT:'Plan nurkowań', planCoron:'+ Wraki Coron', planHint:'Głębokości orientacyjne — potwierdź w centrum nurkowym.',
     pushTitle:'Powiadomienia', badgesTitle:'Odznaki', wrappedTab:'Twój rok', certsTitle:'Certyfikaty', gearTitle:'Mój sprzęt', planTitle:'Planer nurkowania', checklistTitle:'Checklista', statsTitle:'Statystyki', perAll:'Wszystko', perYear:'Ten rok', per12m:'12 mies.', expPdf:'Eksport PDF', expJson:'Kopia zapasowa JSON',
     remTitle:'Przypomnienia', remOver:'po terminie {n} dni', remSoon:'za {n} dni', remToday:'dziś', datesTitle:'Ważne daty', kindMedical:'Badania lekarskie', kindInsurance:'Ubezpieczenie (DAN)', kindOther:'Inne', remName:'Nazwa, np. przegląd butli', remAdd:'Dodaj', remService:'Serwis', servicedToday:'Serwis zrobiony dziś', remNone:'Brak dat — dodaj badania, ubezpieczenie albo cokolwiek, co ma termin.', remSaved:'Zapisano',
     secPlace:'Miejsce i czas', secDive:'Nurkowanie', secTank:'Butla i sprzęt', secCond:'Warunki i ludzie', secNotes:'Ocena i notatki', importHint:'Wybierz jeden lub kilka plików — duplikaty są pomijane', logOr:'albo wpisz ręcznie',
@@ -116,6 +116,7 @@ function applyLang() {
   document.getElementById('tab-home').textContent = t('home');
   document.getElementById('tab-more').textContent = t('more');
   if (document.getElementById('panel-home').classList.contains('active')) renderHome();
+  if (document.getElementById('panel-plan')?.classList.contains('active')) calcPlan();
   // Form labels
   const labels = {
     'l-site':t('diveSite'),'l-loc':t('location'),'l-date':t('date'),
@@ -1667,87 +1668,6 @@ function exportPDF() {
 
 // === DIVE PLANNER ===
 // NDL table (PADI/DSAT recreational, air, in minutes)
-const NDL_TABLE = {10:219,12:147,14:98,16:72,18:56,20:45,22:37,24:29,25:27,26:25,28:22,30:20,32:16,34:14,35:13,36:12,38:10,40:9,42:8};
-
-function getNDL(depth, fO2) {
-  // Use EAD for nitrox NDL lookup
-  const ead = Math.round((1-fO2)/0.79*(depth+10)-10);
-  const d = ead > 0 ? ead : depth;
-  const depths = Object.keys(NDL_TABLE).map(Number).sort((a,b)=>a-b);
-  for (let i = depths.length-1; i >= 0; i--) {
-    if (d >= depths[i]) return NDL_TABLE[depths[i]];
-  }
-  return 999; // shallower than 10m = essentially unlimited
-}
-
-function calcPlan() {
-  const o2 = parseFloat(document.getElementById('p-o2').value) || 21;
-  const ppo2 = parseFloat(document.getElementById('p-ppo2').value) || 1.4;
-  const depth = parseFloat(document.getElementById('p-depth').value) || 30;
-  const time = parseFloat(document.getElementById('p-time').value) || 30;
-  const tank = parseFloat(document.getElementById('p-tank').value) || 12;
-  const sac = parseFloat(document.getElementById('p-sac').value) || 15;
-  const startBar = parseFloat(document.getElementById('p-start-bar').value) || 200;
-  const reserve = parseFloat(document.getElementById('p-reserve').value) || 50;
-
-  const fO2 = o2 / 100;
-  const mod = Math.floor((ppo2 / fO2 - 1) * 10);
-  const fN2 = 1 - fO2;
-  const ead = Math.round((fN2 / 0.79) * (depth + 10) - 10);
-  const actualPpO2 = Math.round(fO2 * (depth / 10 + 1) * 100) / 100;
-
-  // Gas consumption
-  const ambientPressure = depth / 10 + 1;
-  const gasPerMin = sac * ambientPressure;
-  const totalGas = gasPerMin * time;
-  const barUsed = Math.round(totalGas / tank);
-  const availableBar = startBar - reserve;
-  const maxTimeGas = Math.round(availableBar * tank / gasPerMin);
-
-  // NDL
-  const ndl = getNDL(depth, fO2);
-  const ndlOk = time <= ndl;
-
-  // Warnings
-  const depthOk = depth <= mod;
-  const gasOk = barUsed <= availableBar;
-
-  const results = document.getElementById('plan-results');
-  results.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-      <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
-        <div style="font-size:1.1rem;font-weight:800;color:${depthOk?'var(--accent)':'var(--danger)'};">${mod}m</div>
-        <div style="font-size:0.55rem;color:var(--text-dim);text-transform:uppercase;">MOD</div>
-      </div>
-      <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
-        <div style="font-size:1.1rem;font-weight:800;color:${actualPpO2<=ppo2?'var(--accent)':'var(--danger)'};">${actualPpO2}</div>
-        <div style="font-size:0.55rem;color:var(--text-dim);text-transform:uppercase;">ppO₂ @${depth}m</div>
-      </div>
-      <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
-        <div style="font-size:1.1rem;font-weight:800;color:${ndlOk?'var(--accent)':'var(--danger)'};">${ndl} min</div>
-        <div style="font-size:0.55rem;color:var(--text-dim);text-transform:uppercase;">NDL</div>
-      </div>
-      <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
-        <div style="font-size:1.1rem;font-weight:800;color:var(--accent);">${ead}m</div>
-        <div style="font-size:0.55rem;color:var(--text-dim);text-transform:uppercase;">EAD</div>
-      </div>
-      <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
-        <div style="font-size:1.1rem;font-weight:800;color:${gasOk?'var(--accent)':'var(--danger)'};">${barUsed} bar</div>
-        <div style="font-size:0.55rem;color:var(--text-dim);text-transform:uppercase;">Gas needed</div>
-      </div>
-      <div style="padding:10px;border-radius:8px;border:1px solid var(--border);text-align:center;">
-        <div style="font-size:1.1rem;font-weight:800;color:var(--accent);">${maxTimeGas} min</div>
-        <div style="font-size:0.55rem;color:var(--text-dim);text-transform:uppercase;">Max time (gas)</div>
-      </div>
-    </div>
-    ${!depthOk?'<div style="margin-top:8px;padding:8px;border-radius:6px;background:rgba(244,63,94,0.1);color:var(--danger);font-size:0.72rem;font-weight:600;">⚠️ Depth exceeds MOD for EAN${o2}!</div>':''}
-    ${!ndlOk?'<div style="margin-top:6px;padding:8px;border-radius:6px;background:rgba(244,63,94,0.1);color:var(--danger);font-size:0.72rem;font-weight:600;">⚠️ '+(lang==='pl'?`${time} min przekracza NDL ${ndl} min na ${depth} m! Wymagana dekompresja.`:`${time} min exceeds NDL of ${ndl} min at ${depth} m! Deco required.`)+'</div>':''}
-    ${!gasOk?'<div style="margin-top:6px;padding:8px;border-radius:6px;background:rgba(244,63,94,0.1);color:var(--danger);font-size:0.72rem;font-weight:600;">⚠️ Not enough gas! Need ${barUsed} bar, available ${availableBar} bar (${startBar}-${reserve} reserve).</div>':''}
-    <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);text-align:center;">⚠️ For planning only. Always follow your training and computer.</div>
-  `;
-}
-
-
 async function exportJSON() {
   showToast(lang==='pl'?'⏳ Przygotowuję backup...':'⏳ Preparing backup...');
   let backupDives;
@@ -1773,27 +1693,29 @@ async function fetchDiveWeather() {
   const site = document.getElementById('p-weather-site').value.trim();
   if (!site) return;
   const el = document.getElementById('plan-weather');
-  el.innerHTML = '<div style="font-size:0.7rem;color:var(--text-dim);">Loading...</div>';
+  el.innerHTML = `<div style="font-size:0.7rem;color:var(--text-dim);">${TL('Sprawdzam…', 'Loading…')}</div>`;
   try {
     const geoResp = await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(site)+'&format=json&limit=1');
     const geo = await geoResp.json();
-    if (!geo.length) { el.innerHTML = '<div style="color:var(--danger);font-size:0.7rem;">Location not found</div>'; return; }
+    if (!geo.length) { el.innerHTML = `<div style="color:var(--danger);font-size:0.7rem;">${TL('Nie znalazłem tego miejsca', 'Location not found')}</div>`; return; }
     const lat = geo[0].lat, lon = geo[0].lon;
     const wResp = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,windspeed_10m,weathercode&daily=temperature_2m_max,temperature_2m_min,windspeed_10m_max,weathercode&timezone=auto&forecast_days=3`);
     const w = await wResp.json();
-    const wCodes = {0:'☀️ Clear',1:'🌤 Mostly clear',2:'⛅ Partly cloudy',3:'☁️ Overcast',45:'🌫 Fog',51:'🌦 Drizzle',61:'🌧 Rain',63:'🌧 Moderate rain',65:'🌧 Heavy rain',80:'🌦 Showers',95:'⛈ Storm'};
+    const wCodes = lang === 'pl'
+      ? {0:'☀️ Bezchmurnie',1:'🌤 Pogodnie',2:'⛅ Częściowe zachmurzenie',3:'☁️ Pochmurno',45:'🌫 Mgła',51:'🌦 Mżawka',61:'🌧 Deszcz',63:'🌧 Umiarkowany deszcz',65:'🌧 Ulewa',80:'🌦 Przelotne opady',95:'⛈ Burza'}
+      : {0:'☀️ Clear',1:'🌤 Mostly clear',2:'⛅ Partly cloudy',3:'☁️ Overcast',45:'🌫 Fog',51:'🌦 Drizzle',61:'🌧 Rain',63:'🌧 Moderate rain',65:'🌧 Heavy rain',80:'🌦 Showers',95:'⛈ Storm'};
     const cur = w.current;
     el.innerHTML = `
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;font-size:0.72rem;">
         <div style="padding:8px;border-radius:8px;border:1px solid var(--border);text-align:center;">
           <div style="font-size:1.1rem;">${wCodes[cur.weathercode]||'🌡'}</div>
           <div style="font-weight:700;">${cur.temperature_2m}°C</div>
-          <div style="font-size:0.6rem;color:var(--text-dim);">Now</div>
+          <div style="font-size:0.6rem;color:var(--text-dim);">${TL('Teraz', 'Now')}</div>
         </div>
         <div style="padding:8px;border-radius:8px;border:1px solid var(--border);text-align:center;">
           <div style="font-size:1.1rem;">💨</div>
           <div style="font-weight:700;">${cur.windspeed_10m} km/h</div>
-          <div style="font-size:0.6rem;color:var(--text-dim);">Wind</div>
+          <div style="font-size:0.6rem;color:var(--text-dim);">${TL('Wiatr', 'Wind')}</div>
         </div>
       </div>
       <div style="margin-top:8px;font-size:0.65rem;color:var(--text-dim);">

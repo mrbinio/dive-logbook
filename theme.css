@@ -676,6 +676,48 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 .tpl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0 12px; font-size: .74rem; color: var(--text-dim); font-weight: 600; }
 .chip-btn { border: 1px solid var(--glass-edge); background: rgba(255,255,255,.1); color: #fff; border-radius: 999px; padding: 8px 14px; font: 600 .78rem var(--font); cursor: pointer; }
 .chip-btn:active { transform: scale(.97); }
+.chip-btn.on { background: var(--accent); border-color: var(--accent); color: #001018; }
+.chip-btn small { opacity: .7; font-weight: 700; margin-left: 2px; }
+/* planner */
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pl-sec { font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: var(--text-dim); margin: 14px 0 7px; }
+.pl-mini { display: inline-flex; align-items: center; gap: 4px; font-size: .78rem; color: var(--text-dim); }
+.pl-mini input { width: 62px; padding: 7px 8px; }
+.pl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.pl-grid label, .pl-time { display: flex; flex-direction: column; gap: 6px; font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: var(--text-dim); min-width: 0; }
+.pl-unit { display: flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; font-size: .8rem; }
+.pl-unit input { flex: 1; min-width: 0; }
+.pl-note { font-size: .76rem; color: var(--text-dim); line-height: 1.45; margin: 8px 0 0; }
+.pl-note b { color: #fff; }
+.pl-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 18px 0 6px; }
+.pl-head b { font-size: 1.05rem; color: #fff; }
+.pl-head span { font-size: .72rem; color: var(--text-dim); text-align: right; }
+.pl-legend { display: flex; align-items: center; gap: 6px; font-size: .68rem; color: var(--text-dim); margin-bottom: 8px; }
+.pl-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-left: 6px; }
+.pl-legend i.ndl, .pl-track i.ndl { background: linear-gradient(90deg, #3fb6ff, #6fe3ff); }
+.pl-legend i.gas, .pl-track i.gas { background: linear-gradient(90deg, #ffb347, #ffd27a); }
+.pl-bars { display: grid; gap: 4px; }
+.pl-row { display: grid; grid-template-columns: 44px 1fr 62px; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 10px; border: 1px solid transparent; background: rgba(255,255,255,.03); color: inherit; font: inherit; text-align: left; cursor: pointer; width: 100%; }
+.pl-row.sel { border-color: var(--accent); background: rgba(80,200,255,.08); }
+.pl-row.off { grid-template-columns: 44px 1fr; cursor: default; opacity: .55; }
+.pl-d { font-weight: 800; font-size: .82rem; color: #fff; }
+.pl-track { height: 10px; border-radius: 999px; background: rgba(255,255,255,.06); overflow: hidden; }
+.pl-track i { display: block; height: 100%; border-radius: 999px; }
+.pl-t { text-align: right; font-size: .72rem; color: var(--text-dim); }
+.pl-t b { font-size: .95rem; color: #fff; }
+.pl-off { font-size: .72rem; color: var(--text-dim); }
+.pl-detail { margin-top: 14px; padding: 14px; border-radius: 16px; background: rgba(255,255,255,.05); border: 1px solid var(--glass-edge); }
+.pl-detail .pl-head { margin-top: 0; }
+.pl-detail p { font-size: .82rem; color: var(--text-dim); line-height: 1.5; margin: 8px 0; }
+.pl-detail p b { color: #fff; }
+.pl-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 6px; }
+.pl-facts div { padding: 8px 6px; border-radius: 10px; background: rgba(255,255,255,.04); text-align: center; }
+.pl-facts b { display: block; color: #fff; font-size: .95rem; }
+.pl-facts small { font-size: .6rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .08em; }
+.pl-time { margin-top: 12px; }
+.pl-detail .pl-warn { color: #ff8a93; font-weight: 600; }
+.pl-detail .pl-ok { color: #6fe3b0; font-weight: 600; }
+.pl-foot { font-size: .64rem; color: var(--text-dim); text-align: center; margin-top: 14px; line-height: 1.4; opacity: .8; }
 .cl-group { margin-bottom: 10px; }
 .cl-group-h { display: flex; justify-content: space-between; font-size: .64rem; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; color: var(--accent); margin: 12px 4px 2px; }
 .cl-group-h span { color: var(--text-dim); letter-spacing: .04em; }
