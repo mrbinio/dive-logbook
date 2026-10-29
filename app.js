@@ -336,6 +336,7 @@ function showApp(user) {
   subscribeGear();
   subscribeReminders();
   collectSignedRequests();
+  openTabOnStart();
 }
 
 function hideApp() {

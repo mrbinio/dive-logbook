@@ -24,11 +24,33 @@ function setPushOn(on) {
   pushOn = on;
   if (was !== null && was !== on && document.getElementById('panel-home')?.classList.contains('active')) renderHome();
 }
+// Notifications open a tab: ?tab=… in the url, or a message from sw.js when the app is already open
+function openTabFromUrl(url) {
+  const tab = new URL(url, location.href).searchParams.get('tab');
+  if (tab && document.getElementById('panel-' + tab)) switchTab(tab);
+}
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.type === 'open') openTabFromUrl(e.data.url); });
+}
+function openTabOnStart() {
+  if (!new URLSearchParams(location.search).has('tab')) return;
+  openTabFromUrl(location.href);
+  history.replaceState(null, '', location.pathname);
+}
+// The icon badge shows overdue reminders; the server keeps it up to date between visits
+function syncAppBadge() {
+  if (!navigator.setAppBadge || typeof gear === 'undefined') return;
+  const n = DiveTools.dueItems(gear, reminders).filter(x => x.left <= 0).length;
+  (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {});
+}
 function homePushTile() {
+  syncAppBadge();
   if (!pushSupported() || (isIOS() && !isStandalone()) || Notification.permission === 'denied') return '';
   if (pushOn === null) {
-    currentSubscription().catch(() => null).then(s => {
+    currentSubscription().catch(() => null).then(async s => {
       pushOn = !!s;
+      // Keep the time zone current, so reminders arrive at the right local hour when travelling
+      if (s) pushCol().doc(await subDocId(s)).set({ lang, tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Stockholm' }, { merge: true }).catch(() => {});
       if (!s && document.getElementById('panel-home')?.classList.contains('active')) renderHome();
     });
     return '';
