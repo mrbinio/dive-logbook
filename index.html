@@ -612,13 +612,12 @@
       <div class="tpl-row"><span id="tpl-l">Ready-made lists:</span>
         <button class="chip-btn" onclick="applyTripTemplate('tropic')" id="tpl-tropic">Tropics · wrecks · boat</button>
         <button class="chip-btn" onclick="applyTripTemplate('cold')" id="tpl-cold">Cold water · drysuit</button>
+        <button class="chip-btn" onclick="applyTripTemplate('wash')" id="tpl-wash">Toiletries · clothes</button>
         <span id="saved-lists"></span>
         <button class="chip-btn chip-save" onclick="saveListAs()" id="tpl-save">Save as my list</button></div>
       <div id="cl-personal-items"></div>
       <div style="display:flex;gap:6px;margin-top:6px;">
-        <select id="cl-new-sec" class="edit-input sec-select">
-          <option value="">—</option><option value="docs">Docs</option><option value="gear">Gear</option><option value="boat">Boat</option>
-          <option value="health">Health</option><option value="tech">Tech</option><option value="cold">Cold</option></select>
+        <select id="cl-new-sec" class="edit-input sec-select"></select>
         <input type="text" id="cl-new-personal" class="edit-input" style="flex:1;" placeholder="Add personal item..." onkeydown="if(event.key==='Enter')addPersonalItem()">
         <button onclick="addPersonalItem()" style="background:#8b5cf6;border:none;border-radius:8px;padding:6px 14px;color:#fff;font-weight:700;cursor:pointer;font-size:0.8rem;">+</button>
       </div>

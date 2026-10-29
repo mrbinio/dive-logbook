@@ -8,7 +8,8 @@ let currentTrip = null;
 
 const TRIP_SECTIONS = [
   ['docs', 'Dokumenty', 'Documents'], ['gear', 'Sprzęt nurkowy', 'Dive gear'], ['boat', 'Na łódź i słońce', 'Boat & sun'],
-  ['health', 'Zdrowie', 'Health'], ['tech', 'Elektronika', 'Electronics'], ['cold', 'Zimna woda', 'Cold water'], ['', 'Moje rzeczy', 'My things'],
+  ['health', 'Zdrowie', 'Health'], ['tech', 'Elektronika', 'Electronics'], ['cold', 'Zimna woda', 'Cold water'],
+  ['wash', 'Kosmetyczka', 'Toiletries'], ['clothes', 'Ubrania', 'Clothes'], ['', 'Moje rzeczy', 'My things'],
 ];
 // [section, Polish, English]. "sprawdź" items are things to verify, not facts.
 const TRIP_TEMPLATES = {
@@ -58,6 +59,31 @@ const TRIP_TEMPLATES = {
     ['gear', 'Zestaw naprawczy: o-ringi, pasek do maski', 'Save-a-dive kit: o-rings, mask strap'],
   ] },
 };
+TRIP_TEMPLATES.wash = { pl: 'Kosmetyczka · ubrania', en: 'Toiletries · clothes', items: [
+  ['wash', 'Szczoteczka + pasta do zębów', 'Toothbrush + toothpaste'],
+  ['wash', 'Nić dentystyczna', 'Dental floss'],
+  ['wash', 'Szampon + odżywka (po słonej wodzie)', 'Shampoo + conditioner (after salt water)'],
+  ['wash', 'Żel pod prysznic', 'Shower gel'],
+  ['wash', 'Dezodorant', 'Deodorant'],
+  ['wash', 'Maszynka / golarka + pianka', 'Razor / shaver + foam'],
+  ['wash', 'Grzebień / szczotka', 'Comb / brush'],
+  ['wash', 'Balsam po opalaniu (aloes)', 'After-sun (aloe)'],
+  ['wash', 'Pomadka z filtrem', 'Lip balm with SPF'],
+  ['wash', 'Krem nawilżający', 'Moisturiser'],
+  ['wash', 'Obcinaczka do paznokci', 'Nail clippers'],
+  ['wash', 'Patyczki do uszu', 'Cotton buds'],
+  ['wash', 'Chusteczki nawilżane', 'Wet wipes'],
+  ['wash', 'Płyny max 100 ml w przezroczystej torebce (bagaż podręczny)', 'Liquids max 100 ml in a clear bag (cabin bag)'],
+  ['clothes', 'Bielizna i skarpetki (na każdy dzień + zapas)', 'Underwear and socks (one per day + spare)'],
+  ['clothes', 'Koszulki', 'T-shirts'],
+  ['clothes', 'Szorty', 'Shorts'],
+  ['clothes', 'Długie spodnie + bluza (samolot, wieczór)', 'Long trousers + hoodie (plane, evenings)'],
+  ['clothes', 'Kąpielówki × 2', 'Swimwear × 2'],
+  ['clothes', 'Klapki', 'Flip-flops'],
+  ['clothes', 'Buty na ląd', 'Shoes for land'],
+  ['clothes', 'Kurtka przeciwdeszczowa', 'Rain jacket'],
+  ['clothes', 'Piżama', 'Sleepwear'],
+] };
 // Coron wrecks and sites — depths are approximate, confirm with the dive centre
 const PLAN_PRESETS = {
   coron: [['Akitsushima', 38], ['Irako', 43], ['Kogyo Maru', 34], ['Okikawa Maru', 26], ['Olympia Maru', 30], ['Morazan Maru', 25],
@@ -133,8 +159,17 @@ async function applyTripTemplate(key) {
   showToast(TL(`Dodano ${added} pozycji`, `Added ${added} items`));
 }
 
+// Section picker next to "Add personal item", in the current language
+function fillSectionSelect() {
+  const sel = document.getElementById('cl-new-sec');
+  if (!sel) return;
+  const keep = sel.value;
+  sel.innerHTML = TRIP_SECTIONS.map(([key, pl, en]) => `<option value="${key}">${key ? (lang === 'pl' ? pl : en) : '—'}</option>`).join('');
+  sel.value = keep;
+}
 // Personal list grouped by section; original indexes keep toggle/remove working
 function personalItemsHTML(pers) {
+  fillSectionSelect();
   const groups = TRIP_SECTIONS.map(([key, pl, en]) => ({ key, title: lang === 'pl' ? pl : en,
     items: pers.map((item, i) => ({ item, i })).filter(x => (x.item.sec || '') === key) })).filter(g => g.items.length);
   const known = new Set(TRIP_SECTIONS.map(s => s[0]));
