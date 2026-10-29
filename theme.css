@@ -659,6 +659,10 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 .leg b { display: block; color: #fff; font-size: .86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .leg small { display: block; color: var(--text-dim); font-size: .74rem; margin-top: 2px; }
 .leg em { display: inline-block; font-style: normal; font-size: .68rem; font-weight: 700; margin: 5px 6px 0 0; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.06); color: var(--text-dim); }
+.leg .leg-tag { display: inline-block; font: inherit; font-size: .68rem; font-weight: 700; margin: 5px 6px 0 0; padding: 2px 8px; border-radius: 999px; border: none; background: rgba(120,200,255,.1); color: var(--accent); text-decoration: none; cursor: pointer; }
+.alt-row { display: flex; gap: 6px; text-transform: none; letter-spacing: 0; }
+.alt-row input { flex: 1; min-width: 0; }
+.alt-row .btn-ghost { white-space: nowrap; font-size: .78rem; padding: 0 12px; }
 .leg em.leg-ok { background: rgba(80,220,160,.12); color: #6fe3b0; }
 .leg em.leg-warn { background: rgba(255,92,104,.12); color: #ff8a93; }
 .legs-add summary { cursor: pointer; color: var(--accent); font-size: .8rem; font-weight: 700; padding: 6px 0; list-style: none; }

@@ -141,6 +141,65 @@ function flightInfo(t, after = Date.now()) {
   const f = Date.parse(leg.dep);
   return { leg, flight: f, last18: f - 18 * 3600e3, last24: f - 24 * 3600e3 };
 }
+// Highest point of the driving route between two place names:
+// Open-Meteo geocoding → OSRM route → Open-Meteo elevation every ~3 km (free, no key)
+async function routeMaxAltitude(from, to) {
+  const getJSON = async u => { const r = await fetch(u); if (!r.ok) throw new Error(r.status); return r.json(); };
+  const place = async name => {
+    const j = await getJSON(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=${lang}`);
+    if (!j.results || !j.results.length) throw new Error(TL(`Nie znam miejsca „${name}”`, `Unknown place "${name}"`));
+    return j.results[0];
+  };
+  const [a, b] = await Promise.all([place(from), place(to)]);
+  const route = await getJSON(`https://router.project-osrm.org/route/v1/driving/${a.longitude},${a.latitude};${b.longitude},${b.latitude}?overview=full&geometries=geojson`);
+  if (!route.routes || !route.routes.length) throw new Error(TL('Nie znalazłem trasy samochodowej', 'No driving route found'));
+  const line = route.routes[0].geometry.coordinates;
+  const km = route.routes[0].distance / 1000;
+  const step = Math.max(3, km / 900);   // at most ~900 samples (9 requests)
+  const pts = [line[0]];
+  let acc = 0;
+  for (let i = 1; i < line.length; i++) {
+    const [x1, y1] = line[i - 1], [x2, y2] = line[i];
+    acc += Math.hypot((x2 - x1) * Math.cos(y1 * Math.PI / 180), y2 - y1) * 111.2;
+    if (acc >= step) { pts.push(line[i]); acc = 0; }
+  }
+  pts.push(line[line.length - 1]);
+  let best = { alt: -1 };
+  for (let i = 0; i < pts.length; i += 100) {
+    const ch = pts.slice(i, i + 100);
+    const j = await getJSON(`https://api.open-meteo.com/v1/elevation?latitude=${ch.map(p => p[1].toFixed(4)).join(',')}&longitude=${ch.map(p => p[0].toFixed(4)).join(',')}`);
+    (j.elevation || []).forEach((e, k) => { if (e > best.alt) best = { alt: Math.round(e), lat: ch[k][1], lon: ch[k][0] }; });
+  }
+  return Object.assign(best, { km: Math.round(km) });
+}
+// "Calculate from the route" button in the add-leg form
+async function calcLegAlt() {
+  const v = id => ((document.getElementById(id) || {}).value || '').trim();
+  if (!v('leg-from') || !v('leg-to')) { showToast(TL('Wpisz najpierw skąd i dokąd', 'Fill in from and to first')); return; }
+  const btn = document.getElementById('leg-alt-calc');
+  btn.disabled = true; btn.textContent = TL('Liczę trasę…', 'Checking the route…');
+  try {
+    const r = await routeMaxAltitude(v('leg-from'), v('leg-to'));
+    document.getElementById('leg-alt').value = r.alt;
+    document.getElementById('leg-alt').dataset.calc = JSON.stringify(r);
+    showToast(TL(`Najwyżej ${r.alt} m n.p.m. · ${r.km} km`, `Highest ${r.alt} m · ${r.km} km`));
+  } catch (e) { showToast('❌ ' + e.message); }
+  btn.disabled = false; btn.textContent = TL('📍 Oblicz z trasy', '📍 Calculate from route');
+}
+// The same for a car leg already on the list
+async function calcSavedLegAlt(i) {
+  const leg = (currentTrip.legs || [])[i];
+  if (!leg) return;
+  if (!leg.from || !leg.to) { showToast(TL('Ten odcinek nie ma „skąd” i „dokąd”', 'This leg has no from / to')); return; }
+  showToast(TL('Liczę trasę…', 'Checking the route…'));
+  try {
+    const r = await routeMaxAltitude(leg.from, leg.to);
+    const legs = currentTrip.legs.slice();
+    legs[i] = Object.assign({}, leg, { alt: r.alt, km: r.km, top: [r.lat, r.lon] });
+    await tripRef().update({ legs });
+    showToast(TL(`Najwyżej ${r.alt} m n.p.m. · ${r.km} km`, `Highest ${r.alt} m · ${r.km} km`));
+  } catch (e) { showToast('❌ ' + e.message); }
+}
 const sameLeg = (a, b) => !!a && !!b && a.dep === b.dep && a.mode === b.mode && a.to === b.to;
 const legName = l => [l.from, l.to].filter(Boolean).map(esc).join(' → ') || TL(LEG_MODES[l.mode][1], LEG_MODES[l.mode][2]);
 function renderLegs() {
@@ -152,7 +211,10 @@ function renderLegs() {
     const tags = [];
     if (arr && sameLeg(arr.leg, l)) tags.push(`<em class="leg-ok">🤿 ${TL('na miejscu', 'arrival')}</em>`);
     if (fi && sameLeg(fi.leg, l)) tags.push(`<em class="leg-warn">${TL('ostatnie wynurzenie', 'last surfacing')} ${fmtDT(fi.last18)}</em>`);
-    if (l.mode === 'car' && l.alt) tags.push(`<em>${TL('do', 'up to')} ${+l.alt} m n.p.m.</em>`);
+    if (l.mode === 'car' && l.alt != null && l.alt !== '') {
+      const txt = `${TL('najwyżej', 'highest')} ${+l.alt} m n.p.m.${l.km ? ' · ' + l.km + ' km' : ''}`;
+      tags.push(l.top ? `<a class="leg-tag" href="https://www.openstreetmap.org/?mlat=${l.top[0]}&mlon=${l.top[1]}#map=11/${l.top[0]}/${l.top[1]}" target="_blank" rel="noopener">⛰ ${txt}</a>` : `<em>⛰ ${txt}</em>`);
+    } else if (l.mode === 'car' && !l.legacy) tags.push(`<button class="leg-tag" onclick="calcSavedLegAlt(${l.i})">📍 ${TL('Sprawdź wysokość trasy', 'Check road altitude')}</button>`);
     return `<div class="leg"><span class="leg-ic">${m[0]}</span><div><b>${legName(l)}</b>
       <small>${fmtDT(Date.parse(l.dep))}${isNaN(arrMs) ? '' : ' → ' + fmtDT(arrMs)}</small>${tags.join('')}</div>
       <button class="rem-del" onclick="removeLeg(${l.legacy ? -1 : l.i})" aria-label="Delete">✕</button></div>`;
@@ -168,8 +230,9 @@ function renderLegs() {
       <input id="leg-to" class="edit-input" placeholder="${TL('Dokąd, np. Cebu', 'To, e.g. Cebu')}">
       <label><span>${TL('Wyjazd / odlot', 'Departure')}</span><input type="datetime-local" id="leg-dep" class="edit-input"></label>
       <label><span>${TL('Przyjazd / przylot', 'Arrival')}</span><input type="datetime-local" id="leg-arr" class="edit-input"></label>
-      <label id="leg-alt-w" class="full" style="display:none"><span>${TL('Najwyższy punkt trasy (m n.p.m., jeśli wiesz)', 'Highest point of the road (m above sea level, if known)')}</span>
-        <input type="number" id="leg-alt" class="edit-input" inputmode="numeric" placeholder="${TL('np. 520 — sprawdź na mapie', 'e.g. 520 — check a map')}"></label>
+      <label id="leg-alt-w" class="full" style="display:none"><span>${TL('Najwyższy punkt trasy (m n.p.m.)', 'Highest point of the road (m)')}</span>
+        <span class="alt-row"><input type="number" id="leg-alt" class="edit-input" inputmode="numeric" placeholder="${TL('policzę sam', 'auto')}" oninput="delete this.dataset.calc">
+        <button type="button" id="leg-alt-calc" class="btn-ghost" onclick="calcLegAlt()">${TL('📍 Oblicz z trasy', '📍 Calculate from route')}</button></span></label>
       <button class="btn-solid full" onclick="addLeg()">+ ${TL('Dodaj odcinek', 'Add leg')}</button>`;
   }
 }
@@ -178,7 +241,18 @@ async function addLeg() {
   const leg = { mode: v('leg-mode') || 'plane', from: v('leg-from').trim(), to: v('leg-to').trim(), dep: v('leg-dep'), arr: v('leg-arr') };
   if (!leg.dep) { showToast(TL('Podaj datę i godzinę wyjazdu', 'Add the departure date and time')); return; }
   if (leg.arr && leg.arr < leg.dep) { showToast(TL('Przyjazd jest przed wyjazdem', 'Arrival is before departure')); return; }
-  if (leg.mode === 'car' && v('leg-alt')) leg.alt = Math.round(+v('leg-alt'));
+  if (leg.mode === 'car') {
+    const altEl = document.getElementById('leg-alt');
+    let calc = altEl && altEl.dataset.calc ? JSON.parse(altEl.dataset.calc) : null;
+    // No altitude typed: work it out from the route, so a mountain road is never missed
+    if (!v('leg-alt') && leg.from && leg.to) {
+      showToast(TL('Liczę wysokość trasy…', 'Checking the road altitude…'));
+      calc = await routeMaxAltitude(leg.from, leg.to).catch(e => { showToast('❌ ' + e.message); return null; });
+    }
+    if (calc) Object.assign(leg, { alt: calc.alt, km: calc.km, top: [calc.lat, calc.lon] });
+    else if (v('leg-alt')) leg.alt = Math.round(+v('leg-alt'));
+    if (altEl) delete altEl.dataset.calc;
+  }
   await tripRef().update({ legs: (currentTrip.legs || []).concat([leg]) });
   ['leg-from', 'leg-to', 'leg-dep', 'leg-arr', 'leg-alt'].forEach(id => { const x = document.getElementById(id); if (x) x.value = ''; });
   // the next leg usually starts where this one ended
