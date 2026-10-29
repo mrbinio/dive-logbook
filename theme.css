@@ -668,6 +668,13 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 .legs-add summary { cursor: pointer; color: var(--accent); font-size: .8rem; font-weight: 700; padding: 6px 0; list-style: none; }
 .legs-add summary::-webkit-details-marker { display: none; }
 .legs-add .trip-fields { margin-top: 8px; }
+/* iOS collapses empty date/time inputs and lets them overflow a grid cell */
+.trip-fields input[type="date"], .trip-fields input[type="datetime-local"] {
+  -webkit-appearance: none; appearance: none; display: block; width: 100%; min-width: 0; max-width: 100%;
+  min-height: 48px; box-sizing: border-box; text-align: left;
+}
+.trip-fields input::-webkit-date-and-time-value { text-align: left; min-height: 1.3em; }
+.dt-input.need { border-color: #ff5c68 !important; box-shadow: 0 0 0 3px rgba(255,92,104,.25); }
 .legs-add .btn-solid.full, .legs-add .full { grid-column: 1 / -1; }
 .trip-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 8px; margin: 10px 0 4px; }
 .trip-sum > div { padding: 12px 8px; text-align: center; border-radius: var(--r-sm); background: rgba(255,255,255,.07); }

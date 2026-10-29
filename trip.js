@@ -228,8 +228,8 @@ function renderLegs() {
         ${Object.entries(LEG_MODES).map(([k, m]) => `<option value="${k}">${m[0]} ${TL(m[1], m[2])}</option>`).join('')}</select>
       <input id="leg-from" class="edit-input" placeholder="${TL('Skąd, np. Tokio', 'From, e.g. Tokyo')}">
       <input id="leg-to" class="edit-input" placeholder="${TL('Dokąd, np. Cebu', 'To, e.g. Cebu')}">
-      <label><span>${TL('Wyjazd / odlot', 'Departure')}</span><input type="datetime-local" id="leg-dep" class="edit-input"></label>
-      <label><span>${TL('Przyjazd / przylot', 'Arrival')}</span><input type="datetime-local" id="leg-arr" class="edit-input"></label>
+      <label class="full"><span>${TL('Wyjazd / odlot', 'Departure')}</span><input type="datetime-local" id="leg-dep" class="edit-input dt-input"></label>
+      <label class="full"><span>${TL('Przyjazd / przylot (opcjonalnie)', 'Arrival (optional)')}</span><input type="datetime-local" id="leg-arr" class="edit-input dt-input"></label>
       <label id="leg-alt-w" class="full" style="display:none"><span>${TL('Najwyższy punkt trasy (m n.p.m.)', 'Highest point of the road (m)')}</span>
         <span class="alt-row"><input type="number" id="leg-alt" class="edit-input" inputmode="numeric" placeholder="${TL('policzę sam', 'auto')}" oninput="delete this.dataset.calc">
         <button type="button" id="leg-alt-calc" class="btn-ghost" onclick="calcLegAlt()">${TL('📍 Oblicz z trasy', '📍 Calculate from route')}</button></span></label>
@@ -239,7 +239,12 @@ function renderLegs() {
 async function addLeg() {
   const v = id => (document.getElementById(id) || {}).value || '';
   const leg = { mode: v('leg-mode') || 'plane', from: v('leg-from').trim(), to: v('leg-to').trim(), dep: v('leg-dep'), arr: v('leg-arr') };
-  if (!leg.dep) { showToast(TL('Podaj datę i godzinę wyjazdu', 'Add the departure date and time')); return; }
+  if (!leg.dep) {
+    showToast(TL('Podaj datę i godzinę wyjazdu', 'Add the departure date and time'));
+    const dep = document.getElementById('leg-dep');
+    if (dep) { dep.classList.add('need'); dep.focus(); setTimeout(() => dep.classList.remove('need'), 2500); }
+    return;
+  }
   if (leg.arr && leg.arr < leg.dep) { showToast(TL('Przyjazd jest przed wyjazdem', 'Arrival is before departure')); return; }
   if (leg.mode === 'car') {
     const altEl = document.getElementById('leg-alt');
@@ -253,7 +258,10 @@ async function addLeg() {
     else if (v('leg-alt')) leg.alt = Math.round(+v('leg-alt'));
     if (altEl) delete altEl.dataset.calc;
   }
-  await tripRef().update({ legs: (currentTrip.legs || []).concat([leg]) });
+  try {
+    await tripRef().update({ legs: (currentTrip.legs || []).concat([leg]) });
+  } catch (e) { showToast('❌ ' + e.message); return; }
+  showToast(TL('Dodano odcinek ✓', 'Leg added ✓'));
   ['leg-from', 'leg-to', 'leg-dep', 'leg-arr', 'leg-alt'].forEach(id => { const x = document.getElementById(id); if (x) x.value = ''; });
   // the next leg usually starts where this one ended
   const from = document.getElementById('leg-from'); if (from) from.value = leg.to;
