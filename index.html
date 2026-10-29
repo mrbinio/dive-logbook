@@ -699,6 +699,21 @@
 <script src="sharecard.js"></script>
 <script src="badges.js"></script>
 <script src="wrapped.js"></script>
-<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');</script>
+<script>
+// Updates: look for a new sw.js on start and whenever the app comes back to the screen.
+// A new version activates at once (skipWaiting), takes over this page and we reload.
+if ('serviceWorker' in navigator) {
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloading) return;
+    reloading = true;
+    location.reload();
+  });
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+  });
+}
+</script>
 </body>
 </html>
