@@ -651,6 +651,20 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 .trip-info p { margin: 6px 0; font-size: .86rem; color: var(--text-dim); line-height: 1.45; }
 .trip-info b { color: #fff; }
 .trip-info:empty { display: none; }
+.trip-legs { margin: 4px 0 12px; }
+.legs-h { font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: var(--text-dim); margin-bottom: 6px; }
+.leg { display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px; border-radius: 12px; background: rgba(255,255,255,.04); margin-bottom: 6px; }
+.leg-ic { font-size: 1.1rem; line-height: 1.3; }
+.leg > div { flex: 1; min-width: 0; }
+.leg b { display: block; color: #fff; font-size: .86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.leg small { display: block; color: var(--text-dim); font-size: .74rem; margin-top: 2px; }
+.leg em { display: inline-block; font-style: normal; font-size: .68rem; font-weight: 700; margin: 5px 6px 0 0; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.06); color: var(--text-dim); }
+.leg em.leg-ok { background: rgba(80,220,160,.12); color: #6fe3b0; }
+.leg em.leg-warn { background: rgba(255,92,104,.12); color: #ff8a93; }
+.legs-add summary { cursor: pointer; color: var(--accent); font-size: .8rem; font-weight: 700; padding: 6px 0; list-style: none; }
+.legs-add summary::-webkit-details-marker { display: none; }
+.legs-add .trip-fields { margin-top: 8px; }
+.legs-add .btn-solid.full, .legs-add .full { grid-column: 1 / -1; }
 .trip-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 8px; margin: 10px 0 4px; }
 .trip-sum > div { padding: 12px 8px; text-align: center; border-radius: var(--r-sm); background: rgba(255,255,255,.07); }
 .trip-sum b { display: block; color: #fff; font-size: 1.4rem; font-weight: 300; letter-spacing: -.03em; }

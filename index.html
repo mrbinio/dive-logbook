@@ -590,7 +590,11 @@
           <input type="text" id="cl-site" class="edit-input" placeholder="e.g. Coron" onchange="saveTripMeta()"></label>
         <label><span id="tr-from-l">From</span><input type="date" id="cl-next-date" class="edit-input" onchange="saveTripMeta()"></label>
         <label><span id="tr-to-l">To</span><input type="date" id="cl-end" class="edit-input" onchange="saveTripMeta()"></label>
-        <label class="full"><span id="tr-flight-l">Flight home</span><input type="datetime-local" id="cl-flight" class="edit-input" onchange="saveTripMeta()"></label>
+      </div>
+      <div class="trip-legs">
+        <div class="legs-h" id="tr-flight-l">Route</div>
+        <div id="legs-list"></div>
+        <details class="legs-add"><summary data-i18n="legAdd">+ Add flight / drive</summary><div id="legs-form" class="trip-fields"></div></details>
       </div>
       <div id="trip-info" class="trip-info"></div>
       <div id="trip-summary"></div>

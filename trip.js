@@ -1,5 +1,8 @@
 // Trip planning on top of the shared checklist (trips/{id}):
-//  - destination, dates and the flight home (trip.site, trip.date = start, trip.end, trip.flight)
+//  - destination and dates (trip.site, trip.date = start, trip.end)
+//  - the route (trip.legs = [{mode: plane|car|ferry, from, to, dep, arr, alt}]): when you arrive and
+//    may dive, and the last time to surface before a flight or a high mountain road on the way back.
+//    The older single field trip.flight is shown as one plane leg.
 //  - packing templates that add sectioned items to my personal list
 //  - a dive plan (trip.plan) ticked automatically by dives logged during the trip
 //  - Home tile: countdown / day N of M / last dive before the flight / trip summary
@@ -107,10 +110,85 @@ function planDone(item, list) {
   const n = norm(item.name);
   return !!n && list.some(d => { const s = norm(d.site); return s && (s.includes(n) || n.includes(s)); });
 }
-function flightInfo(trip) {
-  const f = Date.parse(trip.flight || '');
-  if (isNaN(f)) return null;
-  return { flight: f, last18: f - 18 * 3600e3, last24: f - 24 * 3600e3 };
+// --- route ---
+const LEG_MODES = { plane: ['✈️', 'Samolot', 'Plane'], car: ['🚗', 'Auto', 'Car'], ferry: ['⛴️', 'Prom / łódź', 'Ferry / boat'] };
+const ALT_LIMIT = 300;   // m above sea level: a road this high after diving counts like a flight
+function tripLegs(t) {
+  const legs = (t.legs || []).map((l, i) => Object.assign({}, l, { i }));
+  if (t.flight && !legs.some(l => l.dep === t.flight)) legs.push({ mode: 'plane', from: '', to: TL('dom', 'home'), dep: t.flight, legacy: true });
+  return legs.filter(l => !isNaN(Date.parse(l.dep))).sort((a, b) => Date.parse(a.dep) - Date.parse(b.dep));
+}
+// A plane, or a car over a high road, puts you at altitude
+const legAtAltitude = l => l.mode === 'plane' || (l.mode === 'car' && +l.alt >= ALT_LIMIT);
+// On the way back: after the middle of the trip, or after a dive of this trip
+function isReturnLeg(t, l) {
+  const dep = Date.parse(l.dep), s = parseDay(t.date), e = parseDay(t.end);
+  if (s != null && e != null && dep > (s + e + dayMs) / 2) return true;
+  return tripDives(t).some(d => { const x = DiveTools.endOf(d); return x && x.t < dep; });
+}
+// Arrival at the destination: the last leg out
+function arrivalInfo(t) {
+  const out = tripLegs(t).filter(l => !isReturnLeg(t, l));
+  if (!out.length) return null;
+  const leg = out[out.length - 1];
+  const at = Date.parse(leg.arr || '');
+  return { leg, at: isNaN(at) ? Date.parse(leg.dep) : at, approx: isNaN(at) };
+}
+// First flight / high road on the way back after `after`, with the last time to surface
+function flightInfo(t, after = Date.now()) {
+  const leg = tripLegs(t).find(l => legAtAltitude(l) && isReturnLeg(t, l) && Date.parse(l.dep) > after);
+  if (!leg) return null;
+  const f = Date.parse(leg.dep);
+  return { leg, flight: f, last18: f - 18 * 3600e3, last24: f - 24 * 3600e3 };
+}
+const sameLeg = (a, b) => !!a && !!b && a.dep === b.dep && a.mode === b.mode && a.to === b.to;
+const legName = l => [l.from, l.to].filter(Boolean).map(esc).join(' → ') || TL(LEG_MODES[l.mode][1], LEG_MODES[l.mode][2]);
+function renderLegs() {
+  const t = currentTrip, list = document.getElementById('legs-list');
+  if (!t || !list) return;
+  const arr = arrivalInfo(t), fi = flightInfo(t);
+  list.innerHTML = tripLegs(t).map(l => {
+    const m = LEG_MODES[l.mode] || LEG_MODES.plane, arrMs = Date.parse(l.arr || '');
+    const tags = [];
+    if (arr && sameLeg(arr.leg, l)) tags.push(`<em class="leg-ok">🤿 ${TL('na miejscu', 'arrival')}</em>`);
+    if (fi && sameLeg(fi.leg, l)) tags.push(`<em class="leg-warn">${TL('ostatnie wynurzenie', 'last surfacing')} ${fmtDT(fi.last18)}</em>`);
+    if (l.mode === 'car' && l.alt) tags.push(`<em>${TL('do', 'up to')} ${+l.alt} m n.p.m.</em>`);
+    return `<div class="leg"><span class="leg-ic">${m[0]}</span><div><b>${legName(l)}</b>
+      <small>${fmtDT(Date.parse(l.dep))}${isNaN(arrMs) ? '' : ' → ' + fmtDT(arrMs)}</small>${tags.join('')}</div>
+      <button class="rem-del" onclick="removeLeg(${l.legacy ? -1 : l.i})" aria-label="Delete">✕</button></div>`;
+  }).join('') || `<p class="muted">${TL('Dodaj loty, przejazdy autem i promy — policzę, kiedy możesz nurkować i do kiedy się wynurzyć przed powrotem.',
+    'Add flights, drives and ferries — I will work out when you can dive and when to surface before going home.')}</p>`;
+  const form = document.getElementById('legs-form');
+  if (form && form.dataset.lang !== lang) {
+    form.dataset.lang = lang;
+    form.innerHTML = `
+      <select id="leg-mode" class="edit-input full" onchange="document.getElementById('leg-alt-w').style.display = this.value === 'car' ? '' : 'none'">
+        ${Object.entries(LEG_MODES).map(([k, m]) => `<option value="${k}">${m[0]} ${TL(m[1], m[2])}</option>`).join('')}</select>
+      <input id="leg-from" class="edit-input" placeholder="${TL('Skąd, np. Tokio', 'From, e.g. Tokyo')}">
+      <input id="leg-to" class="edit-input" placeholder="${TL('Dokąd, np. Cebu', 'To, e.g. Cebu')}">
+      <label><span>${TL('Wyjazd / odlot', 'Departure')}</span><input type="datetime-local" id="leg-dep" class="edit-input"></label>
+      <label><span>${TL('Przyjazd / przylot', 'Arrival')}</span><input type="datetime-local" id="leg-arr" class="edit-input"></label>
+      <label id="leg-alt-w" class="full" style="display:none"><span>${TL('Najwyższy punkt trasy (m n.p.m., jeśli wiesz)', 'Highest point of the road (m above sea level, if known)')}</span>
+        <input type="number" id="leg-alt" class="edit-input" inputmode="numeric" placeholder="${TL('np. 520 — sprawdź na mapie', 'e.g. 520 — check a map')}"></label>
+      <button class="btn-solid full" onclick="addLeg()">+ ${TL('Dodaj odcinek', 'Add leg')}</button>`;
+  }
+}
+async function addLeg() {
+  const v = id => (document.getElementById(id) || {}).value || '';
+  const leg = { mode: v('leg-mode') || 'plane', from: v('leg-from').trim(), to: v('leg-to').trim(), dep: v('leg-dep'), arr: v('leg-arr') };
+  if (!leg.dep) { showToast(TL('Podaj datę i godzinę wyjazdu', 'Add the departure date and time')); return; }
+  if (leg.arr && leg.arr < leg.dep) { showToast(TL('Przyjazd jest przed wyjazdem', 'Arrival is before departure')); return; }
+  if (leg.mode === 'car' && v('leg-alt')) leg.alt = Math.round(+v('leg-alt'));
+  await tripRef().update({ legs: (currentTrip.legs || []).concat([leg]) });
+  ['leg-from', 'leg-to', 'leg-dep', 'leg-arr', 'leg-alt'].forEach(id => { const x = document.getElementById(id); if (x) x.value = ''; });
+  // the next leg usually starts where this one ended
+  const from = document.getElementById('leg-from'); if (from) from.value = leg.to;
+}
+async function removeLeg(i) {
+  if (i < 0) return tripRef().update({ flight: '' });
+  const legs = (currentTrip.legs || []).slice();
+  legs.splice(i, 1);
+  await tripRef().update({ legs });
 }
 
 // --- checklist panel: trip header ---
@@ -119,14 +197,24 @@ function renderTripCard() {
   const t = currentTrip;
   if (!el || !t) return;
   const set = (id, v) => { const x = document.getElementById(id); if (x && document.activeElement !== x) x.value = v || ''; };
-  set('cl-site', t.site); set('cl-next-date', t.date); set('cl-end', t.end); set('cl-flight', t.flight);
+  set('cl-site', t.site); set('cl-next-date', t.date); set('cl-end', t.end);
   const s = parseDay(t.date), e = parseDay(t.end), now = todayMs();
   const lines = [];
   if (s != null && now < s) lines.push(`<b>${TL('Za', 'In')} ${Math.round((s - now) / dayMs)} ${TL('dni', 'days')}</b>${e ? ' · ' + (Math.round((e - s) / dayMs) + 1) + ' ' + TL('dni wyjazdu', 'days away') : ''}`);
   else if (s != null && e != null && now <= e) lines.push(`<b>${TL('Dzień', 'Day')} ${Math.round((now - s) / dayMs) + 1} ${TL('z', 'of')} ${Math.round((e - s) / dayMs) + 1}</b>`);
+  const arr = arrivalInfo(t);
+  if (arr && arr.at > Date.now() - 2 * dayMs) lines.push(`🤿 ${TL('Na miejscu', 'You arrive')}: <b>${arr.approx ? '~' : ''}${fmtDT(arr.at)}</b> (${legName(arr.leg)}). `
+    + TL('Po locie nie ma obowiązkowej przerwy przed nurkowaniem, ale po długiej podróży (zmęczenie, odwodnienie, jet lag) lepiej odpocząć i zacząć od łatwego nurkowania.',
+         'There is no required wait after flying before diving, but after a long trip (fatigue, dehydration, jet lag) rest first and start with an easy dive.'));
   const fi = flightInfo(t);
-  if (fi) lines.push(`${TL('Ostatnie nurkowanie najpóźniej', 'Last dive no later than')}: <b>${fmtDT(fi.last18)}</b> (18 h), ${TL('bezpieczniej', 'safer')} <b>${fmtDT(fi.last24)}</b> (24 h)`);
+  if (fi) {
+    const how = fi.leg.mode === 'car' ? TL(`przejazdem przez ${+fi.leg.alt} m n.p.m.`, `driving over ${+fi.leg.alt} m`) : TL('lotem', 'your flight');
+    lines.push(`${TL('Ostatnie wynurzenie przed', 'Last surfacing before')} ${how} (${legName(fi.leg)}): <b>${fmtDT(fi.last18)}</b> (18 h), ${TL('bezpieczniej', 'safer')} <b>${fmtDT(fi.last24)}</b> (24 h)`
+      + (fi.leg.mode === 'car' ? '. ' + TL('Wysoka droga po nurkowaniu działa jak lot — przyjmij ten sam odstęp albo sprawdź tabelę wysokościową / komputer.',
+        'A high road after diving works like a flight — keep the same gap or check altitude tables / your computer.') : ''));
+  }
   el.innerHTML = lines.map(l => `<p>${l}</p>`).join('');
+  renderLegs();
   renderTripPlan();
   renderTripSummary();
 }
@@ -134,7 +222,7 @@ function renderTripCard() {
 async function saveTripMeta() {
   if (!currentTripId) return;
   const v = id => (document.getElementById(id) || {}).value || '';
-  const upd = { site: v('cl-site'), date: v('cl-next-date'), end: v('cl-end'), flight: v('cl-flight') };
+  const upd = { site: v('cl-site'), date: v('cl-next-date'), end: v('cl-end') };
   if (upd.end && upd.date && upd.end < upd.date) { showToast(TL('Koniec wyjazdu jest przed początkiem', 'The trip ends before it starts')); return; }
   await tripRef().update(upd);
   if (typeof scheduleNotification === 'function') scheduleNotification(upd.date);
@@ -273,7 +361,7 @@ function homeTripTile() {
     const st = tripStats(t);
     body = `<b>${TL('dzień', 'day')} ${Math.round((now - s) / dayMs) + 1}${e ? ` ${TL('z', 'of')} ${Math.round((e - s) / dayMs) + 1}` : ''}</b>
       <span>${st.list.length} ${TL('nurkowań', 'dives')}${st.planTotal ? ` · ${TL('plan', 'plan')} ${st.planDone}/${st.planTotal}` : ''}</span>
-      ${fi && fi.flight > Date.now() && fi.flight - Date.now() < 4 * dayMs ? `<span class="trip-warn">${TL('Ostatnie nurkowanie do', 'Last dive by')} ${fmtDT(fi.last18)}</span>` : ''}`;
+      ${fi && fi.flight - Date.now() < 4 * dayMs ? `<span class="trip-warn">${TL('Ostatnie nurkowanie do', 'Last dive by')} ${fmtDT(fi.last18)}</span>` : ''}`;
   } else {
     if ((now - e) / dayMs > 14) return '';
     const st = tripStats(t);
@@ -282,13 +370,14 @@ function homeTripTile() {
   return `<section class="tile tile-trip" onclick="switchTab('checklist')"><small>✈︎ ${name}</small>${body}</section>`;
 }
 
-// Warn when a dive is logged too close to the flight home
+// Warn when a dive is logged too close to the next flight / high road
 function checkDiveVsFlight(dive) {
-  const fi = currentTrip && flightInfo(currentTrip);
-  if (!fi) return;
   const end = DiveTools.endOf(dive);
-  if (end && !end.estimated && end.t > fi.last18 && end.t < fi.flight) {
-    setTimeout(() => showToast(TL('⚠️ To nurkowanie kończy się mniej niż 18 h przed lotem do domu', '⚠️ This dive ends less than 18 h before your flight home')), 1800);
+  const fi = currentTrip && end && !end.estimated && flightInfo(currentTrip, end.t);
+  if (fi && end.t > fi.last18) {
+    setTimeout(() => showToast(fi.leg.mode === 'car'
+      ? TL(`⚠️ To nurkowanie kończy się mniej niż 18 h przed przejazdem przez ${+fi.leg.alt} m n.p.m.`, `⚠️ This dive ends less than 18 h before driving over ${+fi.leg.alt} m`)
+      : TL('⚠️ To nurkowanie kończy się mniej niż 18 h przed lotem', '⚠️ This dive ends less than 18 h before your flight')), 1800);
   }
 }
 

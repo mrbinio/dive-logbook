@@ -6,8 +6,9 @@ Every 15 minutes, for each user who turned notifications on:
   * reminders for gear service and important dates at 14 days, 3 days and on
     the day / overdue, sent between 08:00 and 21:00 in the user's time zone;
   * for the active trip: a countdown (14, 7, 3, 1 days and the first day),
-    the last time to surface before the flight home, and a summary the day
-    after the trip ends.
+    the last time to surface before a flight or a high mountain road on the
+    way back (trip.legs, or the older trip.flight), and a summary the day after
+    the trip ends.
 Every message carries the tab to open and the number of overdue reminders
 for the app icon badge.
 
@@ -42,9 +43,10 @@ TEXT = {
         'trip_b': 'Spakowane {p}/{n}{plan}. Zajrzyj do checklisty.', 'trip_plan': ' · w planie {n} miejsc',
         'trip_b_empty': 'Czas zrobić checklistę i plan nurkowań.',
         'trip_t0': '🤿 Dziś startuje {site}!', 'trip_b0': 'Udanych nurkowań! Loguj każde nurkowanie — odhaczy się w planie.',
-        'flight_t': '🛫 Lot {when}', 'flight_b': 'Ostatnie wynurzenie najpóźniej {deadline} (DAN: {h} h po nurkowaniu).',
+        'flight_t': '🛫 Lot {name}{when}', 'drive_t': '🚗 Przejazd {name}{when}',
+        'drive_b': 'Trasa do {alt} m n.p.m. działa jak lot. Ostatnie wynurzenie najpóźniej {deadline} ({h} h).', 'flight_b': 'Ostatnie wynurzenie najpóźniej {deadline} (DAN: {h} h po nurkowaniu).',
         'flight_b_late': 'Od teraz już bez nurkowania — do lotu zostało {left} h.',
-        'flight_warn_t': '⚠️ Zakaz lotu trwa dłużej niż do odlotu',
+        'flight_warn_t': '⚠️ Zakaz lotu trwa dłużej niż do wyjazdu',
         'flight_warn_b': 'Możesz lecieć dopiero {fly}, a lot jest {when}. Sprawdź plan.',
         'sum_t': '📊 {site} — podsumowanie', 'sum_b': '{n} {dives} · {hrs} h pod wodą · najgłębiej {depth} m ({deep}).',
         'dives': lambda n: 'nurkowanie' if n == 1 else 'nurkowania' if n % 10 in (2, 3, 4) and n % 100 not in (12, 13, 14) else 'nurkowań',
@@ -62,15 +64,17 @@ TEXT = {
         'trip_b': '{p}/{n} packed{plan}. Check your list.', 'trip_plan': ' · {n} sites planned',
         'trip_b_empty': 'Time to make your checklist and dive plan.',
         'trip_t0': '🤿 {site} starts today!', 'trip_b0': 'Have great dives! Log each one — it ticks off your plan.',
-        'flight_t': '🛫 Flight {when}', 'flight_b': 'Surface for the last time by {deadline} (DAN: {h} h after diving).',
+        'flight_t': '🛫 Flight {name}{when}', 'drive_t': '🚗 Drive {name}{when}',
+        'drive_b': 'A road up to {alt} m works like a flight. Surface for the last time by {deadline} ({h} h).', 'flight_b': 'Surface for the last time by {deadline} (DAN: {h} h after diving).',
         'flight_b_late': 'No more diving from now — {left} h to your flight.',
-        'flight_warn_t': '⚠️ No-fly time runs past your flight',
+        'flight_warn_t': '⚠️ No-fly time runs past your departure',
         'flight_warn_b': "You can fly from {fly}, but your flight is {when}. Check your plans.",
         'sum_t': '📊 {site} — summary', 'sum_b': '{n} {dives} · {hrs} h underwater · deepest {depth} m ({deep}).',
         'dives': lambda n: 'dive' if n == 1 else 'dives',
         'days': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     },
 }
+ALT_LIMIT = 300   # m: a road this high after diving counts like a flight (same as trip.js)
 EMOJI = {'service': '🔧', 'medical': '🩺', 'insurance': '🛡️', 'other': '📌'}
 
 
@@ -198,22 +202,37 @@ def trip_messages(db, uid, tx, now, dives, st, sent):
         elif days == 0:
             once('c0', {'title': tx['trip_t0'].format(site=site), 'body': tx['trip_b0'], 'tag': 'trip', 'url': APP_URL + '?tab=checklist'})
 
-    if t.get('flight'):
+    # Flights and high roads after diving on this trip (outbound legs come before any dive)
+    legs = list(t.get('legs') or [])
+    if t.get('flight') and not any(l.get('dep') == t['flight'] for l in legs):
+        legs.append({'mode': 'plane', 'dep': t['flight']})
+    trip_ends = [e for e, _ in (dive_end(d, now.tzinfo) for d in dives if start and parse_day(d.get('date')) and parse_day(d.get('date')) >= start) if e]
+    for leg in legs:
+        if not (leg.get('mode') == 'plane' or (leg.get('mode') == 'car' and num(leg.get('alt')) >= ALT_LIMIT)):
+            continue
         try:
-            flight = datetime.fromisoformat(t['flight']).replace(tzinfo=now.tzinfo)
+            dep = datetime.fromisoformat(leg.get('dep') or '').replace(tzinfo=now.tzinfo)
         except ValueError:
-            flight = None
-        if flight and timedelta(0) < flight - now <= timedelta(hours=48):
-            when = fmt_when(flight, tx)
-            if st and st['fly_at'] > flight:
-                once('fw' + t['flight'], {'title': tx['flight_warn_t'], 'body': tx['flight_warn_b'].format(fly=fmt_when(st['fly_at'], tx), when=when),
-                                          'tag': 'flight', 'url': APP_URL + '?tab=checklist'})
-            else:
-                hours = 24 if any(d.get('minNDL') == 0 for d in dives[:6]) else 18
-                deadline = flight - timedelta(hours=hours)
-                body = (tx['flight_b'].format(deadline=fmt_when(deadline, tx), h=hours) if now < deadline
-                        else tx['flight_b_late'].format(left=int((flight - now).total_seconds() // 3600)))
-                once('f' + t['flight'], {'title': tx['flight_t'].format(when=when), 'body': body, 'tag': 'flight', 'url': APP_URL + '?tab=checklist'})
+            continue
+        if not (timedelta(0) < dep - now <= timedelta(hours=48)) or not any(e < dep for e in trip_ends):
+            continue
+        when = fmt_when(dep, tx)
+        name = ' → '.join(x for x in (leg.get('from'), leg.get('to')) if x)
+        name = name + ' · ' if name else ''
+        key = leg['dep'] + (leg.get('mode') or '')
+        hours = 24 if any(d.get('minNDL') == 0 for d in dives[:6]) else 18
+        deadline = dep - timedelta(hours=hours)
+        if st and st['fly_at'] > dep:
+            once('fw' + key, {'title': tx['flight_warn_t'], 'body': tx['flight_warn_b'].format(fly=fmt_when(st['fly_at'], tx), when=when),
+                              'tag': 'flight', 'url': APP_URL + '?tab=checklist'})
+        elif leg.get('mode') == 'car':
+            once('f' + key, {'title': tx['drive_t'].format(name=name, when=when), 'tag': 'flight', 'url': APP_URL + '?tab=checklist',
+                             'body': tx['drive_b'].format(alt=int(num(leg.get('alt'))), deadline=fmt_when(deadline, tx), h=hours) if now < deadline
+                             else tx['flight_b_late'].format(left=int((dep - now).total_seconds() // 3600))})
+        else:
+            body = (tx['flight_b'].format(deadline=fmt_when(deadline, tx), h=hours) if now < deadline
+                    else tx['flight_b_late'].format(left=int((dep - now).total_seconds() // 3600)))
+            once('f' + key, {'title': tx['flight_t'].format(name=name, when=when), 'body': body, 'tag': 'flight', 'url': APP_URL + '?tab=checklist'})
 
     if start and end and (today - end).days == 1:
         on_trip = [d for d in dives if (lambda x: x and start <= x <= end)(parse_day(d.get('date')))]
