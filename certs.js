@@ -82,7 +82,7 @@ function certPortraitCache(uid) {
   try { certPortrait ? localStorage.setItem('ccPortrait:' + uid, certPortrait) : localStorage.removeItem('ccPortrait:' + uid); } catch (e) {}
 }
 function certPortraitPaint() {
-  document.querySelectorAll('.cc-portrait').forEach(p => p.innerHTML = certPortraitHTML());
+  document.querySelectorAll('.cc-portrait').forEach(p => { p.innerHTML = certPortraitHTML(); p.classList.toggle('cc-add', !certPortrait); });
   document.querySelectorAll('.cc-photo-btn b').forEach(b => b.textContent = certPortrait ? CL('Zmień zdjęcie', 'Change photo') : CL('Moje zdjęcie', 'My photo'));
 }
 function certLoadPortrait() {
@@ -96,6 +96,17 @@ function certLoadPortrait() {
     certPortraitCache(uid);
     certPortraitPaint();
   }).catch(() => {});
+}
+// Tapping the portrait on a card in the list picks the photo straight away
+function certPickPortrait(e) {
+  e.stopPropagation();
+  let i = document.getElementById('cc-pick');
+  if (!i) {
+    i = Object.assign(document.createElement('input'), { type: 'file', accept: 'image/*', id: 'cc-pick', hidden: true });
+    i.onchange = () => certSetPortrait(i);
+    document.body.appendChild(i);
+  }
+  i.click();
 }
 async function certSetPortrait(input) {
   const f = input.files && input.files[0];
@@ -140,7 +151,7 @@ function certCardHTML(c, anim, i, thick) {
         <b>${mark.slice(0, 4)}</b><i class="cc-ring"></i>
       </div>
       <div class="cc-body">
-        <div class="cc-portrait">${certPortraitHTML()}</div>
+        <div class="cc-portrait${certPortrait ? '' : ' cc-add'}"${thick ? '' : ' onclick="certPickPortrait(event)"'}>${certPortraitHTML()}</div>
         <div class="cc-fields">
           <div class="cc-level">${eng(esc(c.name))}</div>
           <dl>

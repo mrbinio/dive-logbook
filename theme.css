@@ -1196,3 +1196,6 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
   .cert-card-wrap { transform: none !important; }
   .cc-seal, .cc-front::after { animation: none; }
 }
+.cc-portrait { position: relative; }
+.cc-portrait.cc-add::after { content: '📷'; position: absolute; right: .8cqw; bottom: .8cqw; width: 5.6cqw; height: 5.6cqw; border-radius: 50%; display: grid; place-items: center;
+  font-size: 2.8cqw; background: rgba(0,0,0,.55); box-shadow: 0 0 0 .3cqw rgba(255,255,255,.6); }
