@@ -64,7 +64,7 @@ function certRating(name) {
   const n = String(name || '').toLowerCase();
   if (/nitrox|\bean|enriched/.test(n)) return { v: 'EANx', l: 'O₂ ≤ 40%' };
   // no depth limit printed on these cards
-  if (/trimix|\btec|technical|cave|jaskin|sidemount|advanced|\baow\b|zaawans|\*\*/.test(n)) return null;
+  if (/trimix|\btec|technical|cave|jaskin|sidemount|advance|\baow\b|zaawans|\*\*/.test(n)) return null;
   if (/deep|głębok|divemaster|instructor|instruktor/.test(n)) return { v: 40, l: 'MAX' };
   if (/open water|\bow\b|\bp1\b|\*/.test(n)) return { v: 18, l: 'MAX' };
   return null;
