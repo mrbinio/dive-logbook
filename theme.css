@@ -1060,3 +1060,60 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 .bud-order small { display: block; margin-top: 6px; font-size: .7rem; color: var(--text-dim); }
 .bud-mini { width: 64px !important; padding: 4px 6px !important; display: inline-block; text-align: right; }
 .bud-tips { margin: 12px 0 0; padding-left: 18px; font-size: .76rem; color: var(--text-dim); line-height: 1.5; }
+
+/* certificates: cards assemble when the tab opens, then tilt with a holo foil */
+.cert-card-wrap { transform: perspective(900px) rotateX(var(--ty, 0deg)) rotateY(var(--tx, 0deg)); transition: transform .3s ease-out; }
+.cert-card-wrap.cc-tilt { transition: transform .08s linear; }
+.cc-badge { position: relative; }
+.cc-date { margin-right: 18px; }
+.cc-ring { position: absolute; inset: -2px; border: 2px solid rgba(255,255,255,.85); border-radius: 8px; opacity: 0; pointer-events: none; }
+.cc-word { white-space: nowrap; display: inline-block; }
+.cc-ch { display: inline-block; }
+.cc-photo { position: absolute; right: 24px; top: 34px; width: 58px; height: 40px; object-fit: cover; border: 2px solid #fff; border-radius: 4px; rotate: 6deg; box-shadow: 0 6px 14px rgba(0,0,0,.45); pointer-events: none; }
+.cc-foil { position: absolute; inset: 0; pointer-events: none; border-radius: inherit; mix-blend-mode: screen; opacity: 0;
+  background: linear-gradient(115deg, transparent 32%, rgba(120,255,230,.26) 42%, rgba(255,140,240,.26) 50%, rgba(255,236,140,.24) 58%, transparent 68%);
+  background-size: 260% 100%; background-position: var(--fx, 120%) 0; transition: opacity .3s; }
+.cc-tilt .cc-foil { opacity: 1; }
+.cc-front::after { content: ''; position: absolute; inset: 0; pointer-events: none; translate: -120% 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.16) 50%, transparent 60%);
+  animation: ccShine 9s ease-in-out infinite; animation-delay: calc(var(--i, 0) * 1.3s + 3s); }
+.cc-fx { position: absolute; inset: 0; pointer-events: none; }
+.cc-dot { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #c8f6ff; box-shadow: 0 0 8px #9bdcff, 0 0 2px #fff; opacity: 0; }
+.cc-bub { position: absolute; bottom: -12px; width: var(--w); height: var(--w); border-radius: 50%; border: 1px solid rgba(255,255,255,.75); background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.5), transparent 60%); opacity: 0; }
+
+.cc-anim { --d: calc(var(--i) * .22s); animation: ccIn .75s cubic-bezier(.2,.8,.2,1) var(--d) backwards; }
+.cc-anim .cc-front { animation: ccThunk .35s ease-out calc(var(--d) + 1.25s) backwards; }
+.cc-anim .cc-front::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 30%; pointer-events: none; z-index: 3; opacity: 0;
+  background: linear-gradient(transparent, rgba(155,220,255,.35) 85%, rgba(220,250,255,.9) 100%);
+  animation: ccScan .8s ease-in-out calc(var(--d) + .1s); }
+.cc-anim .cc-ch { animation: ccCh .7s cubic-bezier(.2,.9,.25,1.15) calc(var(--d) + .35s + var(--k) * .028s) backwards; }
+.cc-anim .cc-holder { animation: ccFrom .6s cubic-bezier(.2,.8,.2,1) calc(var(--d) + .5s) backwards; --fx0: -70px; --fy0: 0; }
+.cc-anim .cc-date { animation: ccFrom .6s cubic-bezier(.2,.8,.2,1) calc(var(--d) + .6s) backwards; --fx0: 70px; --fy0: 0; }
+.cc-anim .cc-meta { animation: ccFrom .5s ease-out calc(var(--d) + .8s) backwards; --fx0: 0; --fy0: 16px; }
+.cc-anim .cc-octo { animation: ccOcto 1s cubic-bezier(.3,.9,.3,1.1) calc(var(--d) + .55s) backwards; }
+.cc-anim .cc-photo { animation: ccPhoto .8s cubic-bezier(.25,.9,.3,1.2) calc(var(--d) + .7s) backwards; }
+.cc-anim .cc-badge { animation: ccStamp .45s cubic-bezier(.3,1.4,.5,1) calc(var(--d) + 1.05s) backwards; }
+.cc-anim .cc-ring { animation: ccRing .7s ease-out calc(var(--d) + 1.3s); }
+.cc-anim .cc-foil { animation: ccSweep 1.1s ease-in-out calc(var(--d) + 1.35s); }
+.cc-anim .cc-dot { animation: ccDot .75s ease-in calc(var(--d) + .05s + var(--k) * .03s); }
+.cc-anim .cc-bub { animation: ccBub 1.7s ease-out calc(var(--d) + 1.3s + var(--k) * .09s); }
+
+@keyframes ccIn { from { opacity: 0; transform: perspective(900px) translateY(50px) rotateX(55deg) scale(.82); filter: blur(8px); } }
+@keyframes ccThunk { 40% { scale: 1.035; box-shadow: 0 0 0 1px rgba(155,220,255,.6), 0 12px 40px rgba(155,220,255,.35); } }
+@keyframes ccScan { 0% { opacity: 1; translate: 0 -100%; } 90% { opacity: 1; } 100% { opacity: 0; translate: 0 340%; } }
+@keyframes ccCh { from { opacity: 0; translate: var(--dx) var(--dy); rotate: var(--r); scale: .4; filter: blur(5px); } }
+@keyframes ccFrom { from { opacity: 0; translate: var(--fx0) var(--fy0); filter: blur(4px); letter-spacing: .3em; } }
+@keyframes ccOcto { from { opacity: 0; translate: 160px 70px; rotate: 35deg; scale: .6; } }
+@keyframes ccPhoto { from { opacity: 0; translate: -240px 130px; rotate: -50deg; scale: 2.2; } }
+@keyframes ccStamp { from { opacity: 0; scale: 2.8; rotate: -16deg; } }
+@keyframes ccRing { from { opacity: .9; scale: 1; } to { opacity: 0; scale: 2.6; } }
+@keyframes ccSweep { from { opacity: 1; background-position: 170% 0; } to { opacity: 0; background-position: -70% 0; } }
+@keyframes ccDot { 0% { opacity: 0; translate: var(--sx) var(--sy); } 30% { opacity: 1; } 100% { opacity: 0; translate: 0 0; scale: .3; } }
+@keyframes ccBub { 0% { opacity: 0; translate: 0 0; } 15% { opacity: .9; } 100% { opacity: 0; translate: var(--x) -230px; } }
+@keyframes ccShine { 0%, 82% { translate: -120% 0; } 100% { translate: 220% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cc-anim, .cc-anim *, .cc-anim .cc-front::before, .cc-front::after { animation: none !important; }
+  .cert-card-wrap { transform: none !important; }
+  .cc-fx { display: none; }
+}
