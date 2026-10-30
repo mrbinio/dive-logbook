@@ -557,28 +557,32 @@
         <label><span id="tr-from-l">From</span><input type="date" id="cl-next-date" class="edit-input" onchange="saveTripMeta()"></label>
         <label><span id="tr-to-l">To</span><input type="date" id="cl-end" class="edit-input" onchange="saveTripMeta()"></label>
       </div>
+      <div id="trip-info" class="trip-info"></div>
+      <div id="trip-summary"></div>
       <div class="trip-legs">
         <div class="legs-h" id="tr-flight-l">Route</div>
         <div id="legs-list"></div>
         <details class="legs-add"><summary data-i18n="legAdd">+ Add flight / drive</summary><div id="legs-form" class="trip-fields"></div></details>
       </div>
-      <div id="trip-info" class="trip-info"></div>
-      <div id="trip-summary"></div>
-      <button id="cl-cal-btn" onclick="addToCalendar()" style="display:none;width:100%;margin-bottom:12px;background:transparent;border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--accent);font-size:0.72rem;cursor:pointer;font-family:inherit;" data-i18n="clCal">Add to calendar</button>
-      <div style="display:flex;gap:6px;margin-bottom:12px;">
-        <input type="email" id="cl-buddy-email" class="edit-input" style="flex:1;" placeholder="Buddy email (to share list)...">
-        <button onclick="inviteBuddy()" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;padding:6px 12px;color:var(--accent);font-weight:700;cursor:pointer;font-size:0.75rem;white-space:nowrap;" data-i18n="clInvite">Invite</button>
-      </div>
+      <button id="cl-cal-btn" class="btn-ghost cl-wide" onclick="addToCalendar()" style="display:none" data-i18n="clCal">Add to calendar</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="accent" data-i18n="clPackT">Packing</span></div>
       <div id="cl-progress" style="margin-bottom:8px;"></div>
 
-      <div style="font-size:0.75rem;font-weight:700;color:var(--text-dim);margin-bottom:6px;" id="cl-shared-h">Shared (trip gear)</div>
+      <div class="cl-h" id="cl-shared-h">Shared (trip gear)</div>
       <div id="cl-shared-items"></div>
-      <div style="display:flex;gap:6px;margin-top:6px;margin-bottom:16px;">
-        <input type="text" id="cl-new-shared" class="edit-input" style="flex:1;" placeholder="Add shared item..." onkeydown="if(event.key==='Enter')addSharedItem()">
-        <button onclick="addSharedItem()" style="background:var(--accent);border:none;border-radius:8px;padding:6px 14px;color:#000;font-weight:700;cursor:pointer;font-size:0.8rem;">+</button>
+      <div class="cl-add">
+        <input type="text" id="cl-new-shared" class="edit-input" placeholder="Add shared item..." onkeydown="if(event.key==='Enter')addSharedItem()">
+        <button class="cl-plus" onclick="addSharedItem()">+</button>
+      </div>
+      <div class="cl-add cl-invite">
+        <input type="email" id="cl-buddy-email" class="edit-input" placeholder="Buddy email (to share list)...">
+        <button class="btn-ghost" onclick="inviteBuddy()" data-i18n="clInvite">Invite</button>
       </div>
 
-      <div style="font-size:0.75rem;font-weight:700;color:#8b5cf6;margin-bottom:6px;" id="cl-pers-h">My gear (personal)</div>
+      <div class="cl-h cl-h-pers" id="cl-pers-h">My gear (personal)</div>
       <div class="tpl-row"><span id="tpl-l">Ready-made lists:</span>
         <button class="chip-btn" onclick="applyTripTemplate('tropic')" id="tpl-tropic">Tropics · wrecks · boat</button>
         <button class="chip-btn" onclick="applyTripTemplate('cold')" id="tpl-cold">Cold water · drysuit</button>
@@ -586,42 +590,41 @@
         <span id="saved-lists"></span>
         <button class="chip-btn chip-save" onclick="saveListAs()" id="tpl-save">Save as my list</button></div>
       <div id="cl-personal-items"></div>
-      <div style="display:flex;gap:6px;margin-top:6px;">
+      <div class="cl-add">
         <select id="cl-new-sec" class="edit-input sec-select"></select>
-        <input type="text" id="cl-new-personal" class="edit-input" style="flex:1;" placeholder="Add personal item..." onkeydown="if(event.key==='Enter')addPersonalItem()">
-        <button onclick="addPersonalItem()" style="background:#8b5cf6;border:none;border-radius:8px;padding:6px 14px;color:#fff;font-weight:700;cursor:pointer;font-size:0.8rem;">+</button>
+        <input type="text" id="cl-new-personal" class="edit-input" placeholder="Add personal item..." onkeydown="if(event.key==='Enter')addPersonalItem()">
+        <button class="cl-plus cl-plus-pers" onclick="addPersonalItem()">+</button>
       </div>
 
       <div id="cl-buddy-sections"></div>
+      <button onclick="resetChecklist()" class="btn-ghost cl-wide" id="cl-reset-btn" data-i18n="clReset">Reset</button>
+    </div>
 
-      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">
-        <div style="font-size:0.75rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;" id="trip-plan-title">Dive plan</div>
-        <div id="trip-plan"></div>
-        <div class="plan-add">
-          <input type="text" id="plan-name" class="edit-input" placeholder="Site / wreck" onkeydown="if(event.key==='Enter')addPlanItem()">
-          <input type="number" id="plan-depth" class="edit-input" placeholder="m" min="0" max="100">
-          <button onclick="addPlanItem()" style="background:var(--accent);border:none;border-radius:8px;padding:6px 14px;color:#000;font-weight:700;cursor:pointer;">+</button>
-        </div>
-        <div class="tpl-row"><button class="chip-btn" onclick="addPlanPreset('coron')" id="plan-coron">+ Coron wrecks</button>
-          <small class="muted" id="plan-hint">Depths are approximate — confirm with your dive centre.</small></div>
+    <div class="card">
+      <div class="card-title"><span class="accent" id="trip-plan-title">Dive plan</span></div>
+      <div id="trip-plan"></div>
+      <div class="plan-add">
+        <input type="text" id="plan-name" class="edit-input" placeholder="Site / wreck" onkeydown="if(event.key==='Enter')addPlanItem()">
+        <input type="number" id="plan-depth" class="edit-input" placeholder="m" min="0" max="100">
+        <button class="cl-plus" onclick="addPlanItem()">+</button>
       </div>
-      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">
-        <div style="font-size:0.75rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;" id="cl-wishlist-title">Next time / Wishlist</div>
-        <div id="wishlist-items"></div>
-        <div style="display:flex;gap:6px;margin-top:8px;">
-          <input type="text" id="cl-new-wish" class="edit-input" style="flex:1;" placeholder="Forgot something? Add for next time..." onkeydown="if(event.key==='Enter')addWishlistItem()">
-          <button onclick="addWishlistItem()" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;padding:6px 14px;color:var(--accent);font-weight:700;cursor:pointer;font-size:0.8rem;">+</button>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:16px;">
-        <button onclick="resetChecklist()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-dim);font-size:0.72rem;cursor:pointer;font-family:inherit;" id="cl-reset-btn" data-i18n="clReset">Reset</button>
-        <button onclick="newTrip()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-dim);font-size:0.72rem;cursor:pointer;font-family:inherit;" data-i18n="clNew">New trip</button>
+      <div class="tpl-row"><button class="chip-btn" onclick="addPlanPreset('coron')" id="plan-coron">+ Coron wrecks</button>
+        <small class="muted" id="plan-hint">Depths are approximate — confirm with your dive centre.</small></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="accent" id="cl-wishlist-title">Next time / Wishlist</span></div>
+      <div id="wishlist-items"></div>
+      <div class="cl-add">
+        <input type="text" id="cl-new-wish" class="edit-input" placeholder="Forgot something? Add for next time..." onkeydown="if(event.key==='Enter')addWishlistItem()">
+        <button class="cl-plus" onclick="addWishlistItem()">+</button>
       </div>
       <div class="archive-box">
         <div class="arch-head"><span id="arch-title">Trip archive</span>
           <button class="chip-btn" onclick="loadTripArchive()" id="arch-load">Show</button></div>
         <div id="trip-archive"></div>
       </div>
+      <button onclick="newTrip()" class="btn-ghost cl-wide" data-i18n="clNew">New trip</button>
     </div>
   </div>
 

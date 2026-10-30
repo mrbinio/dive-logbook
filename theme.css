@@ -986,3 +986,35 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
   body::after, .dive-card, .panel.active, .login-card { animation: none !important; }
   .dive-card:hover { transform: none; }
 }
+
+/* checklist: cards, add rows, route timeline */
+.cl-h { font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 800; color: var(--text-dim); margin: 14px 4px 6px; }
+.cl-h-pers { color: #b9a0ff; margin-top: 22px; }
+.cl-add { display: flex; gap: 6px; margin: 8px 0 4px; }
+.cl-add .edit-input { flex: 1; min-width: 0; }
+.cl-add .sec-select { flex: 0 0 96px; }
+.cl-invite { margin-top: 10px; }
+.cl-invite .btn-ghost { white-space: nowrap; }
+.cl-plus { flex: 0 0 auto; background: var(--accent); border: none; border-radius: 10px; padding: 6px 15px; color: #000; font-weight: 800; font-size: .95rem; cursor: pointer; }
+.cl-plus-pers { background: #8b5cf6; color: #fff; }
+.cl-wide { display: block; width: 100%; margin-top: 14px; }
+.trip-info p { margin: 4px 0; }
+.trip-info small { display: block; font-size: .74rem; color: var(--text-dim); line-height: 1.45; margin-top: 6px; }
+.trip-legs { margin-top: 14px; }
+.leg-group { margin-bottom: 8px; }
+.leg-gh { font-size: .6rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; color: var(--accent); margin: 10px 4px 5px; }
+.leg.past { opacity: .5; }
+.dive-window { margin: 10px 0; padding: 12px 14px; border-radius: 14px; background: linear-gradient(135deg, rgba(80,220,160,.14), rgba(80,200,255,.08)); border: 1px solid rgba(111,227,176,.25); }
+.dw-h { font-weight: 800; color: #6fe3b0; font-size: .86rem; margin-bottom: 6px; }
+.dw-row { display: flex; justify-content: space-between; gap: 10px; font-size: .82rem; padding: 3px 0; }
+.dw-row span { color: var(--text-dim); }
+.dw-row b { color: #fff; text-align: right; }
+.dive-window small { display: block; margin-top: 6px; font-size: .72rem; color: var(--text-dim); line-height: 1.4; }
+.tile-trip .tt-leg { color: #fff; font-weight: 700; }
+/* planner: extra settings folded away */
+.pl-more { margin-top: 12px; border-radius: 12px; background: rgba(255,255,255,.03); padding: 2px 12px; }
+.pl-more summary { cursor: pointer; list-style: none; padding: 10px 0; font-size: .8rem; font-weight: 700; color: var(--accent); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.pl-more summary::-webkit-details-marker { display: none; }
+.pl-more summary span { color: var(--text-dim); font-weight: 600; font-size: .72rem; }
+.pl-more[open] { padding-bottom: 12px; }
+.pl-more .pl-grid { margin-top: 4px; }

@@ -11,6 +11,7 @@ const PLAN_DEFAULT = { tank: 12, start: 200, o2: 21, reserve: 'bar', sac: null, 
 const DEFAULT_SAC = 18;   // without logbook data: a careful guess for a relaxed recreational diver
 
 let planner = Object.assign({}, PLAN_DEFAULT);
+let plannerMoreOpen = false;
 try { Object.assign(planner, JSON.parse(localStorage.getItem('planner') || '{}'), { depth: null, time: null }); } catch (e) {}
 function savePlanner() { try { const { depth, time, ...keep } = planner; localStorage.setItem('planner', JSON.stringify(keep)); } catch (e) {} }
 
@@ -54,20 +55,23 @@ function calcPlan() {
   const sites = ((typeof currentTrip !== 'undefined' && currentTrip && currentTrip.plan) || []).filter(p => +p.depth > 0);
   el.innerHTML = `
     <div class="pl-sec">${TL('Butla', 'Tank')}</div>
-    <div class="chip-row">${TANKS.map(t => chip(tankKey === t[0], t[1], `setPlanner('tank', ${t[2]})`)).join('')}
-      <label class="pl-mini"><input type="number" class="edit-input" step="0.1" min="1" max="40" value="${planner.tank}" oninput="setPlanner('tank', +this.value, true)"> L</label></div>
+    <div class="chip-row">${TANKS.map(t => chip(tankKey === t[0], t[1], `setPlanner('tank', ${t[2]})`)).join('')}</div>
     <div class="pl-sec">${TL('Gaz', 'Gas')}</div>
-    <div class="chip-row">${GASES.map(g => chip(planner.o2 === g[0], g.length > 2 ? TL(g[1], g[2]) : g[1], `setPlanner('o2', ${g[0]})`)).join('')}
-      <label class="pl-mini">O₂ <input type="number" class="edit-input" min="21" max="40" value="${planner.o2}" oninput="setPlanner('o2', +this.value, true)"> %</label></div>
-    <div class="pl-grid">
-      <label><span>${TL('Ciśnienie startowe', 'Start pressure')}</span><span class="pl-unit"><input type="number" class="edit-input" min="50" max="300" value="${planner.start}" oninput="setPlanner('start', +this.value, true)"> bar</span></label>
-      <label><span>SAC ${my && !planner.sac ? `· ${TL('z logbooka', 'from logbook')}` : ''}</span><span class="pl-unit"><input type="number" class="edit-input" step="0.5" min="5" max="40" value="${planner.sac || ''}" placeholder="${fmt1(my ? my.value : DEFAULT_SAC)}" oninput="setPlanner('sac', +this.value || null, true)"> L/min</span></label>
-    </div>
-    <p class="pl-note">${my ? TL(`Twój SAC z ${my.count} ostatnich nurkowań: <b>${fmt1(my.value)} L/min</b>. Możesz wpisać inny.`, `Your SAC from the last ${my.count} dives: <b>${fmt1(my.value)} L/min</b>. You can type another.`)
-      : TL(`Brak danych z butli w logbooku — przyjmuję ${DEFAULT_SAC} L/min. Wpisuj ciśnienie początkowe i końcowe, a policzę Twój SAC.`, `No tank data in the logbook — using ${DEFAULT_SAC} L/min. Log start and end pressure and I'll work out your own SAC.`)}</p>
-    <div class="pl-sec">${TL('Rezerwa', 'Reserve')}</div>
-    <div class="chip-row">${chip(planner.reserve === 'bar', TL('50 bar na powierzchnię', '50 bar at the surface'), "setPlanner('reserve', 'bar')")}
-      ${chip(planner.reserve === 'third', TL('Zasada ⅓ (wraki, wnętrza)', 'Rule of thirds (wrecks, overhead)'), "setPlanner('reserve', 'third')")}</div>
+    <div class="chip-row">${GASES.map(g => chip(planner.o2 === g[0], g.length > 2 ? TL(g[1], g[2]) : g[1], `setPlanner('o2', ${g[0]})`)).join('')}</div>
+    <details class="pl-more"${plannerMoreOpen ? ' open' : ''} ontoggle="plannerMoreOpen = this.open">
+      <summary>⚙️ ${TL('Więcej ustawień', 'More settings')} <span>${planner.start} bar · SAC ${fmt1(plannerSac())} · ${planner.reserve === 'third' ? TL('zasada ⅓', 'rule of ⅓') : TL('rezerwa 50 bar', '50 bar reserve')}</span></summary>
+      <div class="pl-grid">
+        <label><span>${TL('Inna butla', 'Other tank')}</span><span class="pl-unit"><input type="number" class="edit-input" step="0.1" min="1" max="40" value="${planner.tank}" oninput="setPlanner('tank', +this.value, true)"> L</span></label>
+        <label><span>${TL('Inny nitrox', 'Other nitrox')}</span><span class="pl-unit"><input type="number" class="edit-input" min="21" max="40" value="${planner.o2}" oninput="setPlanner('o2', +this.value, true)"> % O₂</span></label>
+        <label><span>${TL('Ciśnienie startowe', 'Start pressure')}</span><span class="pl-unit"><input type="number" class="edit-input" min="50" max="300" value="${planner.start}" oninput="setPlanner('start', +this.value, true)"> bar</span></label>
+        <label><span>SAC ${my && !planner.sac ? `· ${TL('z logbooka', 'from logbook')}` : ''}</span><span class="pl-unit"><input type="number" class="edit-input" step="0.5" min="5" max="40" value="${planner.sac || ''}" placeholder="${fmt1(my ? my.value : DEFAULT_SAC)}" oninput="setPlanner('sac', +this.value || null, true)"> L/min</span></label>
+      </div>
+      <p class="pl-note">${my ? TL(`Twój SAC z ${my.count} ostatnich nurkowań: <b>${fmt1(my.value)} L/min</b>. Możesz wpisać inny.`, `Your SAC from the last ${my.count} dives: <b>${fmt1(my.value)} L/min</b>. You can type another.`)
+        : TL(`Brak danych z butli w logbooku — przyjmuję ${DEFAULT_SAC} L/min. Wpisuj ciśnienie początkowe i końcowe, a policzę Twój SAC.`, `No tank data in the logbook — using ${DEFAULT_SAC} L/min. Log start and end pressure and I'll work out your own SAC.`)}</p>
+      <div class="pl-sec">${TL('Rezerwa', 'Reserve')}</div>
+      <div class="chip-row">${chip(planner.reserve === 'bar', TL('50 bar na powierzchnię', '50 bar at the surface'), "setPlanner('reserve', 'bar')")}
+        ${chip(planner.reserve === 'third', TL('Zasada ⅓ (wraki, wnętrza)', 'Rule of thirds (wrecks, overhead)'), "setPlanner('reserve', 'third')")}</div>
+    </details>
     ${sites.length ? `<div class="pl-sec">${TL('Z planu wyjazdu', 'From your trip plan')}</div>
       <div class="chip-row">${sites.map(p => chip(planner.depth === +p.depth, `${esc(p.name)} <small>${+p.depth} m</small>`, `setPlanner('depth', ${+p.depth})`)).join('')}</div>` : ''}
     <div id="pl-results"></div>`;
