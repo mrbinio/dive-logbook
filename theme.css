@@ -1098,7 +1098,7 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 .cc-body { position: absolute; left: 5cqw; right: 5cqw; top: 20.5cqw; display: flex; gap: 3.6cqw; }
 .cc-portrait { flex: 0 0 18.5cqw; height: 24cqw; border-radius: 1.8cqw; overflow: hidden;
   background: linear-gradient(160deg, rgba(255,255,255,.28), rgba(255,255,255,.06)); box-shadow: inset 0 0 0 .3cqw rgba(255,255,255,.35); }
-.cc-portrait img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.15); mix-blend-mode: luminosity; }
+.cc-portrait img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 25%; filter: contrast(1.05) saturate(.95); }
 .cc-portrait .cc-noface { object-fit: contain; padding: 2.2cqw; filter: none; mix-blend-mode: normal; opacity: .9; }
 .cc-fields { flex: 1; min-width: 0; }
 .cc-level { font-size: 4.5cqw; font-weight: 800; line-height: 1.12; letter-spacing: -.01em; margin-bottom: 2cqw; max-width: 64cqw; max-height: 10.2cqw; overflow: hidden; text-shadow: 0 .3cqw .8cqw rgba(0,0,0,.35); }
@@ -1186,8 +1186,10 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 .cc-view .cc-back { transform: rotateY(180deg) translateZ(.5cqw); }
 .cc-hint { font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); transition: opacity .4s; }
 .cc-hint.gone { opacity: 0; }
-.cc-vbar { display: flex; gap: 10px; }
-.cc-vbar button { background: var(--glass-strong); border: 1px solid var(--border-light); color: #fff; border-radius: 999px; padding: 10px 18px; font: 700 .85rem var(--font); cursor: pointer; }
+.cc-vbar { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.cc-vbar button, .cc-vbar label { background: var(--glass-strong); border: 1px solid var(--border-light); color: #fff; border-radius: 999px; padding: 10px 18px; font: 700 .85rem var(--font); cursor: pointer; }
+.cc-vbar label { letter-spacing: normal; text-transform: none; display: inline-flex; align-items: center; gap: 6px; }
+.cc-vbar label b { font-weight: 700; }
 .cc-vbar .cc-del { color: var(--danger); }
 
 @media (prefers-reduced-motion: reduce) {

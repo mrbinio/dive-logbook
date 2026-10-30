@@ -70,6 +70,47 @@ function certRating(name) {
   return null;
 }
 
+// Own photo for every card, kept in users/{uid}/profile/portrait (and cached on the phone)
+let certPortrait;                  // undefined until loaded, then a data URL or null
+
+function certPortraitHTML() {
+  const src = certPortrait || (auth.currentUser && auth.currentUser.photoURL);
+  return src ? `<img src="${esc(src)}" alt="" referrerpolicy="no-referrer">` : '<img src="diver.svg" alt="" class="cc-noface">';
+}
+const certPortraitDoc = uid => db.collection('users').doc(uid).collection('profile').doc('portrait');
+function certPortraitCache(uid) {
+  try { certPortrait ? localStorage.setItem('ccPortrait:' + uid, certPortrait) : localStorage.removeItem('ccPortrait:' + uid); } catch (e) {}
+}
+function certPortraitPaint() {
+  document.querySelectorAll('.cc-portrait').forEach(p => p.innerHTML = certPortraitHTML());
+  document.querySelectorAll('.cc-photo-btn b').forEach(b => b.textContent = certPortrait ? CL('Zmień zdjęcie', 'Change photo') : CL('Moje zdjęcie', 'My photo'));
+}
+function certLoadPortrait() {
+  const uid = auth.currentUser && auth.currentUser.uid;
+  if (!uid || certPortrait !== undefined) return;
+  try { certPortrait = localStorage.getItem('ccPortrait:' + uid) || null; } catch (e) { certPortrait = null; }
+  certPortraitDoc(uid).get().then(d => {
+    const img = (d.exists && d.data().img) || null;
+    if (img === certPortrait) return;
+    certPortrait = img;
+    certPortraitCache(uid);
+    certPortraitPaint();
+  }).catch(() => {});
+}
+async function certSetPortrait(input) {
+  const f = input.files && input.files[0];
+  input.value = '';
+  if (!f) return;
+  const uid = myUid();
+  try {
+    certPortrait = await compressImage(f, 480, .82);
+    certPortraitCache(uid);
+    certPortraitPaint();
+    await certPortraitDoc(uid).set({ img: certPortrait, at: firebase.firestore.FieldValue.serverTimestamp() });
+    showToast(CL('✅ Zdjęcie zapisane na wszystkich kartach', '✅ Photo saved on all cards'));
+  } catch (e) { showToast('❌ ' + e.message); }
+}
+
 const ccDate = d => d ? d.split('-').reverse().join('.') : '—';
 
 // One card. anim: build it for the assembly; i: its place in the sequence.
@@ -77,7 +118,6 @@ function certCardHTML(c, anim, i, thick) {
   const ag = AGENCY_LOGOS[c.agency] || { color: '#1e3550', name: CL('Certyfikat nurkowy', 'Dive certification') };
   const mark = esc(c.agency && c.agency !== 'Other' ? c.agency : 'DIVE');
   const rating = certRating(c.name);
-  const photo = auth.currentUser && auth.currentUser.photoURL;
   const hasPhoto = c.photoUrl && c.photoUrl.length > 10;
   let e = 0;
   const eng = (txt, cls = '') => `<span class="cc-eng ${cls}" style="--e:${e++}"><span>${txt}</span></span>`;
@@ -100,7 +140,7 @@ function certCardHTML(c, anim, i, thick) {
         <b>${mark.slice(0, 4)}</b><i class="cc-ring"></i>
       </div>
       <div class="cc-body">
-        <div class="cc-portrait">${photo ? `<img src="${esc(photo)}" alt="" referrerpolicy="no-referrer">` : '<img src="diver.svg" alt="" class="cc-noface">'}</div>
+        <div class="cc-portrait">${certPortraitHTML()}</div>
         <div class="cc-fields">
           <div class="cc-level">${eng(esc(c.name))}</div>
           <dl>
@@ -131,6 +171,7 @@ function renderCerts() {
     list.innerHTML = `<div style="text-align:center;color:var(--text-dim);padding:20px;font-size:0.78rem;">${CL('Brak certyfikatów. Dodaj swój pierwszy!', 'No certifications yet. Add your first!')}</div>`;
     return;
   }
+  certLoadPortrait();
   const first = !certSeen.size;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let n = 0;
@@ -289,6 +330,7 @@ function openCert(id, from) {
     <div class="cc-stage"><div class="cc-3d">${certCardHTML(c, false, 0, true)}</div></div>
     <div class="cc-hint">${CL('Przeciągnij, żeby obrócić', 'Drag to turn')}</div>
     <div class="cc-vbar">
+      <label class="cc-photo-btn">📷 <b>${certPortrait ? CL('Zmień zdjęcie', 'Change photo') : CL('Moje zdjęcie', 'My photo')}</b><input type="file" accept="image/*" hidden onchange="certSetPortrait(this)"></label>
       <button data-a="flip">↻ ${CL('Obróć', 'Turn')}</button>
       <button data-a="del" class="cc-del">${CL('Usuń', 'Delete')}</button>
       <button data-a="close">✕</button>
