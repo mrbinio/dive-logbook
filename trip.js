@@ -87,10 +87,11 @@ TRIP_TEMPLATES.wash = { pl: 'Kosmetyczka · ubrania', en: 'Toiletries · clothes
   ['clothes', 'Kurtka przeciwdeszczowa', 'Rain jacket'],
   ['clothes', 'Piżama', 'Sleepwear'],
 ] };
-// Coron wrecks and sites — depths are approximate, confirm with the dive centre
+// Coron wrecks and sites: [name, top, bottom] in metres — approximate, confirm with the dive centre
 const PLAN_PRESETS = {
-  coron: [['Akitsushima', 38], ['Irako', 43], ['Kogyo Maru', 34], ['Okikawa Maru', 26], ['Olympia Maru', 30], ['Morazan Maru', 25],
-    ['Kyokuzan Maru', 40], ['Lusong Gunboat', 11], ['East Tangat', 22], ['Skeleton Wreck', 20], ['Barracuda Lake', 30]],
+  coron: [['Akitsushima', 22, 36], ['Irako', 28, 43], ['Kogyo Maru', 22, 34], ['Okikawa Maru', 10, 26], ['Olympia Maru', 18, 28], ['Morazan Maru', 15, 25],
+    ['Kyokuzan Maru', 22, 40], ['Lusong Gunboat', 0, 10], ['East Tangat', 10, 22], ['Ekkai Maru', 8, 12], ['Nanshin Maru', 21, 31],
+    ['Skeleton Wreck', 5, 20], ['Barracuda Lake', 0, 30]],
 };
 
 const dayMs = 864e5;
@@ -328,6 +329,7 @@ function renderTripCard() {
   renderLegs();
   renderTripPlan();
   renderTripSummary();
+  if (typeof renderProgram === 'function') { renderProgram(); renderBudget(); }
 }
 
 async function saveTripMeta() {
@@ -398,7 +400,8 @@ function renderTripPlan() {
       const ok = planDone(p, list), auto = ok && !p.done;
       return `<div class="cl-row">
         <input type="checkbox" ${ok ? 'checked' : ''} ${auto ? 'disabled title="' + TL('Zalogowane nurkowanie', 'Logged dive') + '"' : ''} onchange="togglePlan(${i})">
-        <span class="${ok ? 'done' : ''}">${esc(p.name)}${p.depth ? ` <small>~${p.depth} m</small>` : ''}${auto ? ` <small class="auto">✓ ${TL('z logbooka', 'from logbook')}</small>` : ''}</span>
+        <span class="${ok ? 'done' : ''}">${esc(p.name)}${p.depth ? ` <small>${p.min != null ? p.min + '–' : '~'}${p.depth} m</small>` : ''}${auto ? ` <small class="auto">✓ ${TL('z logbooka', 'from logbook')}</small>` : ''}</span>
+        ${p.depth ? `<button class="plan-calc" onclick="planAtDepth(${+p.depth})" title="${TL('Ile mogę na tej głębokości?', 'How long at this depth?')}">⏱</button>` : ''}
         <button onclick="removePlan(${i})" aria-label="Remove">✕</button>
       </div>`;
     }).join('');
@@ -415,7 +418,7 @@ async function addPlanPreset(key) {
   if (!currentTripId) return;
   const plan = (await tripRef().get()).data().plan || [];
   const have = new Set(plan.map(p => norm(p.name)));
-  (PLAN_PRESETS[key] || []).forEach(([name, depth]) => { if (!have.has(norm(name))) plan.push({ name, depth, done: false }); });
+  (PLAN_PRESETS[key] || []).forEach(([name, min, depth]) => { if (!have.has(norm(name))) plan.push({ name, min, depth, done: false }); });
   await tripRef().update({ plan });
 }
 async function togglePlan(i) {
@@ -498,7 +501,7 @@ function homeTripTile() {
     const st = tripStats(t);
     body = `<b>${TL('podsumowanie', 'summary')}</b><span>${st.list.length} ${TL('nurkowań', 'dives')} · ${st.deepest ? st.deepest.depth + ' m max' : ''}${st.planTotal ? ` · ${st.planDone}/${st.planTotal} ${TL('z planu', 'of plan')}` : ''}</span>`;
   }
-  return `<section class="tile tile-trip" onclick="switchTab('checklist')"><small>✈︎ ${name}</small>${body}</section>`;
+  return `<section class="tile tile-trip" onclick="switchTab('trip')"><small>✈︎ ${name}</small>${body}</section>`;
 }
 
 // Warn when a dive is logged too close to the next flight / high road

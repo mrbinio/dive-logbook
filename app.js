@@ -1,6 +1,6 @@
 const T = {
   en: {
-    tplSave:'💾 Save as my list', archTitle:'Trip archive', archLoad:'Show', clCal:'Add to calendar', clInvite:'Invite', clReset:'Uncheck all', clNew:'New trip', clShared:'Shared (trip gear)', clPers:'My gear (personal)', clWish:'Next time / wishlist', trDest:'Destination', trFrom:'From', trTo:'To', trFlight:'Route', legAdd:'+ Add flight / drive / ferry', clPackT:'Packing', tplL:'Ready-made lists:', tplTropic:'Tropics · wrecks · boat', tplCold:'Cold water · drysuit', tplWash:'Toiletries · clothes', wxTitle:'Weather at the dive site', wxCheck:'Check', planT:'Dive plan', planCoron:'+ Coron wrecks', planHint:'Depths are approximate — confirm with your dive centre.',
+    tplSave:'💾 Save as my list', archTitle:'Trip archive', archLoad:'Show', clCal:'Add to calendar', clInvite:'Invite', clReset:'Uncheck all', clNew:'New trip', clShared:'Shared (trip gear)', clPers:'My gear (personal)', clWish:'Next time / wishlist', trDest:'Destination', trFrom:'From', trTo:'To', trFlight:'Route', legAdd:'+ Add flight / drive / ferry', clPackT:'Packing', tripT:'Trip', tripPdf:'Load trip plan (PDF)', progT:'Day by day', budT:'Money for the trip', trip:'Trip', tplL:'Ready-made lists:', tplTropic:'Tropics · wrecks · boat', tplCold:'Cold water · drysuit', tplWash:'Toiletries · clothes', wxTitle:'Weather at the dive site', wxCheck:'Check', planT:'Dive sites', planCoron:'+ Coron wrecks', planHint:'Depths are approximate — confirm with your dive centre.',
     pushTitle:'Notifications', badgesTitle:'Badges', wrappedTab:'Your year', certsTitle:'Certifications', gearTitle:'My gear', planTitle:'Dive planner', checklistTitle:'Dive checklist', statsTitle:'Statistics', perAll:'All', perYear:'This year', per12m:'12 months', expPdf:'Export PDF', expJson:'Backup JSON',
     remTitle:'Reminders', remOver:'overdue {n} d', remSoon:'in {n} d', remToday:'today', datesTitle:'Important dates', kindMedical:'Medical certificate', kindInsurance:'Insurance (DAN)', kindOther:'Other', remName:'Name, e.g. tank inspection', remAdd:'Add', remService:'Service', servicedToday:'Serviced today', remNone:'No dates yet — add your medical, insurance or anything that expires.', remSaved:'Saved',
     secPlace:'Place & time', secDive:'The dive', secTank:'Tank & gear', secCond:'Conditions & people', secNotes:'Rating & notes', importHint:'Choose one or more files — duplicates are skipped', logOr:'or log by hand',
@@ -40,7 +40,7 @@ const T = {
     entry:'Entry', entryShore:'Shore', entryBoat:'Boat', entryPlatform:'Platform', entryOther:'Other',
     feeling:'Feeling'  },
   pl: {
-    tplSave:'💾 Zapisz jako moją listę', archTitle:'Archiwum wyjazdów', archLoad:'Pokaż', clCal:'Dodaj do kalendarza', clInvite:'Zaproś', clReset:'Odznacz wszystko', clNew:'Nowy wyjazd', clShared:'Wspólne (sprzęt na wyjazd)', clPers:'Moje rzeczy', clWish:'Następnym razem / lista życzeń', trDest:'Cel wyjazdu', trFrom:'Od', trTo:'Do', trFlight:'Trasa', legAdd:'+ Dodaj lot / przejazd / prom', clPackT:'Pakowanie', tplL:'Gotowe listy:', tplTropic:'Tropiki · wraki · łódź', tplCold:'Zimna woda · suchar', tplWash:'Kosmetyczka · ubrania', wxTitle:'Pogoda na miejscu nurkowania', wxCheck:'Sprawdź', planT:'Plan nurkowań', planCoron:'+ Wraki Coron', planHint:'Głębokości orientacyjne — potwierdź w centrum nurkowym.',
+    tplSave:'💾 Zapisz jako moją listę', archTitle:'Archiwum wyjazdów', archLoad:'Pokaż', clCal:'Dodaj do kalendarza', clInvite:'Zaproś', clReset:'Odznacz wszystko', clNew:'Nowy wyjazd', clShared:'Wspólne (sprzęt na wyjazd)', clPers:'Moje rzeczy', clWish:'Następnym razem / lista życzeń', trDest:'Cel wyjazdu', trFrom:'Od', trTo:'Do', trFlight:'Trasa', legAdd:'+ Dodaj lot / przejazd / prom', clPackT:'Pakowanie', tripT:'Wyjazd', tripPdf:'Wczytaj plan wyjazdu (PDF)', progT:'Program dzień po dniu', budT:'Pieniądze na wyjazd', trip:'Wyjazd', tplL:'Gotowe listy:', tplTropic:'Tropiki · wraki · łódź', tplCold:'Zimna woda · suchar', tplWash:'Kosmetyczka · ubrania', wxTitle:'Pogoda na miejscu nurkowania', wxCheck:'Sprawdź', planT:'Miejsca nurkowe', planCoron:'+ Wraki Coron', planHint:'Głębokości orientacyjne — potwierdź w centrum nurkowym.',
     pushTitle:'Powiadomienia', badgesTitle:'Odznaki', wrappedTab:'Twój rok', certsTitle:'Certyfikaty', gearTitle:'Mój sprzęt', planTitle:'Planer nurkowania', checklistTitle:'Checklista', statsTitle:'Statystyki', perAll:'Wszystko', perYear:'Ten rok', per12m:'12 mies.', expPdf:'Eksport PDF', expJson:'Kopia zapasowa JSON',
     remTitle:'Przypomnienia', remOver:'po terminie {n} dni', remSoon:'za {n} dni', remToday:'dziś', datesTitle:'Ważne daty', kindMedical:'Badania lekarskie', kindInsurance:'Ubezpieczenie (DAN)', kindOther:'Inne', remName:'Nazwa, np. przegląd butli', remAdd:'Dodaj', remService:'Serwis', servicedToday:'Serwis zrobiony dziś', remNone:'Brak dat — dodaj badania, ubezpieczenie albo cokolwiek, co ma termin.', remSaved:'Zapisano',
     secPlace:'Miejsce i czas', secDive:'Nurkowanie', secTank:'Butla i sprzęt', secCond:'Warunki i ludzie', secNotes:'Ocena i notatki', importHint:'Wybierz jeden lub kilka plików — duplikaty są pomijane', logOr:'albo wpisz ręcznie',
@@ -113,6 +113,8 @@ function applyLang() {
   document.getElementById('tab-gear').textContent = t('gear');
   document.getElementById('tab-plan').textContent = t('plan');
   document.getElementById('tab-checklist').textContent = t('checklist');
+  document.getElementById('tab-trip').textContent = t('trip');
+  document.getElementById('more-trip').textContent = t('trip');
   document.getElementById('tab-home').textContent = t('home');
   document.getElementById('tab-more').textContent = t('more');
   if (document.getElementById('panel-home').classList.contains('active')) renderHome();
@@ -407,7 +409,7 @@ function switchTab(tab) {
   const tabEl = document.getElementById('tab-'+tab);
   if (tabEl) tabEl.classList.add('active');
   // If it's a "more" tab on mobile, highlight the more button
-  if (window.innerWidth <= 600 && ['stats','badges','certs','gear','plan','checklist','shop'].includes(tab)) {
+  if (window.innerWidth <= 600 && ['stats','badges','certs','gear','plan','trip','checklist','shop'].includes(tab)) {
     document.getElementById('tab-more').classList.add('active');
   }
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -421,7 +423,8 @@ function switchTab(tab) {
   if(tab==='certs') renderCerts();
   if(tab==='gear') renderGear();
   if(tab==='plan') calcPlan();
-  if(tab==='checklist' && !currentTripId) loadOrCreateTrip();
+  if((tab==='checklist' || tab==='trip') && !currentTripId) loadOrCreateTrip();
+  if(tab==='trip' && currentTrip) renderTripTab();
   if(tab==='checklist') loadSavedLists();
 }
 

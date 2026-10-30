@@ -142,6 +142,7 @@
     <button class="tab" id="tab-gear" onclick="switchTab('gear')">Gear</button>
     <button class="tab" id="tab-badges" onclick="switchTab('badges')">Badges</button>
     <button class="tab" id="tab-plan" onclick="switchTab('plan')">Plan</button>
+    <button class="tab" id="tab-trip" onclick="switchTab('trip')">Trip</button>
     <button class="tab" id="tab-checklist" onclick="switchTab('checklist')">Checklist</button>
     <button class="tab" id="tab-more" onclick="toggleMoreMenu()">More</button>
   </div>
@@ -152,6 +153,7 @@
     <button class="tab" onclick="switchTab('certs');closeMore()">Certs</button>
     <button class="tab" onclick="switchTab('gear');closeMore()">Gear</button>
     <button class="tab" onclick="switchTab('plan');closeMore()">Plan</button>
+    <button class="tab" onclick="switchTab('trip');closeMore()" id="more-trip">Trip</button>
     <button class="tab" onclick="switchTab('checklist');closeMore()">Checklist</button>
   </div>
 
@@ -547,10 +549,9 @@
     </div>
   </div>
 
-  <div class="panel" id="panel-checklist">
+  <div class="panel" id="panel-trip">
     <div class="card">
-      <div class="card-title"><span class="accent" id="checklist-title">Dive Checklist</span></div>
-      <div id="cl-buddies"></div>
+      <div class="card-title"><span class="accent" data-i18n="tripT">Trip</span></div>
       <div class="trip-fields">
         <label class="full"><span id="tr-dest-l">Destination</span>
           <input type="text" id="cl-site" class="edit-input" placeholder="e.g. Coron" onchange="saveTripMeta()"></label>
@@ -564,11 +565,39 @@
         <div id="legs-list"></div>
         <details class="legs-add"><summary data-i18n="legAdd">+ Add flight / drive</summary><div id="legs-form" class="trip-fields"></div></details>
       </div>
+      <label class="btn-ghost cl-wide pdf-btn">📄 <span data-i18n="tripPdf">Load trip plan (PDF)</span>
+        <input type="file" accept="application/pdf" onchange="importTripPdf(this)" hidden></label>
+      <div id="trip-import"></div>
       <button id="cl-cal-btn" class="btn-ghost cl-wide" onclick="addToCalendar()" style="display:none" data-i18n="clCal">Add to calendar</button>
     </div>
 
     <div class="card">
-      <div class="card-title"><span class="accent" data-i18n="clPackT">Packing</span></div>
+      <div class="card-title"><span class="accent" data-i18n="progT">Program</span></div>
+      <div id="trip-program"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="accent" id="trip-plan-title">Dive plan</span></div>
+      <div id="trip-plan"></div>
+      <div class="plan-add">
+        <input type="text" id="plan-name" class="edit-input" placeholder="Site / wreck" onkeydown="if(event.key==='Enter')addPlanItem()">
+        <input type="number" id="plan-depth" class="edit-input" placeholder="m" min="0" max="100">
+        <button class="cl-plus" onclick="addPlanItem()">+</button>
+      </div>
+      <div class="tpl-row"><button class="chip-btn" onclick="addPlanPreset('coron')" id="plan-coron">+ Coron wrecks</button>
+        <small class="muted" id="plan-hint">Depths are approximate — confirm with your dive centre.</small></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="accent" data-i18n="budT">Money</span></div>
+      <div id="trip-budget"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-checklist">
+    <div class="card">
+      <div class="card-title"><span class="accent" id="checklist-title">Dive Checklist</span></div>
+      <div id="cl-buddies"></div>
       <div id="cl-progress" style="margin-bottom:8px;"></div>
 
       <div class="cl-h" id="cl-shared-h">Shared (trip gear)</div>
@@ -598,18 +627,6 @@
 
       <div id="cl-buddy-sections"></div>
       <button onclick="resetChecklist()" class="btn-ghost cl-wide" id="cl-reset-btn" data-i18n="clReset">Reset</button>
-    </div>
-
-    <div class="card">
-      <div class="card-title"><span class="accent" id="trip-plan-title">Dive plan</span></div>
-      <div id="trip-plan"></div>
-      <div class="plan-add">
-        <input type="text" id="plan-name" class="edit-input" placeholder="Site / wreck" onkeydown="if(event.key==='Enter')addPlanItem()">
-        <input type="number" id="plan-depth" class="edit-input" placeholder="m" min="0" max="100">
-        <button class="cl-plus" onclick="addPlanItem()">+</button>
-      </div>
-      <div class="tpl-row"><button class="chip-btn" onclick="addPlanPreset('coron')" id="plan-coron">+ Coron wrecks</button>
-        <small class="muted" id="plan-hint">Depths are approximate — confirm with your dive centre.</small></div>
     </div>
 
     <div class="card">
@@ -698,6 +715,7 @@
 <script src="push.js"></script>
 <script src="trip.js"></script>
 <script src="planner.js"></script>
+<script src="tripplan.js"></script>
 <script src="app.js"></script>
 <script src="sharecard.js"></script>
 <script src="badges.js"></script>

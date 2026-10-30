@@ -138,7 +138,7 @@ body {
   .tab.active { background: none; color: var(--accent); box-shadow: none; }
   .tab:not(.active) { color: var(--text-muted); }
   /* Hide secondary tabs on mobile by default */
-  #tab-certs, #tab-gear, #tab-plan, #tab-checklist, #tab-shop { display: none; }
+  #tab-certs, #tab-gear, #tab-plan, #tab-trip, #tab-checklist, #tab-shop { display: none; }
   #tab-more { display: flex; }
   .more-menu {
     display: none; position: fixed; bottom: 64px; right: 8px; left: 8px;

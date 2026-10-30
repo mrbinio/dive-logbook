@@ -2,10 +2,10 @@
 // Own files: network first (always the newest deploy), cache as fallback.
 // Libraries and fonts from CDNs: cache first (versioned URLs never change).
 // Firestore/Auth traffic is never touched — Firestore keeps its own offline cache.
-const CACHE = 'mrbinio-v19';
-const SHELL = ['./', 'index.html', 'style.css', 'theme.css', 'app.js', 'divetools.js', 'ocean.js', 'intro.js', 'sharecard.js', 'badges.js', 'wrapped.js', 'signature.js', 'push.js', 'trip.js', 'planner.js',
+const CACHE = 'mrbinio-v20';
+const SHELL = ['./', 'index.html', 'style.css', 'theme.css', 'app.js', 'divetools.js', 'ocean.js', 'intro.js', 'sharecard.js', 'badges.js', 'wrapped.js', 'signature.js', 'push.js', 'trip.js', 'planner.js', 'tripplan.js',
   'suunto.js', 'shearwater.js', 'dive3d.js', 'diver.svg', 'icon.svg', 'icon-192.png', 'manifest.json'];
-const CDN = ['www.gstatic.com', 'unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com', 'sql.js.org'];
+const CDN = ['www.gstatic.com', 'unpkg.com', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com', 'sql.js.org'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).catch(() => {}).then(() => self.skipWaiting()));

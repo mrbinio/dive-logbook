@@ -52,7 +52,6 @@ function calcPlan() {
   const my = myPlannerSac();
   const tankKey = (TANKS.find(t => t[2] === planner.tank) || [])[0];
   const chip = (on, label, click) => `<button class="chip-btn${on ? ' on' : ''}" onclick="${click}">${label}</button>`;
-  const sites = ((typeof currentTrip !== 'undefined' && currentTrip && currentTrip.plan) || []).filter(p => +p.depth > 0);
   el.innerHTML = `
     <div class="pl-sec">${TL('Butla', 'Tank')}</div>
     <div class="chip-row">${TANKS.map(t => chip(tankKey === t[0], t[1], `setPlanner('tank', ${t[2]})`)).join('')}</div>
@@ -72,8 +71,6 @@ function calcPlan() {
       <div class="chip-row">${chip(planner.reserve === 'bar', TL('50 bar na powierzchnię', '50 bar at the surface'), "setPlanner('reserve', 'bar')")}
         ${chip(planner.reserve === 'third', TL('Zasada ⅓ (wraki, wnętrza)', 'Rule of thirds (wrecks, overhead)'), "setPlanner('reserve', 'third')")}</div>
     </details>
-    ${sites.length ? `<div class="pl-sec">${TL('Z planu wyjazdu', 'From your trip plan')}</div>
-      <div class="chip-row">${sites.map(p => chip(planner.depth === +p.depth, `${esc(p.name)} <small>${+p.depth} m</small>`, `setPlanner('depth', ${+p.depth})`)).join('')}</div>` : ''}
     <div id="pl-results"></div>`;
   renderPlanResults();
 }
