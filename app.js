@@ -1239,7 +1239,8 @@ const AGENCY_LOGOS = {
   TDI: {color:'#e31837',text:'TDI'},
   BSAC: {color:'#003087',text:'BSAC'},
   IANTD: {color:'#8b0000',text:'IANTD'},
-  GUE: {color:'#2e4057',text:'GUE'}
+  GUE: {color:'#2e4057',text:'GUE'},
+  PSAI: {color:'#0b2a4a',text:'PSAI'}
 };
 
 function renderCerts() {
