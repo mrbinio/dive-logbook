@@ -1057,6 +1057,7 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 .bud-sum div > small:last-child { letter-spacing: 0; text-transform: none; font-size: .68rem; }
 .bud-order { padding: 12px 14px; border-radius: 14px; background: linear-gradient(135deg, rgba(255,200,90,.14), rgba(255,255,255,.04)); border: 1px solid rgba(255,200,90,.3); }
 .bud-order .dw-h { color: #ffd27a; }
+.bud-bring { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 8px; font-size: .78rem; color: var(--text-dim); }
 .bud-order small { display: block; margin-top: 6px; font-size: .7rem; color: var(--text-dim); }
 .bud-mini { width: 64px !important; padding: 4px 6px !important; display: inline-block; text-align: right; }
 .bud-tips { margin: 12px 0 0; padding-left: 18px; font-size: .76rem; color: var(--text-dim); line-height: 1.5; }

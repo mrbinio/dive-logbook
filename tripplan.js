@@ -261,7 +261,7 @@ function budgetDefaults(t) {
     L('Latarka z wypożyczalni (dzień)', 'Torch rental (per day)', 200, 0, 'cash'),
     L('Wejściówki (np. Maquinit Hot Springs)', 'Entry fees (e.g. hot springs)', 200, 1, 'cash'),
     L('Transport lokalny (tricycle)', 'Local transport (tricycle)', 500, 1, 'cash'),
-    L('Pamiątki dla rodziny', 'Souvenirs for family', 5000, 1, 'cash'),
+    L('Pamiątki: suszone mango (za kg)', 'Souvenirs: dried mango (per kg)', 900, 5, 'cash'),
     L('Drobne: pralnia, apteka, SIM', 'Small stuff: laundry, pharmacy, SIM', 1500, 1, 'cash'),
   ] };
 }
@@ -355,12 +355,19 @@ async function renderBudgetTotals() {
   const cash = sum('cash'), card = sum('card');
   const pr = (currentTrip.program || {}).days || [];
   const days = pr.length || Math.max(1, Math.round(((parseDay(currentTrip.end) || 0) - (programDay1(currentTrip) || 0)) / dayMs) + 1) || 1;
-  const order = Math.ceil(cash * (1 + (+b.buffer || 0) / 100) / 500) * 500;
+  const need = cash * (1 + (+b.buffer || 0) / 100);
+  const order = Math.ceil(need / 500) * 500;
+  // bring: order the local currency at home, or dollars to change on arrival
+  const inUsd = b.bring === 'USD' && b.cur !== 'USD';
   const sign = CUR_SIGN[b.cur] || b.cur;
   const fx = await loadRates(b.cur);
   const conv = v => fx && fx.rates[b.home] ? ` <small>≈ ${Math.round(v * fx.rates[b.home]).toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-GB')} ${b.home}</small>` : '';
   const f = v => Math.round(v).toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-GB') + ' ' + sign;
   if (!document.getElementById('bud-totals')) return;
+  const usdPer = fx && fx.rates.USD, homePerUsd = fx && fx.rates[b.home] && usdPer ? fx.rates[b.home] / usdPer : 0;
+  const usdEx = usdPer ? Math.ceil(need * usdPer / 50) * 50 : 0;
+  const homeTotal = !fx || !fx.rates[b.home] ? null
+    : inUsd ? (usdEx + (b.usd || 0)) * homePerUsd : order * fx.rates[b.home] + (b.usd || 0) * homePerUsd;
   el.innerHTML = `<div class="bud-sum">
       <div><small>${TL('Gotówka', 'Cash')}</small><b>${f(cash)}</b>${conv(cash)}</div>
       <div><small>${TL('Karta', 'Card')}</small><b>${f(card)}</b>${conv(card)}</div>
@@ -368,15 +375,21 @@ async function renderBudgetTotals() {
     </div>
     <div class="bud-order">
       <div class="dw-h">🏦 ${TL('Do zamówienia', 'To order')}</div>
-      <div class="dw-row"><span>${b.cur} (${TL('gotówka', 'cash')} + <input type="number" class="edit-input bud-mini" min="0" max="100" value="${b.buffer}" onchange="editBudget(-1, 'buffer', +this.value || 0)">% ${TL('zapasu', 'spare')})</span><b>${f(order)}</b></div>
+      ${b.cur !== 'USD' ? `<div class="bud-bring">${TL('Zamawiam', 'I order')}
+        <button class="chip-btn${inUsd ? '' : ' on'}" onclick="editBudget(-1, 'bring', '${b.cur}')">${b.cur}</button>
+        <button class="chip-btn${inUsd ? ' on' : ''}" onclick="editBudget(-1, 'bring', 'USD')">${TL('USD, wymiana na miejscu', 'USD, change on arrival')}</button></div>` : ''}
+      <div class="dw-row"><span>${TL('Gotówka', 'Cash')} ${f(cash)} + <input type="number" class="edit-input bud-mini" min="0" max="100" value="${b.buffer}" onchange="editBudget(-1, 'buffer', +this.value || 0)">% ${TL('zapasu', 'spare')}</span><b>${inUsd ? (usdEx ? '$ ' + usdEx.toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-GB') : '—') : f(order)}</b></div>
       <div class="dw-row"><span>USD ${TL('na awaryjną rezerwę', 'emergency reserve')}</span><b>$ <input type="number" class="edit-input bud-mini" min="0" step="50" value="${b.usd}" onchange="editBudget(-1, 'usd', +this.value || 0)"></b></div>
-      <div class="dw-row"><span>${TL('Razem w', 'Total in')} ${b.home}</span><b>${fx && fx.rates[b.home] ? '≈ ' + Math.round(order * fx.rates[b.home] + (b.usd || 0) * (fx.rates[b.home] / (fx.rates.USD || 1))).toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-GB') + ' ' + b.home : '—'}</b></div>
+      ${inUsd && usdEx ? `<div class="dw-row"><span>${TL('Razem dolarów', 'Dollars in total')}</span><b>$ ${(usdEx + (b.usd || 0)).toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-GB')}</b></div>` : ''}
+      <div class="dw-row"><span>${TL('Razem w', 'Total in')} ${b.home}</span><b>${homeTotal != null ? '≈ ' + Math.round(homeTotal).toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-GB') + ' ' + b.home : '—'}</b></div>
       <small>${fx ? TL(`Kurs z ${fx.date}. W kantorze będzie trochę gorszy.`, `Rate from ${fx.date}. Exchange offices are a bit worse.`) : TL('Brak kursu (offline).', 'No exchange rate (offline).')}</small>
     </div>
     <ul class="bud-tips">
       <li>${TL('Płacąc kartą, zawsze wybieraj walutę lokalną, nie złotówki — przewalutowanie terminala (DCC) jest drogie.', 'When paying by card always choose the local currency — the terminal\'s conversion (DCC) is expensive.')}</li>
       <li>${TL('Napiwki, bary poza hotelem, targ i tricycle — tylko gotówka, najlepiej w małych nominałach.', 'Tips, bars outside the hotel, markets and tricycles — cash only, best in small notes.')}</li>
-      <li>${TL('Dolary to rezerwa na wypadek, gdyby karta nie działała — dolary wymienisz wszędzie.', 'Dollars are a reserve in case the card fails — they can be exchanged anywhere.')}</li>
+      ${inUsd ? `<li>${TL('Dolary bierz nowe, nieuszkodzone, najlepiej w banknotach $100 i $50 — dostaniesz lepszy kurs; zagięte, popisane lub stare banknoty kantory odrzucają albo liczą taniej.', 'Bring new, undamaged dollars, ideally $100 and $50 notes — better rate; folded, marked or old notes get refused or a worse rate.')}</li>
+      <li>${TL('Na lotnisku wymień tylko tyle, ile trzeba na start — kurs jest tam gorszy. Resztę w kantorze w mieście (w Coron jest kilka w centrum).', 'At the airport change only what you need to start — the rate is worse there. The rest at a money changer in town.')}</li>`
+      : `<li>${TL('Dolary to rezerwa na wypadek, gdyby karta nie działała — dolary wymienisz wszędzie.', 'Dollars are a reserve in case the card fails — they can be exchanged anywhere.')}</li>`}
       ${(currentTrip.program || {}).gearIncluded ? `<li>${TL('Sprzęt jest wliczony w cenę wyjazdu — wypożyczenie dolicz tylko za latarkę, jeśli nie masz swojej.', 'Gear is included in the trip price — only add a torch rental if you have no torch.')}</li>` : ''}
     </ul>`;
 }
