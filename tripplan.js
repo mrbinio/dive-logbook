@@ -251,7 +251,7 @@ function budgetDefaults(t) {
   const php = (pr.cur || 'PHP') === 'PHP';
   const P = v => php ? v : 0;
   const L = (pl, en, price, qty, pay) => ({ name: TL(pl, en), price: P(price), qty, pay });
-  return { cur: pr.cur || 'PHP', home: 'PLN', usd: 100, buffer: 15, lines: [
+  return { cur: pr.cur || 'PHP', home: 'SEK', usd: 100, buffer: 15, lines: [
     L('Kolacje (hotel, karta)', 'Dinners (hotel, card)', 900, Math.max(0, n - 1 - (lunchDays.length ? 1 : 0)), 'card'),
     L('Posiłki poza hotelem', 'Meals out', 1000, lunchDays.length + (lunchDays.length ? 1 : 0), 'cash'),
     L('Lunch w dni bez łodzi', 'Lunch on non-boat days', 500, freeDays, 'card'),
