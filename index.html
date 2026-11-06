@@ -154,6 +154,7 @@
     <button class="tab" onclick="switchTab('gear');closeMore()">Gear</button>
     <button class="tab" onclick="switchTab('plan');closeMore()">Plan</button>
     <button class="tab" onclick="switchTab('trip');closeMore()" id="more-trip">Trip</button>
+    <button class="tab" onclick="switchTab('trip');flightsShow(true);closeMore()">✈️ Flights</button>
     <button class="tab" onclick="switchTab('checklist');closeMore()">Checklist</button>
   </div>
 
@@ -551,6 +552,8 @@
   </div>
 
   <div class="panel" id="panel-trip">
+    <div class="fl-seg" id="fl-seg"><button onclick="flightsShow(false)">Trip</button><button onclick="flightsShow(true)">Flights</button></div>
+    <div id="flights-view"></div>
     <div class="card">
       <div class="card-title"><span class="accent" data-i18n="tripT">Trip</span></div>
       <div class="trip-fields">
@@ -719,6 +722,7 @@
 <script src="tripplan.js"></script>
 <script src="app.js"></script>
 <script src="certs.js"></script>
+<script src="flights.js"></script>
 <script src="sharecard.js"></script>
 <script src="badges.js"></script>
 <script src="wrapped.js"></script>
