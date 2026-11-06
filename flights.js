@@ -4,7 +4,8 @@
 // reaches the account through a #flights=<base64url> link (a fragment is never sent to the server)
 // or a JSON file. Shape: { title, ap: {CODE: {name, lat, lon, lx, ly}}, todo: [{st, t, d}], notes: [],
 // items: [{k:'s', t} | {k:'f', no, air, plane, from, to, dep, arr, tFrom, tTo, cls, seat, meal, pnr, etkt, bag: {st, big, t}}
-//         | {k:'w', at, st, t, lines: [], price}] }, with dep/arr as ISO strings including the UTC offset.
+//         | {k:'w', at, st, t, lines: []}
+//         | {k:'h', name, addr, addrLocal, in, out, ref, tel, lines: [], routes: [{t, maps, steps: [{ic, t, d}]}]}] }, with dep/arr as ISO strings including the UTC offset.
 let flData = null, flOn = false, flIO = null, flTimer = null, flRun = 0;
 const flDoc = uid => db.collection('users').doc(uid).collection('profile').doc('flights');
 const flCacheKey = uid => 'ccFlights:' + uid;
@@ -189,6 +190,28 @@ function flWaitHTML(w, prev, next) {
   </div>`;
 }
 
+// A place to stay: address, times and the way there, step by step
+function flHotelHTML(h, prev, next) {
+  const dur = prev && next ? flSpan(Date.parse(next.dep) - Date.parse(prev.arr)) : '';
+  const web = u => /^https:\/\//.test(u || '') ? esc(u) : '';
+  const copy = (txt, label) => txt ? `<button class="fl-h-copy" data-c="${esc(txt)}" onclick="flCopy(this)"><small>${esc(label)}</small><b>${esc(txt)}</b></button>` : '';
+  const tel = String(h.tel || '').replace(/[^\d+]/g, '');
+  const routes = (h.routes || []).map(r => `<div class="fl-rt"><div class="fl-rt-t">${esc(r.t)}</div>
+    <ol>${(r.steps || []).map((st, i) => `<li style="--i:${i}"><span class="fl-rt-ic">${esc(st.ic || '•')}</span><div><b>${esc(st.t)}</b>${st.d ? `<small>${esc(st.d)}</small>` : ''}</div></li>`).join('')}</ol>
+    ${web(r.maps) ? `<a class="fl-rt-map" href="${web(r.maps)}" target="_blank" rel="noopener">🗺️ ${TL('Otwórz trasę w mapach', 'Open route in maps')}</a>` : ''}</div>`).join('');
+  const lines = (h.lines || []).map(l => `<li>${esc(l)}</li>`).join('');
+  return `<article class="fl-hotel">
+    <div class="fl-hotel-top"><div><small>${TL('Nocleg', 'Stay')}${dur ? ` · ${esc(dur)}` : ''}</small><h4>${esc(h.name)}</h4></div><span class="fl-hotel-ic">🏨</span></div>
+    <div class="fl-hotel-times">${h.in ? `<div><small>${TL('Zameldowanie', 'Check-in')}</small><b>${esc(h.in)}</b></div>` : ''}${h.out ? `<div><small>${TL('Wymeldowanie', 'Check-out')}</small><b>${esc(h.out)}</b></div>` : ''}</div>
+    ${copy(h.addr, TL('Adres (dotknij, aby skopiować)', 'Address (tap to copy)'))}
+    ${copy(h.addrLocal, TL('Adres dla taksówkarza', 'Address for the driver'))}
+    ${copy(h.ref, TL('Numer rezerwacji', 'Booking number'))}
+    ${tel ? `<a class="fl-h-tel" href="tel:${esc(tel)}">📞 ${esc(h.tel)}</a>` : ''}
+    ${routes}
+    ${lines ? `<ul class="fl-hotel-notes">${lines}</ul>` : ''}
+  </article>`;
+}
+
 // Split-flap: each letter of an airport code rattles through the alphabet and lands on the real one
 function flFlap(el, delay) {
   const code = el.dataset.code || '';
@@ -243,6 +266,7 @@ function flightsRender() {
     if (it.k === 'f') return flCardHTML(it);
     const prev = items.slice(0, i).reverse().find(x => x.k === 'f');
     const next = items.slice(i + 1).find(x => x.k === 'f');
+    if (it.k === 'h') return flHotelHTML(it, prev, next);
     return flWaitHTML(it, prev, it.first ? null : next);
   }).join('');
   const todo = (flData.todo || []).map((t, i) => `<li class="${esc(t.st || '')}" style="--i:${i}"><b>${esc(t.t)}</b>${t.d ? `<span>${esc(t.d)}</span>` : ''}</li>`).join('');
@@ -261,7 +285,7 @@ function flightsRender() {
   flHeroLine();
   flTimer = setInterval(() => { if (flOn && document.getElementById('fl-count')) flHeroLine(); else clearInterval(flTimer); }, 30000);
   flFlyJet(run);
-  const cards = root.querySelectorAll('.fl-card');
+  const cards = root.querySelectorAll('.fl-card, .fl-hotel');
   if ('IntersectionObserver' in window) {
     flIO = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { flReveal(e.target); flIO.unobserve(e.target); } }), { threshold: .18 });
     cards.forEach(c => flIO.observe(c));
