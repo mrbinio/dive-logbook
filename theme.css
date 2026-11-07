@@ -1229,6 +1229,22 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 @keyframes flCity { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 @keyframes flPulse { from { transform: scale(.7); opacity: .9; } to { transform: scale(3); opacity: 0; } }
 .fl-jet path { fill: #fff; filter: drop-shadow(0 0 5px #fff); }
+/* Flown part of the route: grey over the coloured arc; a finished flight loses its glow */
+.fl-flown { fill: none; stroke: #6c7686; stroke-width: 3.4; stroke-linecap: butt; stroke-dasharray: 0 2; opacity: 0; transition: stroke-dasharray .8s ease; }
+.fl-flown.on { animation: flFade .5s ease-out var(--d) forwards; }
+.fl-arc.done { filter: none; }
+@keyframes flFade { to { opacity: 1; } }
+.fl-jet-ring { fill: none; stroke: #fff; stroke-width: 1.4; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.fl-jet.live .fl-jet-ring { animation: flPulse 2.4s ease-out infinite; }
+.fl-live { display: grid; gap: 8px; padding-top: 10px; }
+.fl-live:empty { display: none; }
+.fl-prog { height: 6px; border-radius: 99px; background: rgba(155,220,255,.18); overflow: hidden; }
+.fl-prog i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #8f9aab, var(--accent-bright)); transition: width .8s ease; }
+.fl-live-row { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--text-dim); }
+.fl-live-row b { color: var(--white); }
+.fl-live-gps { font-size: 12.5px; font-weight: 700; color: var(--accent-bright); font-variant-numeric: tabular-nums; }
+.fl-live .fl-gps { justify-self: start; }
+.fl-live-hint { font-size: 11px; color: var(--text-dim); }
 .fl-count { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
 .fl-count small { color: var(--text-dim); font-size: 12px; }
 .fl-count b { color: var(--accent-bright); font-size: 17px; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -1273,6 +1289,11 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 .fl-track i { position: absolute; top: -10px; left: 0; font-style: normal; font-size: 16px; color: var(--air); }
 .fl-card.in .fl-track i { animation: flTrack 1.3s cubic-bezier(.45,.05,.3,1) .35s both; }
 @keyframes flTrack { from { left: 0; opacity: 0; } 15% { opacity: 1; } to { left: calc(100% - 15px); opacity: 1; } }
+/* The flight in the air: the track fills in grey up to the plane */
+.fl-card.live { box-shadow: 0 0 0 2px var(--air), 0 10px 30px rgba(0,0,0,.35); }
+.fl-card.live .fl-track { background: linear-gradient(90deg, #8f9aab 0 calc(var(--p) * 100%), transparent 0), repeating-linear-gradient(90deg, #9fb1c6 0 4px, transparent 4px 8px); }
+.fl-card.live .fl-track i, .fl-card.in.live .fl-track i { animation: none; opacity: 1; left: calc(var(--p) * (100% - 15px)); transition: left .8s ease; }
+.fl-card.live .fl-line small { color: var(--air); }
 .fl-meta { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 14px 10px; }
 .fl-m { flex: 1 1 auto; padding: 5px 8px; border: 0; border-radius: 8px; background: rgba(16,35,58,.06); text-align: left; font-family: inherit; color: inherit; }
 .fl-m small { display: block; font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: #5b6e85; }
@@ -1321,6 +1342,7 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 @media (prefers-reduced-motion: reduce) {
   .fl-arc, .fl-city, .fl-city .fl-pulse, .fl-todo li, .fl-card.in, .fl-card.in * { animation: none !important; }
   .fl-arc { stroke-dashoffset: 0; } .fl-city { opacity: 1; }
+  .fl-flown.on { animation: none; opacity: 1; } .fl-jet.live .fl-jet-ring { animation: none; }
 }
 
 .fl-hotel { margin: 0 0 6px 18px; padding: 14px; border-radius: 16px; background: linear-gradient(160deg, rgba(120,190,170,.17), rgba(255,255,255,.05)); border: 1px solid rgba(140,220,190,.32); }

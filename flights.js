@@ -6,7 +6,7 @@
 // items: [{k:'s', t} | {k:'f', no, air, plane, from, to, dep, arr, tFrom, tTo, cls, seat, meal, pnr, etkt, bag: {st, big, t}}
 //         | {k:'w', at, st, t, lines: []}
 //         | {k:'h', name, addr, addrLocal, in, out, ref, tel, lines: [], routes: [{t, maps, steps: [{ic, t, d}]}]}] }, with dep/arr as ISO strings including the UTC offset.
-let flData = null, flOn = false, flIO = null, flTimer = null, flRun = 0;
+let flData = null, flOn = false, flIO = null, flTimer = null, flRun = 0, flParked = false;
 const flDoc = uid => db.collection('users').doc(uid).collection('profile').doc('flights');
 const flCacheKey = uid => 'ccFlights:' + uid;
 const FL_AIR = { QR: '#8a1538', PR: '#1c4fa8', CX: '#006564' };
@@ -117,7 +117,8 @@ function flMapHTML() {
     arcs.push({ d: `M${ax.toFixed(1)} ${ay.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${bx.toFixed(1)} ${by.toFixed(1)}`, back: seenBack });
   });
   const step = 0.62;
-  const paths = arcs.map((a, i) => `<path class="fl-arc${a.back ? ' back' : ''}" d="${a.d}" pathLength="1" style="--d:${(.3 + i * step).toFixed(2)}s"/>`).join('');
+  const paths = arcs.map((a, i) => `<path class="fl-arc${a.back ? ' back' : ''}" d="${a.d}" pathLength="1" style="--d:${(.3 + i * step).toFixed(2)}s"/>`).join('')
+    + arcs.map(a => `<path class="fl-flown" d="${a.d}" pathLength="1" style="--d:${(.3 + arcs.length * step).toFixed(2)}s"/>`).join('');
   const codes = [...new Set(fl.flatMap(f => [f.from, f.to]))];
   const dots = codes.map((c, i) => {
     const p = ap[c], x = X(p.lon), y = Y(p.lat);
@@ -126,17 +127,18 @@ function flMapHTML() {
   }).join('');
   return `<svg class="fl-map" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(TL('Mapa trasy', 'Route map'))}">
     <g class="fl-grid">${grid.join('')}</g>${paths}${dots}
-    <g id="fl-jet" class="fl-jet" style="opacity:0"><path d="M11 0 L-5 -7 L-2 0 L-5 7 Z"/></g></svg>`;
+    <g id="fl-jet" class="fl-jet" style="opacity:0"><circle class="fl-jet-ring" r="7"/><path d="M11 0 L-5 -7 L-2 0 L-5 7 Z"/></g></svg>`;
 }
 function flFlyJet(run) {
   const jet = document.getElementById('fl-jet');
   const arcs = [...document.querySelectorAll('#flights-view .fl-arc')];
-  if (!jet || !arcs.length || flCalm()) return;
+  flParked = false;
+  if (!jet || !arcs.length || flCalm()) { flParked = true; flPaint(); return; }
   const step = 620, t0 = performance.now() + 300;
   const frame = now => {
     if (run !== flRun || !jet.isConnected) return;
     const t = (now - t0) / step, i = Math.floor(t);
-    if (i >= arcs.length) { jet.style.opacity = 0; return; }
+    if (i >= arcs.length) { flParked = true; flPaint(); return; }
     if (t >= 0) {
       const a = arcs[i], len = a.getTotalLength(), k = t - i, e = k * k * (3 - 2 * k);
       const p = a.getPointAtLength(e * len), q = a.getPointAtLength(Math.min(len, e * len + 1));
@@ -147,6 +149,106 @@ function flFlyJet(run) {
   };
   requestAnimationFrame(frame);
 }
+
+// --- live progress: from the timetable, or from the phone's GPS (it works in flight mode, best at a window) ---
+let flGps = null, flWatch = null;
+const FL_R = 6371, flRad = d => d * Math.PI / 180;
+function flGc(a, b) {   // angle between two points on the globe, radians
+  const p1 = flRad(a.lat), p2 = flRad(b.lat), dl = flRad(b.lon - a.lon);
+  return 2 * Math.asin(Math.sqrt(Math.sin((p2 - p1) / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2));
+}
+function flBearing(a, b) {
+  const p1 = flRad(a.lat), p2 = flRad(b.lat), dl = flRad(b.lon - a.lon);
+  return Math.atan2(Math.sin(dl) * Math.cos(p2), Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl));
+}
+// How much of the great circle A→B lies behind P, and how far P is off that line (km)
+function flAlong(a, b, p) {
+  const d13 = flGc(a, p), d12 = flGc(a, b), turn = flBearing(a, p) - flBearing(a, b);
+  const xt = Math.asin(Math.sin(d13) * Math.sin(turn));
+  const at = Math.acos(Math.min(1, Math.max(-1, Math.cos(d13) / Math.cos(xt)))) * (Math.cos(turn) < 0 ? -1 : 1);
+  return { frac: Math.min(1, Math.max(0, at / (d12 || 1))), off: Math.abs(xt) * FL_R };
+}
+const flGeo = () => { const ap = flData.ap || {}; return flFlights().every(f => ap[f.from] && ap[f.to]); };
+const flKm = f => flGc(flData.ap[f.from], flData.ap[f.to]) * FL_R;
+const flNum = n => Math.round(n).toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-GB');
+
+// The flight in progress: the GPS fix decides when there is a fresh one near a flight's line, else the clock
+function flLeg() {
+  const fl = flFlights(), now = Date.now(), H = 3600000;
+  if (flGps && now - flGps.t < 5 * 60000 && flGeo()) {
+    let best = null;
+    fl.forEach((f, i) => {
+      if (now < Date.parse(f.dep) - 3 * H || now > Date.parse(f.arr) + 3 * H) return;
+      const r = flAlong(flData.ap[f.from], flData.ap[f.to], flGps);
+      if (r.off < 400 && (!best || r.off < best.off)) best = { i, f, frac: r.frac, off: r.off, gps: true };
+    });
+    if (best) return best;
+  }
+  const i = fl.findIndex(f => now >= Date.parse(f.dep) && now <= Date.parse(f.arr));
+  if (i < 0) return null;
+  const f = fl[i];
+  return { i, f, frac: (now - Date.parse(f.dep)) / (Date.parse(f.arr) - Date.parse(f.dep)), gps: false };
+}
+// Share of each flight already flown: 1 behind us, 0 ahead, the share in between for the one in the air
+function flShares(leg) {
+  const now = Date.now();
+  return flFlights().map((f, i) => leg ? (i < leg.i ? 1 : i === leg.i ? leg.frac : 0) : (now > Date.parse(f.arr) ? 1 : 0));
+}
+function flLeft(leg) {
+  const km = flGeo() ? flKm(leg.f) * (1 - leg.frac) : 0;
+  if (leg.gps && flGps.spd > 50 && km) return km / (flGps.spd * 3.6) * 3600000;
+  return Math.max(0, Date.parse(leg.f.arr) - Date.now());
+}
+
+// Grey for the part of the route behind us, the jet parked where we are, the boarding pass track filled in
+function flPaint() {
+  const root = document.getElementById('flights-view');
+  if (!root || !flData) return;
+  const leg = flLeg(), share = flShares(leg);
+  const arcs = root.querySelectorAll('.fl-arc'), flown = root.querySelectorAll('.fl-flown');
+  share.forEach((p, i) => {
+    if (flown[i]) { flown[i].style.strokeDasharray = `${p.toFixed(4)} 2`; flown[i].classList.toggle('on', p > 0.001); }
+    if (arcs[i]) arcs[i].classList.toggle('done', p >= 1);
+  });
+  const jet = document.getElementById('fl-jet');
+  if (jet && flParked) {
+    const a = leg && arcs[leg.i];
+    if (a) {
+      const len = a.getTotalLength(), at = Math.min(len - 1, leg.frac * len);
+      const p = a.getPointAtLength(Math.max(0, at)), q = a.getPointAtLength(Math.max(0, at) + 1);
+      jet.setAttribute('transform', `translate(${p.x} ${p.y}) rotate(${Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI})`);
+      jet.style.opacity = 1;
+      jet.classList.add('live');
+    } else { jet.style.opacity = 0; jet.classList.remove('live'); }
+  }
+  root.querySelectorAll('.fl-card').forEach(c => {
+    const on = !!leg && c.dataset.dep === leg.f.dep, sm = c.querySelector('.fl-line small');
+    c.classList.toggle('live', on);
+    if (on) c.style.setProperty('--p', leg.frac.toFixed(4));
+    if (sm) sm.textContent = on ? `${Math.round(leg.frac * 100)}% · ${TL('zostało', 'left')} ${flSpan(flLeft(leg))}` : sm.dataset.dur;
+  });
+}
+
+function flGpsOn() {
+  if (!navigator.geolocation) { showToast(TL('❌ Ten telefon nie udostępnia GPS', '❌ No GPS on this device')); return; }
+  if (flWatch !== null) return;
+  flWatch = navigator.geolocation.watchPosition(pos => {
+    const c = pos.coords;
+    flGps = { lat: c.latitude, lon: c.longitude, alt: c.altitude, spd: c.speed, acc: c.accuracy, t: Date.now() };
+    if (flOn) { flHeroLine(); flPaint(); }
+  }, err => {
+    if (err.code === 1) { flGpsOff(); showToast(TL('📍 Brak zgody na lokalizację. Włącz ją w Ustawieniach.', '📍 Location not allowed. Turn it on in Settings.')); }
+  }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 120000 });
+  try { localStorage.setItem('ccFlGps', '1'); } catch (e) {}
+  flHeroLine();
+}
+function flGpsOff(keep) {
+  if (flWatch !== null && navigator.geolocation) navigator.geolocation.clearWatch(flWatch);
+  flWatch = null;
+  if (!keep) { flGps = null; try { localStorage.removeItem('ccFlGps'); } catch (e) {} }
+  if (flOn) { flHeroLine(); flPaint(); }
+}
+const flGpsToggle = () => flWatch === null ? flGpsOn() : flGpsOff();
 
 // --- cards ---
 function flCardHTML(f) {
@@ -170,7 +272,7 @@ function flCardHTML(f) {
     <div class="fl-sheen"></div>
     <header class="fl-h"><b>${esc(f.no)}</b><span>${esc([f.air, f.plane].filter(Boolean).join(' · '))}</span></header>
     <div class="fl-route">${pt('a', f.from, f.dep, f.tFrom)}
-      <div class="fl-line"><span class="fl-track"><i>✈</i></span><small>${esc(dur)}</small></div>
+      <div class="fl-line"><span class="fl-track"><i>✈</i></span><small data-dur="${esc(dur)}">${esc(dur)}</small></div>
       ${pt('b', f.to, f.arr, f.tTo)}</div>
     <div class="fl-meta">${meta}${ref}</div>
     ${f.etkt ? `<div class="fl-etkt">${TL('E-bilet', 'E-ticket')} ${esc(f.etkt)}</div>` : ''}
@@ -239,12 +341,37 @@ function flReveal(card) {
 function flHeroLine() {
   const el = document.getElementById('fl-count');
   if (!el) return;
-  const next = flFlights().find(f => Date.parse(f.dep) > Date.now());
+  const leg = flLeg(), next = flFlights().find(f => Date.parse(f.dep) > Date.now());
+  flLiveLine(leg, next);
+  if (leg) {
+    el.innerHTML = `<small>✈️ ${TL('W powietrzu', 'In the air')}: ${esc(leg.f.no)} ${esc(leg.f.from)} → ${esc(leg.f.to)}</small><b>${TL('zostało', 'left')} ${esc(flSpan(flLeft(leg)))}</b>`;
+    return;
+  }
   el.innerHTML = next
     ? `<small>${TL('Następny lot', 'Next flight')}: ${esc(next.no)} ${esc(next.from)} → ${esc(next.to)}</small><b>${TL('za', 'in')} ${esc(flUntil(Date.parse(next.dep) - Date.now()))}</b>`
     : `<small>${TL('Podróż zakończona', 'Trip finished')}</small>`;
   document.querySelectorAll('#flights-view .fl-card.next').forEach(c => c.classList.remove('next'));
   if (next) { const c = document.querySelector(`#flights-view .fl-card[data-dep="${next.dep}"]`); if (c) c.classList.add('next'); }
+}
+
+// Under the countdown: how far along we are, what the GPS says, and the switch for it
+function flLiveLine(leg, next) {
+  const el = document.getElementById('fl-live');
+  if (!el) return;
+  const geo = flGeo(), share = flShares(leg), fl = flFlights();
+  const total = geo ? fl.reduce((s, f) => s + flKm(f), 0) : 0;
+  const done = geo ? fl.reduce((s, f, i) => s + flKm(f) * share[i], 0) : 0;
+  const trip = document.getElementById('fl-trip');
+  if (trip) trip.innerHTML = total ? `<b>${Math.round(done / total * 100)}%</b> ${TL('trasy za Tobą', 'of the route done')}` : '';
+  const g = flGps, on = flWatch !== null;
+  const gpsTxt = !on ? '' : !g ? TL('📍 Szukam sygnału GPS… Trzymaj telefon przy oknie.', '📍 Looking for GPS… Keep the phone by a window.')
+    : '📍 ' + [g.alt != null ? `${flNum(g.alt)} m` : '', g.spd != null && g.spd >= 0 ? `${flNum(g.spd * 3.6)} km/h` : '', `± ${flNum(g.acc)} m`].filter(Boolean).join(' · ');
+  const legTxt = leg && geo ? `<div class="fl-prog"><i style="width:${(leg.frac * 100).toFixed(1)}%"></i></div>
+      <div class="fl-live-row"><span>${TL('Przelecone', 'Flown')} <b>${flNum(flKm(leg.f) * leg.frac)} km</b> ${TL('z', 'of')} ${flNum(flKm(leg.f))}</span>
+      <span>${leg.gps ? TL('pozycja z GPS', 'position from GPS') : TL('według rozkładu', 'by the timetable')}</span></div>` : '';
+  const btn = geo && (leg || next) ? `<button class="chip-btn fl-gps${on ? ' on' : ''}" onclick="flGpsToggle()">${on ? TL('📍 GPS włączony · wyłącz', '📍 GPS on · turn off') : TL('📍 Pokaż moją pozycję (GPS)', '📍 Show my position (GPS)')}</button>` : '';
+  el.innerHTML = legTxt + (gpsTxt ? `<div class="fl-live-gps">${esc(gpsTxt)}</div>` : '') + btn
+    + (btn && !on ? `<small class="fl-live-hint">${TL('Działa też w trybie samolotowym. Bez GPS pozycja liczy się z rozkładu.', 'Works in flight mode too. Without GPS the position follows the timetable.')}</small>` : '');
 }
 
 function flightsRender() {
@@ -273,9 +400,10 @@ function flightsRender() {
   const notes = (flData.notes || []).map(n => `<li>${esc(n)}</li>`).join('');
   root.innerHTML = `<section class="fl-hero">
       <div class="fl-hero-top"><div class="fl-title">${esc(flData.title || TL('Loty', 'Flights'))}</div>
-        <div class="fl-stats"><span><b>${fl.length}</b> ${TL('lotów', 'flights')}</span><span><b>${Math.round(air / 3600000)} h</b> ${TL('w powietrzu', 'in the air')}</span></div></div>
+        <div class="fl-stats"><span><b>${fl.length}</b> ${TL('lotów', 'flights')}</span><span><b>${Math.round(air / 3600000)} h</b> ${TL('w powietrzu', 'in the air')}</span><span id="fl-trip"></span></div></div>
       ${flMapHTML()}
       <div id="fl-count" class="fl-count"></div>
+      <div id="fl-live" class="fl-live"></div>
     </section>
     ${todo ? `<section class="fl-todo"><h3>${TL('Do zrobienia', 'To do')}</h3><ul>${todo}</ul></section>` : ''}
     ${body}
@@ -283,8 +411,15 @@ function flightsRender() {
     <div class="fl-foot"><label class="chip-btn">${TL('Wczytaj nowy plik', 'Load a new file')}<input type="file" accept="application/json,.json" onchange="flFile(this)" hidden></label>
       <button class="chip-btn" onclick="flDelete()">${TL('Usuń loty', 'Remove flights')}</button></div>`;
   flHeroLine();
-  flTimer = setInterval(() => { if (flOn && document.getElementById('fl-count')) flHeroLine(); else clearInterval(flTimer); }, 30000);
+  flTimer = setInterval(() => {
+    if (flOn && document.getElementById('fl-count')) { flHeroLine(); flPaint(); }
+    else { clearInterval(flTimer); flGpsOff(true); }
+  }, 30000);
   flFlyJet(run);
+  flPaint();
+  let want = false;
+  try { want = localStorage.getItem('ccFlGps') === '1'; } catch (e) {}
+  if (want && flGeo() && flWatch === null) flGpsOn();
   const cards = root.querySelectorAll('.fl-card, .fl-hotel');
   if ('IntersectionObserver' in window) {
     flIO = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { flReveal(e.target); flIO.unobserve(e.target); } }), { threshold: .18 });
@@ -301,6 +436,7 @@ function flightsShow(on) {
     b.textContent = i ? TL('✈️ Loty', '✈️ Flights') : TL('Wyjazd', 'Trip');
   });
   if (flOn) { flightsRender(); window.scrollTo(0, 0); }
+  else flGpsOff(true);   // GPS only while the flights are on screen; it comes back on with them
 }
 
 // A link with #flights=… : take the data out of the address straight away, save it once signed in
