@@ -240,8 +240,8 @@ function planAtDepth(depth) {
 }
 
 // --- money ---
-// Starting lines. For pesos the prices come from AlFresco Busuanga's menu (main ₱320–490,
-// beer ₱110–150, shake ₱200, water ₱60) and the Coron dive shop's rental list.
+// Starting lines. For pesos the hotel prices come from Marina del Sol's menu (main ₱440–640,
+// pasta/pizza/burger ₱280–560, shake ₱250, coffee ₱150, soft drink ₱100) and the Coron dive shop's rental list.
 function budgetDefaults(t) {
   const pr = t.program || {}, days = pr.days || [];
   const n = days.length || Math.max(1, Math.round(((parseDay(t.end) || 0) - (programDay1(t) || 0)) / dayMs) + 1) || 7;
@@ -252,10 +252,11 @@ function budgetDefaults(t) {
   const P = v => php ? v : 0;
   const L = (pl, en, price, qty, pay) => ({ name: TL(pl, en), price: P(price), qty, pay });
   return { cur: pr.cur || 'PHP', home: 'SEK', usd: 100, buffer: 15, lines: [
-    L('Kolacje (hotel, karta)', 'Dinners (hotel, card)', 900, Math.max(0, n - 1 - (lunchDays.length ? 1 : 0)), 'card'),
+    L('Kolacje (hotel, karta)', 'Dinners (hotel, card)', 1000, Math.max(0, n - 1 - (lunchDays.length ? 1 : 0)), 'card'),
     L('Posiłki poza hotelem', 'Meals out', 1000, lunchDays.length + (lunchDays.length ? 1 : 0), 'cash'),
-    L('Lunch w dni bez łodzi', 'Lunch on non-boat days', 500, freeDays, 'card'),
-    L('Woda, kawa, shake w ciągu dnia', 'Water, coffee, shakes', 300, n, 'cash'),
+    L('Lunch w dni bez łodzi', 'Lunch on non-boat days', 600, freeDays, 'card'),
+    L('Kawa i napoje w hotelu', 'Coffee and drinks at the hotel', 250, n, 'card'),
+    L('Napoje poza hotelem (shake, kawa w mieście)', 'Drinks out (shakes, coffee in town)', 150, n, 'cash'),
     L('Napiwki: załoga i przewodnik', 'Tips: boat crew and guide', 300, diveDays, 'cash'),
     L('Nitrox (opcjonalnie, za butlę)', 'Nitrox (optional, per fill)', 350, 0, 'cash'),
     L('Latarka z wypożyczalni (dzień)', 'Torch rental (per day)', 200, 0, 'cash'),
