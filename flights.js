@@ -61,15 +61,22 @@ function flCopy(btn) {
 function flLoad(user) {
   try { const c = localStorage.getItem(flCacheKey(user.uid)); if (c) flData = JSON.parse(c); } catch (e) {}
   if (flOn) flightsRender();
-  flDoc(user.uid).get().then(snap => {
+  flRefresh();
+}
+// Fetch the saved copy again: a phone app kept in the background would otherwise show the old times
+function flRefresh() {
+  const uid = auth.currentUser && auth.currentUser.uid;
+  if (!uid) return;
+  flDoc(uid).get().then(snap => {
     const json = snap.exists ? snap.data().json : null;
     const same = json && flData && json === JSON.stringify(flData);
     if (!json || same) return;
     flData = JSON.parse(json);
-    try { localStorage.setItem(flCacheKey(user.uid), json); } catch (e) {}
+    try { localStorage.setItem(flCacheKey(uid), json); } catch (e) {}
     if (flOn) flightsRender();
   }).catch(() => {});
 }
+document.addEventListener('visibilitychange', () => { if (flOn && document.visibilityState === 'visible') flRefresh(); });
 
 // --- formatting; times are shown as written on the ticket, in local time ---
 function flDay(iso) {
@@ -435,7 +442,7 @@ function flightsShow(on) {
     b.classList.toggle('on', i === (flOn ? 1 : 0));
     b.textContent = i ? TL('✈️ Loty', '✈️ Flights') : TL('Wyjazd', 'Trip');
   });
-  if (flOn) { flightsRender(); window.scrollTo(0, 0); }
+  if (flOn) { flightsRender(); window.scrollTo(0, 0); flRefresh(); }
   else flGpsOff(true);   // GPS only while the flights are on screen; it comes back on with them
 }
 
