@@ -450,17 +450,18 @@ function flightsShow(on) {
 
 // A link with #flights=… : take the data out of the address straight away, save it once signed in
 let flPending = null;
-(function flReadLink() {
+function flReadLink() {
   const m = location.hash.match(/^#flights=([\w-]+)$/);
-  if (!m) return;
+  if (!m) return false;
   history.replaceState(null, '', location.pathname + location.search);
   try { const d = flDecode(m[1]); if (flValid(d)) flPending = d; } catch (e) {}
   if (!flPending) showToast(TL('❌ Ten link z lotami jest uszkodzony', '❌ That flights link is damaged'));
-})();
-auth.onAuthStateChanged(user => {
-  if (!user) { flData = null; return; }
-  flLoad(user);
-  if (!flPending) return;
+  return !!flPending;
+}
+flReadLink();
+// The same link opened again in a tab that already has the app: only the #… part changes, no reload
+window.addEventListener('hashchange', () => { if (flReadLink() && auth.currentUser) flTakePending(); });
+function flTakePending() {
   const d = flPending;
   flPending = null;
   flSave(d).then(saved => {
@@ -468,5 +469,10 @@ auth.onAuthStateChanged(user => {
     if (typeof switchTab === 'function') switchTab('trip');
     flightsShow(true);
   }).catch(e => showToast('❌ ' + e.message));
+}
+auth.onAuthStateChanged(user => {
+  if (!user) { flData = null; return; }
+  flLoad(user);
+  if (flPending) flTakePending();
 });
 flightsShow(false);
