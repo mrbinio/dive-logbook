@@ -27,13 +27,27 @@ async function flSave(d) {
   const uid = auth.currentUser && auth.currentUser.uid;
   if (!uid) return false;
   const n = d.items.filter(i => i.k === 'f').length;
-  if (!confirm(TL(`Wczytać ${n} lotów na Twoje konto?`, `Load ${n} flights to your account?`))) return false;
+  if (!await flAsk(TL(`Wczytać ${n} lotów na Twoje konto?`, `Load ${n} flights to your account?`))) return false;
   flData = d;
   const json = JSON.stringify(d);
   try { localStorage.setItem(flCacheKey(uid), json); } catch (e) {}
   await flDoc(uid).set({ json, at: firebase.firestore.FieldValue.serverTimestamp() });
   showToast(TL('✈️ Loty zapisane', '✈️ Flights saved'));
   return true;
+}
+// A bar in the page instead of confirm(): browsers may block a dialog from a tab opened by a link
+function flAsk(text) {
+  document.querySelector('.fl-ask')?.remove();
+  const bar = document.createElement('div');
+  bar.className = 'fl-ask';
+  bar.innerHTML = `<b>✈️ ${esc(text)}</b><div><button class="btn-solid" data-ok="1">${TL('Wczytaj', 'Load')}</button><button class="btn-ghost">${TL('Anuluj', 'Cancel')}</button></div>`;
+  document.body.appendChild(bar);
+  return new Promise(ok => bar.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    bar.remove();
+    ok(!!b.dataset.ok);
+  }));
 }
 function flFile(input) {
   const f = input.files && input.files[0];
@@ -471,7 +485,7 @@ function flTakePending() {
   }).catch(e => showToast('❌ ' + e.message));
 }
 auth.onAuthStateChanged(user => {
-  if (!user) { flData = null; return; }
+  if (!user) { flData = null; if (flPending) showToast(TL('Zaloguj się, a wczytam loty z linku', 'Sign in and I will load the flights from the link')); return; }
   flLoad(user);
   if (flPending) flTakePending();
 });
