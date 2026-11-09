@@ -55,7 +55,7 @@ function flJetHTML() {
   const hrs = m => `${m > 0 ? '+' : '−'}${Math.abs(m) / 60 % 1 ? (Math.abs(m) / 60).toFixed(1).replace('.', lang === 'pl' ? ',' : '.') : Math.abs(m) / 60} h`;
   const hh = ms => { const h = Math.round(ms / 1800e3) / 2; return `${String(h).replace('.', lang === 'pl' ? ',' : '.')} h`; };
   const dayOf = (iso, d) => { const t = Date.parse(iso.slice(0, 10) + 'T12:00:00Z') + d * 864e5; return flDay(new Date(t).toISOString()); };
-  return `<section class="fl-jet"><h3>😴 ${TL('Plan na zmianę czasu', 'Jet lag plan')}</h3>${model.map(m => {
+  return `<details class="fl-jet"><summary>😴 ${TL('Plan na zmianę czasu', 'Jet lag plan')} <span>${model.map(m => hrs(m.shift)).join(' · ')}</span></summary>${model.map(m => {
     const steps = [];
     if (m.first) steps.push(['🛏️', `${dayOf(m.dep, -3)} – ${dayOf(m.dep, -1)}`, TL('Przed wylotem', 'Before you fly'),
       m.east ? TL('Kładź się i wstawaj o 1 h wcześniej każdego dnia. Rano wychodź na jasne światło, wieczorem przyciemnij ekrany.', 'Go to bed and get up 1 h earlier each day. Get bright light in the morning, dim screens in the evening.')
@@ -75,7 +75,7 @@ function flJetHTML() {
       + ' ' + TL(`Organizm przestawi się w ok. ${m.days} dni.`, `Your body will adjust in about ${m.days} days.`)]);
     return `<div class="fl-jet-j"><div class="fl-jet-head"><b>${hrs(m.shift)}</b><span>${m.east ? TL('zegar do przodu', 'clock forward') : TL('zegar do tyłu', 'clock back')} · ${esc(m.place)}</span></div>
       <ol>${steps.map(s => `<li class="${s[4] || ''}"><i>${s[0]}</i><div><small>${s[1]}</small><b>${esc(s[2])}</b><span>${esc(s[3])}</span></div></li>`).join('')}</ol></div>`;
-  }).join('')}<p class="fl-jet-src">${TL('Zasady', 'Rules')}: <a href="https://www.cdc.gov/yellow-book/hcp/travel-air-sea/jet-lag-disorder.html" target="_blank" rel="noopener">CDC Yellow Book</a>, <a href="https://www.mayoclinic.org/diseases-conditions/jet-lag/diagnosis-treatment/drc-20374031" target="_blank" rel="noopener">Mayo Clinic</a>. ${TL('Noc u celu liczę jako 22:00–06:00.', 'Night at the destination is taken as 22:00–06:00.')}</p></section>`;
+  }).join('')}<p class="fl-jet-src">${TL('Zasady', 'Rules')}: <a href="https://www.cdc.gov/yellow-book/hcp/travel-air-sea/jet-lag-disorder.html" target="_blank" rel="noopener">CDC Yellow Book</a>, <a href="https://www.mayoclinic.org/diseases-conditions/jet-lag/diagnosis-treatment/drc-20374031" target="_blank" rel="noopener">Mayo Clinic</a>. ${TL('Noc u celu liczę jako 22:00–06:00.', 'Night at the destination is taken as 22:00–06:00.')}</p></details>`;
 }
 
 // --- reminders: the same list functions/main.py sends ---
@@ -106,9 +106,14 @@ function flReminders() {
         t: TL(`Osobny bilet: odbierz bagaż na ${f.no}`, `Separate ticket: collect your bag for ${f.no}`),
         b: TL(`${f.no} o ${flClock(f.dep)}${f.tFrom ? ' z T' + f.tFrom.replace(/^T/, '') : ''}. Nadaj bagaż od nowa i idź od razu do odprawy.`, `${f.no} at ${flClock(f.dep)}${f.tFrom ? ' from T' + f.tFrom.replace(/^T/, '') : ''}. Check your bag in again and go straight to check-in.`) });
     }
-    if (f.bag && (f.bag.st === 'buy' || f.bag.st === 'no'))
+    if (f.bag && (f.bag.st === 'buy' || f.bag.st === 'no')) {
+      // 3 days before the leg, and also 3 days before the whole trip starts, so it is sorted out from home
+      const pre = Date.parse(fl[0].dep) - 72 * 3600e3;
+      if (pre < dep - 72 * 3600e3) out.push({ key: 'bagpre:' + f.no + f.dep, at: pre, until: dep, ic: '🧳', quiet: true,
+        t: TL(`Przed wyjazdem: dokup bagaż na ${f.no}`, `Before you go: buy a bag for ${f.no}`), b: f.bag.t || '' });
       out.push({ key: 'bag:' + f.no + f.dep, at: dep - 72 * 3600e3, until: dep, ic: '🧳', quiet: true,
         t: TL(`Brak bagażu rejestrowanego: ${f.no}`, `No checked bag: ${f.no}`), b: f.bag.t || '' });
+    }
     const form = FL_ENTRY[flCc(f.to)];
     if (form && flCc(f.from) && flCc(f.from) !== flCc(f.to)) {
       const arr = Date.parse(f.arr);

@@ -58,7 +58,7 @@ TEXT = {
         'fl_from': ' z T{t}', 'fl_go_t': '🧳 Czas jechać na lotnisko', 'fl_go_t_early': '🧳 Jutro wcześnie: na lotnisku do {by}',
         'fl_go_b': '{no} o {time}{term}. Bądź na lotnisku do {by} ({h} h przed lotem).',
         'fl_sep_t': '🔁 Osobny bilet: odbierz bagaż na {no}', 'fl_sep_b': '{no} o {time}{term}. Nadaj bagaż od nowa i idź od razu do odprawy.',
-        'fl_bag_t': '🧳 Brak bagażu rejestrowanego: {no}',
+        'fl_bag_t': '🧳 Brak bagażu rejestrowanego: {no}', 'fl_bagpre_t': '🧳 Przed wyjazdem: dokup bagaż na {no}',
         'fl_entry_t': '📝 {name}: możesz się już zarejestrować', 'fl_entry_b': 'Przylot {day} o {time} ({place}). Tylko {url}, za darmo.',
         'brief_t': '🤿 Dziś: {sites}', 'brief_b': '{depths} · Dotknij, żeby zobaczyć odprawę i historię.',
     },
@@ -86,7 +86,7 @@ TEXT = {
         'fl_from': ' from T{t}', 'fl_go_t': '🧳 Time to head to the airport', 'fl_go_t_early': '🧳 Early tomorrow: at the airport by {by}',
         'fl_go_b': '{no} at {time}{term}. Be at the airport by {by} ({h} h before).',
         'fl_sep_t': '🔁 Separate ticket: collect your bag for {no}', 'fl_sep_b': '{no} at {time}{term}. Check your bag in again and go straight to check-in.',
-        'fl_bag_t': '🧳 No checked bag: {no}',
+        'fl_bag_t': '🧳 No checked bag: {no}', 'fl_bagpre_t': '🧳 Before you go: buy a bag for {no}',
         'fl_entry_t': '📝 {name}: registration is open', 'fl_entry_b': 'Arrival {day} at {time} ({place}). Only {url}, free.',
         'brief_t': '🤿 Today: {sites}', 'brief_b': '{depths} · Tap for the briefing and the story.',
     },
@@ -307,6 +307,10 @@ def fl_reminders(data, tx):
                         'title': tx['fl_sep_t'].format(no=no), 'body': tx['fl_sep_b'].format(no=no, time=hm, term=tx['fl_from'].format(t=t) if t else '')})
         bag = f.get('bag') or {}
         if bag.get('st') in ('buy', 'no'):
+            pre = fl_time(fl[0]['dep']) - timedelta(hours=72)   # also 3 days before the whole trip starts
+            if pre < dep - timedelta(hours=72):
+                out.append({'key': 'bagpre:' + no + f['dep'], 'at': pre, 'until': dep, 'quiet': True,
+                            'title': tx['fl_bagpre_t'].format(no=no), 'body': bag.get('t') or ''})
             out.append({'key': 'bag:' + no + f['dep'], 'at': dep - timedelta(hours=72), 'until': dep, 'quiet': True,
                         'title': tx['fl_bag_t'].format(no=no), 'body': bag.get('t') or ''})
         form = FL_ENTRY.get(cc(f.get('to')))

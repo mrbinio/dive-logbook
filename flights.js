@@ -426,7 +426,7 @@ function flightsRender() {
       <div id="fl-count" class="fl-count"></div>
       <div id="fl-live" class="fl-live"></div>
     </section>
-    ${todo ? `<section class="fl-todo"><h3>${TL('Do zrobienia', 'To do')}</h3><ul>${todo}</ul></section>` : ''}
+    ${todo ? `<details class="fl-todo"><summary>✅ ${TL('Do zrobienia', 'To do')} <span>${flData.todo.length}</span></summary><ul>${todo}</ul></details>` : ''}
     ${flRemHTML()}
     ${flJetHTML()}
     ${body}

@@ -1443,6 +1443,10 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 .fl-jet li span, .fl-rem li span { display: block; color: var(--text-dim); font-size: .8rem; line-height: 1.4; }
 .fl-jet-src { margin: 10px 0 0; font-size: .7rem; color: var(--text-muted); }
 .fl-jet-src a { color: var(--accent); }
+.fl-todo summary, .fl-jet summary { cursor: pointer; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--text-dim); list-style: none; }
+.fl-todo summary::-webkit-details-marker, .fl-jet summary::-webkit-details-marker { display: none; }
+.fl-todo summary span, .fl-jet summary span { margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--accent-dim); color: var(--accent); letter-spacing: 0; }
+.fl-todo[open] ul, .fl-jet[open] .fl-jet-j:first-of-type { margin-top: 12px; }
 .fl-rem summary { cursor: pointer; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--text-dim); list-style: none; }
 .fl-rem summary::-webkit-details-marker { display: none; }
 .fl-rem summary span { margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--accent-dim); color: var(--accent); }
