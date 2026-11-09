@@ -98,6 +98,13 @@ const dayMs = 864e5;
 const parseDay = s => { const t = Date.parse((s || '') + 'T00:00'); return isNaN(t) ? null : t; };
 const todayMs = () => new Date(new Date().toDateString()).getTime();
 const fmtDT = ms => new Date(ms).toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+// In the local time of a place when `iso` carries its UTC offset (flights from the Flights view), else the phone's
+function fmtAt(ms, iso) {
+  const m = /([+-])(\d\d):?(\d\d)$/.exec(iso || '');
+  if (!m) return fmtDT(ms);
+  const off = (m[1] === '-' ? -1 : 1) * (+m[2] * 60 + +m[3]);
+  return new Date(ms + off * 60000).toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
 const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
 
 function tripDives(trip) {
@@ -114,10 +121,21 @@ function planDone(item, list) {
 // --- route ---
 const LEG_MODES = { plane: ['✈️', 'Samolot', 'Plane'], car: ['🚗', 'Auto', 'Car'], ferry: ['⛴️', 'Prom / łódź', 'Ferry / boat'] };
 const ALT_LIMIT = 300;   // m above sea level: a road this high after diving counts like a flight
+// Flights from the Flights view (flights.js) that fall within the trip dates, as plane legs.
+// When there are any, they replace planes typed here, so a flight is entered only once.
+function flightLegs(t) {
+  if (typeof flFlights !== 'function' || !flData) return [];
+  const s = parseDay(t.date), e = parseDay(t.end);
+  if (s == null) return [];
+  const lo = s - 5 * dayMs, hi = (e != null ? e : s) + 6 * dayMs;
+  return flFlights().filter(f => { const d = Date.parse(f.dep); return d >= lo && d <= hi; })
+    .map(f => ({ mode: 'plane', from: flApName(f.from), to: flApName(f.to), dep: f.dep, arr: f.arr, no: f.no, auto: true }));
+}
 function tripLegs(t) {
-  const legs = (t.legs || []).map((l, i) => Object.assign({}, l, { i }));
+  const auto = flightLegs(t);
+  const legs = (t.legs || []).map((l, i) => Object.assign({}, l, { i })).filter(l => !auto.length || l.mode !== 'plane').concat(auto);
   // the old single "flight" field, only while no legs were added (otherwise it duplicates one of them)
-  if (t.flight && !legs.length) legs.push({ mode: 'plane', from: '', to: '', dep: t.flight, legacy: true });
+  if (t.flight && !legs.length && !auto.length) legs.push({ mode: 'plane', from: '', to: '', dep: t.flight, legacy: true });
   return legs.filter(l => !isNaN(Date.parse(l.dep))).sort((a, b) => Date.parse(a.dep) - Date.parse(b.dep));
 }
 // A plane, or a car over a high road, puts you at altitude
@@ -233,35 +251,37 @@ function renderLegs() {
       const txt = `${TL('najwyżej', 'highest')} ${+l.alt} m n.p.m.${l.km ? ' · ' + l.km + ' km' : ''}`;
       tag = l.top ? `<a class="leg-tag" href="https://www.openstreetmap.org/?mlat=${l.top[0]}&mlon=${l.top[1]}#map=11/${l.top[0]}/${l.top[1]}" target="_blank" rel="noopener">⛰ ${txt}</a>` : `<em>⛰ ${txt}</em>`;
     } else if (l.mode === 'car' && !l.legacy) tag = `<button class="leg-tag" onclick="calcSavedLegAlt(${l.i})">📍 ${TL('Sprawdź wysokość trasy', 'Check road altitude')}</button>`;
-    return `<div class="leg${Date.parse(l.arr || l.dep) < Date.now() ? ' past' : ''}"><span class="leg-ic">${m[0]}</span><div><b>${legName(l)}</b>
-      <small>${fmtDT(Date.parse(l.dep))}${isNaN(arrMs) ? '' : ' → ' + fmtDT(arrMs)}</small>${tag}</div>
-      <button class="rem-del" onclick="removeLeg(${l.legacy ? -1 : l.i})" aria-label="Delete">✕</button></div>`;
+    return `<div class="leg${Date.parse(l.arr || l.dep) < Date.now() ? ' past' : ''}"><span class="leg-ic">${m[0]}</span><div><b>${l.no ? esc(l.no) + ' · ' : ''}${legName(l)}</b>
+      <small>${fmtAt(Date.parse(l.dep), l.dep)}${isNaN(arrMs) ? '' : ' → ' + fmtAt(arrMs, l.arr)}</small>${tag}</div>
+      ${l.auto ? '' : `<button class="rem-del" onclick="removeLeg(${l.legacy ? -1 : l.i})" aria-label="Delete">✕</button>`}</div>`;
   };
   const group = (title, legs) => legs.length ? `<div class="leg-group"><div class="leg-gh">${title}</div>${legs.map(legHTML).join('')}</div>` : '';
   // Between arrival and the last surfacing: the days you can dive
   let window = '';
   if (arr || fi) {
-    const from = arr ? `<b>${arr.approx ? '~' : ''}${fmtDT(arr.at)}</b>` : '…';
-    const to = fi ? `<b>${fmtDT(fi.last18)}</b>` : '…';
+    const from = arr ? `<b>${arr.approx ? '~' : ''}${fmtAt(arr.at, arr.leg.arr || arr.leg.dep)}</b>` : '…';
+    const to = fi ? `<b>${fmtAt(fi.last18, fi.leg.dep)}</b>` : '…';
     const days = arr && fi ? Math.max(0, Math.round((fi.last18 - arr.at) / dayMs)) : null;
     window = `<div class="dive-window"><div class="dw-h">🤿 ${TL('Nurkowanie', 'Diving')}${days != null ? ` · ${days} ${TL(days === 1 ? 'dzień' : 'dni', days === 1 ? 'day' : 'days')}` : ''}</div>
       <div class="dw-row"><span>${TL('od przylotu', 'from arrival')}</span>${from}</div>
       <div class="dw-row"><span>${TL('ostatnie wynurzenie', 'last surfacing')}</span>${to}</div>
-      ${fi ? `<small>${TL(`18 h przed ${fi.leg.mode === 'car' ? `przejazdem przez ${+fi.leg.alt} m n.p.m.` : 'lotem'}, bezpieczniej 24 h: ${fmtDT(fi.last24)}`,
-        `18 h before ${fi.leg.mode === 'car' ? `driving over ${+fi.leg.alt} m` : 'your flight'}, safer 24 h: ${fmtDT(fi.last24)}`)}</small>`
+      ${fi ? `<small>${TL(`18 h przed ${fi.leg.mode === 'car' ? `przejazdem przez ${+fi.leg.alt} m n.p.m.` : 'lotem'}, bezpieczniej 24 h: ${fmtAt(fi.last24, fi.leg.dep)}`,
+        `18 h before ${fi.leg.mode === 'car' ? `driving over ${+fi.leg.alt} m` : 'your flight'}, safer 24 h: ${fmtAt(fi.last24, fi.leg.dep)}`)}</small>`
         : `<small>${TL('Dodaj lot powrotny, a policzę, do kiedy możesz nurkować.', 'Add your flight home and I will work out your last dive.')}</small>`}
     </div>`;
   }
-  list.innerHTML = (parts.out.length || parts.mid.length || parts.back.length)
+  const auto = flightLegs(t).length;
+  list.innerHTML = (auto ? `<p class="leg-src">✈️ ${TL('Loty biorę z zakładki', 'Flights come from the')} <button class="link-btn" onclick="flightsShow(true)">${TL('Loty', 'Flights view')}</button>${TL('. Tutaj dopisujesz tylko auto albo prom.', '. Add only drives or ferries here.')}</p>` : '')
+    + ((parts.out.length || parts.mid.length || parts.back.length)
     ? group(TL('Dojazd', 'Getting there'), parts.out) + window + group(TL('Na miejscu', 'On site'), parts.mid) + group(TL('Powrót', 'Going home'), parts.back)
     : `<p class="muted">${TL('Dodaj loty, przejazdy autem i promy — policzę, kiedy możesz nurkować i do kiedy się wynurzyć przed powrotem.',
-      'Add flights, drives and ferries — I will work out when you can dive and when to surface before going home.')}</p>`;
+      'Add flights, drives and ferries — I will work out when you can dive and when to surface before going home.')}</p>`);
   const form = document.getElementById('legs-form');
-  if (form && form.dataset.lang !== lang) {
-    form.dataset.lang = lang;
+  if (form && form.dataset.lang !== lang + auto) {
+    form.dataset.lang = lang + auto;
     form.innerHTML = `
       <select id="leg-mode" class="edit-input full" onchange="document.getElementById('leg-alt-w').style.display = this.value === 'car' ? '' : 'none'">
-        ${Object.entries(LEG_MODES).map(([k, m]) => `<option value="${k}">${m[0]} ${TL(m[1], m[2])}</option>`).join('')}</select>
+        ${Object.entries(LEG_MODES).filter(([k]) => !auto || k !== 'plane').map(([k, m]) => `<option value="${k}">${m[0]} ${TL(m[1], m[2])}</option>`).join('')}</select>
       <input id="leg-from" class="edit-input" placeholder="${TL('Skąd, np. Tokio', 'From, e.g. Tokyo')}">
       <input id="leg-to" class="edit-input" placeholder="${TL('Dokąd, np. Cebu', 'To, e.g. Cebu')}">
       <label class="full"><span>${TL('Wyjazd / odlot', 'Departure')}</span><input type="datetime-local" id="leg-dep" class="edit-input dt-input"></label>
@@ -479,7 +499,7 @@ function homeTripTile() {
     return d === 1 ? TL('jutro', 'tomorrow') : `${TL('za', 'in')} ${d} ${TL('dni', 'days')}`;
   };
   const verb = l => ({ plane: TL('Wylot', 'Flight'), car: TL('Wyjazd', 'Drive'), ferry: TL('Prom', 'Ferry') })[l.mode] || TL('Wyjazd', 'Departure');
-  const nextLine = l => `<span class="tt-leg">${(LEG_MODES[l.mode] || LEG_MODES.plane)[0]} ${fmtDT(Date.parse(l.dep))} · ${legName(l)}</span>`;
+  const nextLine = l => `<span class="tt-leg">${(LEG_MODES[l.mode] || LEG_MODES.plane)[0]} ${fmtAt(Date.parse(l.dep), l.dep)} · ${l.no ? esc(l.no) + ' · ' : ''}${legName(l)}</span>`;
   if (now < s || (has(parts.out, next))) {
     const first = parts.out[0];
     const at = first && Date.parse(first.dep) > Date.now() ? Date.parse(first.dep) : s;
@@ -488,14 +508,14 @@ function homeTripTile() {
     body = `<b>${leg ? verb(leg) + ' ' : ''}${until(leg ? Date.parse(leg.dep) : at)}</b>
       ${leg ? nextLine(leg) : ''}
       ${parts.out.length > 1 ? `<span>${routeChain(parts.out)}</span>` : ''}
-      ${arr ? `<span>🤿 ${TL('na miejscu', 'arrive')} ${arr.approx ? '~' : ''}${fmtDT(arr.at)}</span>` : ''}
+      ${arr ? `<span>🤿 ${TL('na miejscu', 'arrive')} ${arr.approx ? '~' : ''}${fmtAt(arr.at, arr.leg.arr || arr.leg.dep)}</span>` : ''}
       ${packed != null ? `<div class="rank-bar"><i style="width:${packed}%"></i></div><span>${TL('Spakowane', 'Packed')} ${packed}%</span>` : ''}`;
   } else if (e == null || now <= e || (has(parts.back, next))) {
     const st = tripStats(t);
     const soon = next && Date.parse(next.dep) - Date.now() < 3 * dayMs;
     body = `<b>${TL('dzień', 'day')} ${Math.round((now - s) / dayMs) + 1}${e ? ` ${TL('z', 'of')} ${Math.round((e - s) / dayMs) + 1}` : ''}</b>
       <span>${st.list.length} ${TL('nurkowań', 'dives')}${st.planTotal ? ` · ${TL('plan', 'plan')} ${st.planDone}/${st.planTotal}` : ''}</span>
-      ${fi && fi.flight - Date.now() < 4 * dayMs ? `<span class="trip-warn">${TL('Ostatnie nurkowanie do', 'Last dive by')} ${fmtDT(fi.last18)}</span>` : ''}
+      ${fi && fi.flight - Date.now() < 4 * dayMs ? `<span class="trip-warn">${TL('Ostatnie nurkowanie do', 'Last dive by')} ${fmtAt(fi.last18, fi.leg.dep)}</span>` : ''}
       ${soon ? `<span>${verb(next)} ${until(Date.parse(next.dep))}</span>${nextLine(next)}` : ''}`;
   } else {
     if ((now - e) / dayMs > 14) return '';

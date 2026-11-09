@@ -222,17 +222,26 @@ def trip_messages(db, uid, tx, now, dives, st, sent):
 
     # Flights and high roads after diving on this trip (outbound legs come before any dive)
     legs = list(t.get('legs') or [])
-    if t.get('flight') and not any(l.get('dep') == t['flight'] for l in legs):
+    # planes come from the Flights view when it has flights in the trip dates (as trip.js flightLegs)
+    auto = trip_flight_legs(db, uid, start, end)
+    if auto:
+        legs = [l for l in legs if l.get('mode') != 'plane'] + auto
+    elif t.get('flight') and not any(l.get('dep') == t['flight'] for l in legs):
         legs.append({'mode': 'plane', 'dep': t['flight']})
     trip_ends = [e for e, _ in (dive_end(d, now.tzinfo) for d in dives if start and parse_day(d.get('date')) and parse_day(d.get('date')) >= start) if e]
+    timed = []
     for leg in legs:
         if not (leg.get('mode') == 'plane' or (leg.get('mode') == 'car' and num(leg.get('alt')) >= ALT_LIMIT)):
             continue
         try:
-            dep = datetime.fromisoformat(leg.get('dep') or '').replace(tzinfo=now.tzinfo)
+            dep = datetime.fromisoformat(leg.get('dep') or '')
         except ValueError:
             continue
-        if not (timedelta(0) < dep - now <= timedelta(hours=48)) or not any(e < dep for e in trip_ends):
+        timed.append((dep if dep.tzinfo else dep.replace(tzinfo=now.tzinfo), leg))   # typed in the app: local time
+    # only the first flight / high road after the dives: the later legs of the way home follow from it
+    nxt = next(((d, l) for d, l in sorted(timed, key=lambda x: x[0]) if d > now and any(e < d for e in trip_ends)), None)
+    for dep, leg in [nxt] if nxt else []:
+        if dep - now > timedelta(hours=48):
             continue
         when = fmt_when(dep, tx)
         name = ' → '.join(x for x in (leg.get('from'), leg.get('to')) if x)
@@ -263,6 +272,23 @@ def trip_messages(db, uid, tx, now, dives, st, sent):
                                                     deep=deep.get('site') or deep.get('location') or ''),
                          'tag': 'trip', 'url': APP_URL + '?tab=checklist'})
     return out
+
+
+def trip_flight_legs(db, uid, start, end):
+    if not start:
+        return []
+    snap = db.collection('users').document(uid).collection('profile').document('flights').get()
+    if not snap.exists:
+        return []
+    try:
+        data = json.loads((snap.to_dict() or {}).get('json') or '{}')
+    except ValueError:
+        return []
+    ap = data.get('ap') or {}
+    lo, hi = start - timedelta(days=5), (end or start) + timedelta(days=6)
+    return [{'mode': 'plane', 'from': (ap.get(f.get('from')) or {}).get('name') or f.get('from'),
+             'to': (ap.get(f.get('to')) or {}).get('name') or f.get('to'), 'dep': f['dep'], 'arr': f.get('arr')}
+            for f in data.get('items') or [] if f.get('k') == 'f' and fl_time(f.get('dep')) and lo <= fl_time(f['dep']).date() <= hi]
 
 
 def active_trip(db, uid):

@@ -1459,3 +1459,5 @@ details.form-sec > summary em { font-style: normal; margin-left: auto; color: va
 .fl-ask b { color: #fff; font-size: 1rem; }
 .fl-ask div { display: flex; gap: 8px; }
 .fl-ask button { flex: 1; }
+.leg-src { font-size: .8rem; color: var(--text-dim); margin: 0 0 8px; line-height: 1.4; }
+.leg-src .link-btn { padding: 0; font-weight: 800; }

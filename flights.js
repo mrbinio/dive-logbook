@@ -32,6 +32,7 @@ async function flSave(d) {
   const json = JSON.stringify(d);
   try { localStorage.setItem(flCacheKey(uid), json); } catch (e) {}
   await flDoc(uid).set({ json, at: firebase.firestore.FieldValue.serverTimestamp() });
+  flTripChanged();
   showToast(TL('✈️ Loty zapisane', '✈️ Flights saved'));
   return true;
 }
@@ -72,9 +73,15 @@ function flCopy(btn) {
   if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => showToast(TL(`Skopiowano ${text}`, `Copied ${text}`))).catch(() => {});
 }
 
+// The trip route (trip.js) takes its planes from here
+function flTripChanged() {
+  if (typeof renderLegs === 'function' && typeof currentTrip !== 'undefined' && currentTrip) renderLegs();
+  if (document.getElementById('panel-home')?.classList.contains('active') && typeof renderHome === 'function') renderHome();
+}
 function flLoad(user) {
   try { const c = localStorage.getItem(flCacheKey(user.uid)); if (c) flData = JSON.parse(c); } catch (e) {}
   if (flOn) flightsRender();
+  flTripChanged();
   flRefresh();
 }
 // Fetch the saved copy again: a phone app kept in the background would otherwise show the old times
@@ -88,6 +95,7 @@ function flRefresh() {
     flData = JSON.parse(json);
     try { localStorage.setItem(flCacheKey(uid), json); } catch (e) {}
     if (flOn) flightsRender();
+    flTripChanged();
   }).catch(() => {});
 }
 document.addEventListener('visibilitychange', () => { if (flOn && document.visibilityState === 'visible') flRefresh(); });
