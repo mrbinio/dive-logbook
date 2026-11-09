@@ -26,8 +26,10 @@ function setPushOn(on) {
 }
 // Notifications open a tab: ?tab=… in the url, or a message from sw.js when the app is already open
 function openTabFromUrl(url) {
-  const tab = new URL(url, location.href).searchParams.get('tab');
+  const q = new URL(url, location.href).searchParams, tab = q.get('tab');
   if (tab && document.getElementById('panel-' + tab)) switchTab(tab);
+  if (q.get('brief') === 'today' && typeof briefOpenToday === 'function') briefOpenToday();
+  if (q.get('fl') && typeof flightsShow === 'function') setTimeout(() => flightsShow(true), 0);
 }
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.type === 'open') openTabFromUrl(e.data.url); });

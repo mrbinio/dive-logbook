@@ -9,6 +9,9 @@ Every 15 minutes, for each user who turned notifications on:
     the last time to surface before a flight or a high mountain road on the
     way back (trip.legs, or the older trip.flight), and a summary the day after
     the trip ends.
+  * from the flights itinerary (users/{uid}/profile/flights): the day before, time to leave for the
+    airport, a separate-ticket connection, a leg with no checked bag, an entry form opening (as flplan.js);
+  * on a dive day of the active trip, at 06:30: today's sites, opening the briefing (sites.js).
 Every message carries the tab to open and the number of overdue reminders
 for the app icon badge.
 
@@ -51,6 +54,13 @@ TEXT = {
         'sum_t': '📊 {site} — podsumowanie', 'sum_b': '{n} {dives} · {hrs} h pod wodą · najgłębiej {depth} m ({deep}).',
         'dives': lambda n: 'nurkowanie' if n == 1 else 'nurkowania' if n % 10 in (2, 3, 4) and n % 100 not in (12, 13, 14) else 'nurkowań',
         'days': ['pon', 'wt', 'śr', 'czw', 'pt', 'sob', 'niedz'],
+        'fl_day_t': '✈️ Jutro: {no} {route} o {time}', 'fl_day_b': '{term}Sprawdź odprawę online · Na lotnisku bądź do {by}',
+        'fl_from': ' z T{t}', 'fl_go_t': '🧳 Czas jechać na lotnisko', 'fl_go_t_early': '🧳 Jutro wcześnie: na lotnisku do {by}',
+        'fl_go_b': '{no} o {time}{term}. Bądź na lotnisku do {by} ({h} h przed lotem).',
+        'fl_sep_t': '🔁 Osobny bilet: odbierz bagaż na {no}', 'fl_sep_b': '{no} o {time}{term}. Nadaj bagaż od nowa i idź od razu do odprawy.',
+        'fl_bag_t': '🧳 Brak bagażu rejestrowanego: {no}',
+        'fl_entry_t': '📝 {name}: możesz się już zarejestrować', 'fl_entry_b': 'Przylot {day} o {time} ({place}). Tylko {url}, za darmo.',
+        'brief_t': '🤿 Dziś: {sites}', 'brief_b': '{depths} · Dotknij, żeby zobaczyć odprawę i historię.',
     },
     'en': {
         'fly_t': '✈️ OK to fly', 'fly_b': '{h} h since you surfaced · {dive}. Safe travels!',
@@ -72,8 +82,17 @@ TEXT = {
         'sum_t': '📊 {site} — summary', 'sum_b': '{n} {dives} · {hrs} h underwater · deepest {depth} m ({deep}).',
         'dives': lambda n: 'dive' if n == 1 else 'dives',
         'days': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        'fl_day_t': '✈️ Tomorrow: {no} {route} at {time}', 'fl_day_b': '{term}Check online check-in · Be at the airport by {by}',
+        'fl_from': ' from T{t}', 'fl_go_t': '🧳 Time to head to the airport', 'fl_go_t_early': '🧳 Early tomorrow: at the airport by {by}',
+        'fl_go_b': '{no} at {time}{term}. Be at the airport by {by} ({h} h before).',
+        'fl_sep_t': '🔁 Separate ticket: collect your bag for {no}', 'fl_sep_b': '{no} at {time}{term}. Check your bag in again and go straight to check-in.',
+        'fl_bag_t': '🧳 No checked bag: {no}',
+        'fl_entry_t': '📝 {name}: registration is open', 'fl_entry_b': 'Arrival {day} at {time} ({place}). Only {url}, free.',
+        'brief_t': '🤿 Today: {sites}', 'brief_b': '{depths} · Tap for the briefing and the story.',
     },
 }
+# Entry forms by destination country (same table as flplan.js); opens = hours before arrival
+FL_ENTRY = {'PH': {'name': 'eTravel', 'url': 'etravel.gov.ph', 'opens': 72}}
 ALT_LIMIT = 300   # m: a road this high after diving counts like a flight (same as trip.js)
 EMOJI = {'service': '🔧', 'medical': '🩺', 'insurance': '🛡️', 'other': '📌'}
 
@@ -175,8 +194,7 @@ def parse_day(s):
 
 def trip_messages(db, uid, tx, now, dives, st, sent):
     """Countdown, flight and summary messages for the user's active trip."""
-    trip = next((t for t in db.collection('trips').where('members', 'array_contains', uid).stream()
-                 if (t.to_dict() or {}).get('active')), None)
+    trip = active_trip(db, uid)
     if not trip:
         return []
     t, tid, out = trip.to_dict(), trip.id, []
@@ -247,6 +265,116 @@ def trip_messages(db, uid, tx, now, dives, st, sent):
     return out
 
 
+def active_trip(db, uid):
+    return next((t for t in db.collection('trips').where('members', 'array_contains', uid).stream()
+                 if (t.to_dict() or {}).get('active')), None)
+
+
+def fl_time(s):
+    try:
+        t = datetime.fromisoformat(s)
+        return t if t.tzinfo else None
+    except (TypeError, ValueError):
+        return None
+
+
+def fl_reminders(data, tx):
+    """The reminders flplan.js lists in the app, as {key, at, until, quiet, title, body}; keep the two in step."""
+    ap = data.get('ap') or {}
+    cc = lambda c: (ap.get(c) or {}).get('cc')
+    name = lambda c: (ap.get(c) or {}).get('name') or c
+    fl = sorted((f for f in data.get('items') or [] if f.get('k') == 'f' and fl_time(f.get('dep')) and fl_time(f.get('arr'))),
+                key=lambda f: fl_time(f['dep']))
+    out = []
+    for i, f in enumerate(fl):
+        dep, prev = fl_time(f['dep']), fl[i - 1] if i else None
+        intl = not (cc(f.get('from')) and cc(f.get('from')) == cc(f.get('to')))
+        by = dep - timedelta(hours=3 if intl else 2)
+        t = (f.get('tFrom') or '').lstrip('T')
+        no, hm = f.get('no') or '', f'{dep:%H:%M}'
+        if not prev or dep - fl_time(prev['arr']) >= timedelta(hours=6):
+            out.append({'key': 'day:' + no + f['dep'], 'at': dep - timedelta(hours=24), 'until': dep,
+                        'title': tx['fl_day_t'].format(no=no, route=f"{f.get('from')} → {f.get('to')}", time=hm),
+                        'body': tx['fl_day_b'].format(term=f'Terminal {t} · ' if t else '', by=f'{by:%H:%M}')})
+            go, early = by - timedelta(hours=1), False
+            if go.hour < 6:   # at night: the evening before, 21:00
+                go, early = (go - timedelta(days=1)).replace(hour=21, minute=0, second=0, microsecond=0), True
+            out.append({'key': 'go:' + no + f['dep'], 'at': go, 'until': dep,
+                        'title': tx['fl_go_t_early'].format(by=f'{by:%H:%M}') if early else tx['fl_go_t'],
+                        'body': tx['fl_go_b'].format(no=no, time=hm, term=tx['fl_from'].format(t=t) if t else '', by=f'{by:%H:%M}', h=3 if intl else 2)})
+        elif f.get('pnr') and prev.get('pnr') and f['pnr'] != prev['pnr']:
+            out.append({'key': 'sep:' + no + f['dep'], 'at': fl_time(prev['arr']), 'until': dep,
+                        'title': tx['fl_sep_t'].format(no=no), 'body': tx['fl_sep_b'].format(no=no, time=hm, term=tx['fl_from'].format(t=t) if t else '')})
+        bag = f.get('bag') or {}
+        if bag.get('st') in ('buy', 'no'):
+            out.append({'key': 'bag:' + no + f['dep'], 'at': dep - timedelta(hours=72), 'until': dep, 'quiet': True,
+                        'title': tx['fl_bag_t'].format(no=no), 'body': bag.get('t') or ''})
+        form = FL_ENTRY.get(cc(f.get('to')))
+        if form and cc(f.get('from')) and cc(f.get('from')) != cc(f.get('to')):
+            arr = fl_time(f['arr'])
+            out.append({'key': 'entry:' + no + f['arr'], 'at': arr - timedelta(hours=form['opens']), 'until': arr, 'quiet': True,
+                        'title': tx['fl_entry_t'].format(name=form['name']),
+                        'body': tx['fl_entry_b'].format(day=f"{tx['days'][arr.weekday()]} {arr.day}.{arr.month:02d}", time=f'{arr:%H:%M}', place=name(f.get('to')), url=form['url'])})
+    return out, fl
+
+
+def flight_messages(user, tx, now_utc, sent):
+    """Reminders from the itinerary in users/{uid}/profile/flights, each sent once."""
+    snap = user.collection('profile').document('flights').get()
+    if not snap.exists:
+        return []
+    try:
+        data = json.loads((snap.to_dict() or {}).get('json') or '{}')
+    except ValueError:
+        return []
+    rems, fl = fl_reminders(data, tx)
+    # where you are now by the itinerary, for the quiet hours of the 🌙 reminders
+    here = fl_time(fl[0]['dep']).utcoffset() if fl else timedelta(0)
+    for f in fl:
+        if fl_time(f['arr']) <= now_utc:
+            here = fl_time(f['arr']).utcoffset()
+    local_h = (now_utc + here).hour
+    out = []
+    for r in rems:
+        if sent.get(r['key']) or not (r['at'] <= now_utc < r['until']):
+            continue
+        if r.get('quiet') and not 8 <= local_h < 21:
+            continue
+        if not r.get('quiet') and now_utc - r['at'] > timedelta(hours=2):   # too late to be useful
+            sent[r['key']] = True
+            continue
+        sent[r['key']] = True
+        out.append({'title': r['title'], 'body': r['body'], 'tag': 'fl:' + r['key'][:40], 'url': APP_URL + '?tab=trip&fl=1'})
+    return out
+
+
+def brief_messages(trip, tx, now, sent):
+    """At 06:30 on a dive day of the active trip: today's sites, opening the briefing."""
+    if not trip or (now.hour, now.minute) < (6, 30) or now.hour >= 12:
+        return []
+    t, tid = trip.to_dict(), trip.id
+    pr = t.get('program') or {}
+    d1 = parse_day(pr.get('day1') or t.get('date'))
+    if not d1:
+        return []
+    n = (now.date() - d1).days + 1
+    day = next((d for d in pr.get('days') or [] if d.get('n') == n), None)
+    sites = [s for s in (day or {}).get('sites') or [] if s]
+    key = f'{tid}:brief{n}'
+    if not sites or sent.get(key):
+        return []
+    sent[key] = True
+    key5 = lambda x: ''.join(ch for ch in str(x).lower() if ch.isalnum())[:5]
+
+    def depth(name):
+        p = next((p for p in t.get('plan') or [] if key5(p.get('name')) == key5(name)), None)
+        if not p or not p.get('depth'):
+            return '—'
+        return (f"{num(p.get('min')):g}–" if p.get('min') is not None else '') + f"{num(p['depth']):g} m"
+    return [{'title': tx['brief_t'].format(sites=' · '.join(sites)), 'body': tx['brief_b'].format(depths=' · '.join(depth(s) for s in sites)),
+             'tag': 'brief', 'url': APP_URL + '?tab=home&brief=today'}]
+
+
 def send(sub_ref, sub, payload):
     try:
         webpush(subscription_info=sub['subscription'], data=json.dumps(payload),
@@ -277,6 +405,16 @@ def notify_user(db, uid, subs, now_utc):
         if meta.get('flySent') != key:
             messages.append({'title': tx['fly_t'], 'body': tx['fly_b'].format(h=st['hours'], dive=dive_label(st['dive'])), 'tag': 'fly', 'url': APP_URL + '?tab=history'})
             changes['flySent'] = key
+
+    # Flights and the morning dive briefing keep their own hours, so they sit outside the 08–21 window
+    fl_sent = dict(meta.get('flSent') or {})
+    messages += flight_messages(user, tx, now_utc, fl_sent)
+    if fl_sent != (meta.get('flSent') or {}):
+        changes['flSent'] = fl_sent
+    brief_sent = dict(meta.get('briefSent') or {})
+    messages += brief_messages(active_trip(db, uid), tx, now, brief_sent)
+    if brief_sent != (meta.get('briefSent') or {}):
+        changes['briefSent'] = brief_sent
 
     gear = [dict(x.to_dict(), id=x.id) for x in user.collection('gear').stream()]
     rems = [dict(x.to_dict(), id=x.id) for x in user.collection('reminders').stream()]

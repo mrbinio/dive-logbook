@@ -230,6 +230,7 @@ function renderProgram() {
       ${(d.plan || []).map(l => `<p>${esc(l)}</p>`).join('')}
       ${d.note ? `<p class="pd-note">${esc(d.note)}</p>` : ''}
       ${d.desc ? `<p class="pd-desc">${esc(d.desc)}</p>` : ''}
+      ${(d.sites || []).length ? `<div class="pd-brief">${d.sites.map((s, i) => `<button class="chip-btn" onclick="openBriefDay(${d.n}, ${i})">📖 ${esc(s)}</button>`).join('')}</div>` : ''}
     </details>`;
   }).join('') + `<p class="pl-foot">📄 ${esc(pr.file || '')}${pr.price ? ' · ' + esc(pr.price) : ''}</p>`;
 }

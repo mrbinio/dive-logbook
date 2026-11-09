@@ -413,6 +413,8 @@ function flightsRender() {
       <div id="fl-live" class="fl-live"></div>
     </section>
     ${todo ? `<section class="fl-todo"><h3>${TL('Do zrobienia', 'To do')}</h3><ul>${todo}</ul></section>` : ''}
+    ${flRemHTML()}
+    ${flJetHTML()}
     ${body}
     ${notes ? `<details class="fl-notes"><summary>${TL('Skąd te informacje', 'Where this comes from')}</summary><ul>${notes}</ul></details>` : ''}
     <div class="fl-foot"><label class="chip-btn">${TL('Wczytaj nowy plik', 'Load a new file')}<input type="file" accept="application/json,.json" onchange="flFile(this)" hidden></label>

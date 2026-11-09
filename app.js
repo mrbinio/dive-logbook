@@ -658,7 +658,7 @@ function renderHome() {
   const el = document.getElementById('home-content');
   if (!el) return;
   if (!dives.length) {
-    el.innerHTML = `<div class="bento">${homeTripTile()}<section class="tile tile-hero home-empty">
+    el.innerHTML = `<div class="bento">${homeTripTile()}${homeBriefTile()}<section class="tile tile-hero home-empty">
       <div class="eyebrow">Mr.Binio · ${t('subtitle')}</div>
       <h1 class="hero-site">${t('startLog')}</h1>
       <p class="hero-loc">${t('startLogSub')}</p>
@@ -696,6 +696,7 @@ function renderHome() {
       ${facts.length ? `<div class="hero-facts">${facts.map(f => `<div><b>${esc(f[0])}</b><small>${f[1]}</small></div>`).join('')}</div>` : ''}
     </section>
     ${homeTripTile()}
+    ${homeBriefTile()}
     ${homeStatusTiles()}
     ${homeRemindersTile()}
     ${homePushTile()}

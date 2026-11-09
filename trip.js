@@ -401,6 +401,7 @@ function renderTripPlan() {
       return `<div class="cl-row">
         <input type="checkbox" ${ok ? 'checked' : ''} ${auto ? 'disabled title="' + TL('Zalogowane nurkowanie', 'Logged dive') + '"' : ''} onchange="togglePlan(${i})">
         <span class="${ok ? 'done' : ''}">${esc(p.name)}${p.depth ? ` <small>${p.min != null ? p.min + '–' : '~'}${p.depth} m</small>` : ''}${auto ? ` <small class="auto">✓ ${TL('z logbooka', 'from logbook')}</small>` : ''}</span>
+        <button class="plan-calc" onclick='openBrief(${esc(JSON.stringify(p.name))})' title="${TL('Odprawa i historia', 'Briefing and history')}">📖</button>
         ${p.depth ? `<button class="plan-calc" onclick="planAtDepth(${+p.depth})" title="${TL('Ile mogę na tej głębokości?', 'How long at this depth?')}">⏱</button>` : ''}
         <button onclick="removePlan(${i})" aria-label="Remove">✕</button>
       </div>`;
